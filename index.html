@@ -53,7 +53,7 @@ header {
 .grid { 
   display:grid; 
   grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); 
-  gap:20px; 
+  gap:25px; 
   padding:20px; 
 }
 
@@ -61,7 +61,7 @@ header {
 .card { 
   background:#111827; 
   border-radius:15px; 
-  overflow:hidden;
+  overflow:visible; /* IMPORTANTE */
   text-align:center;
   position:relative;
   box-shadow: 0 10px 25px rgba(0,0,0,0.8);
@@ -70,43 +70,44 @@ header {
 
 .card:hover {
   transform: scale(1.05);
+  z-index:10;
 }
 
 .card img { 
   width:100%; 
   height:300px; 
   object-fit:cover;
+  border-radius:15px;
 }
 
-/* TITULO */
 .card h3 { 
   margin:10px; 
   font-size:16px;
 }
 
-/* SINOPSIS OCULTA */
+/* 🔥 SINOPSIS LATERAL */
 .card p { 
   position:absolute;
   top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background: rgba(0,0,0,0.85);
-  color:#fff;
-  font-size:14px;
+  left:105%;
+  width:250px;
+  height:300px;
+  background:#111;
+  border-radius:10px;
   padding:15px;
-  box-sizing:border-box;
+  font-size:14px;
+  text-align:left;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.9);
   opacity:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  transition:0.4s;
+  transform: translateX(-10px);
+  transition:0.3s;
+  overflow-y:auto;
 }
 
-/* HOVER */
+/* Mostrar */
 .card:hover p {
   opacity:1;
+  transform: translateX(0);
 }
 </style>
 
