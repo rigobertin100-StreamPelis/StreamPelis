@@ -59,34 +59,54 @@ header {
 
 /* CARD */
 .card { 
-  background:#111827; 
+  position:relative;
   border-radius:15px; 
   overflow:visible;
-  text-align:center;
-  position:relative;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-  transition: all 0.4s ease;
+  transition:0.4s;
 }
 
 .card:hover {
-  transform: scale(1.05);
-  z-index:20;
+  transform: scale(1.08);
+  z-index:50;
 }
 
+/* IMAGEN */
 .card img { 
   width:100%; 
   height:300px; 
   object-fit:cover;
   border-radius:15px;
+  transition:0.4s;
 }
 
+/* OVERLAY OSCURO */
+.card::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:15px;
+  background:linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  opacity:0;
+  transition:0.3s;
+}
+
+.card:hover::after {
+  opacity:1;
+}
+
+/* TITULO */
 .card h3 { 
-  margin:10px; 
+  position:absolute;
+  bottom:10px;
+  left:10px;
+  right:10px;
+  margin:0;
   font-size:16px;
+  z-index:2;
 }
 
-/* 🔥 SINOPSIS BASE */
-.card p { 
+/* 🔥 PANEL FLOTANTE */
+.preview {
   position:absolute;
   top:0;
   width:260px;
@@ -94,30 +114,16 @@ header {
   background:#111;
   border-radius:10px;
   padding:15px;
-  font-size:14px;
-  text-align:left;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+  box-shadow:0 10px 30px rgba(0,0,0,0.9);
   opacity:0;
   transition:0.3s;
   overflow-y:auto;
-}
-
-/* 👉 derecha */
-.card p.right {
-  left:105%;
-  transform: translateX(-10px);
-}
-
-/* 👉 izquierda */
-.card p.left {
-  right:105%;
-  transform: translateX(10px);
+  pointer-events:none;
 }
 
 /* mostrar */
-.card:hover p {
+.card:hover .preview {
   opacity:1;
-  transform: translateX(0);
 }
 </style>
 
@@ -133,59 +139,55 @@ header {
 
 <div class="grid">
 
-<!-- IZQUIERDA -->
+<!-- EJEMPLOS (PUEDES DUPLICAR IGUAL) -->
+
 <div class="card">
 <a href="https://t.me/c/3872012854/2496">
 <img src="https://www.themoviedb.org/t/p/w1280/pLQQMO77ohibggTKV6wmFs5LHYf.jpg">
 </a>
-<h3>Super Mario Galaxy: La película (2026)</h3>
-<p class="right">Mario y Luigi se enfrentan una nueva amenaza: Bowser Jr., quién está decidido liberar a su padre del cautiverio y restaurar el legado familiar.</p>
+<h3>Super Mario Galaxy (2026)</h3>
+<div class="preview">Mario y Luigi se enfrentan a una nueva amenaza mientras viajan por las estrellas para salvar el reino.</div>
 </div>
 
 <div class="card">
 <a href="https://t.me/c/3872012854/1139">
 <img src="https://www.themoviedb.org/t/p/w1280/vHtH4xdcTbaCVftGwaeGFHfOB3p.jpg">
 </a>
-<h3>Avatar: Fuego y ceniza (2025)</h3>
-<p class="right">Devastados por la guerra contra la RDA, Jake Sully y Neytiri enfrentan una nueva amenaza en Pandora.</p>
+<h3>Avatar (2025)</h3>
+<div class="preview">Jake Sully y Neytiri enfrentan una nueva amenaza tras una devastadora guerra.</div>
 </div>
 
-<div class="card">
-<a href="https://t.me/c/3872012854/896">
-<img src="https://www.themoviedb.org/t/p/w1280/kCb3QJNLi0alrk7i5aCphkkuoFl.jpg">
-</a>
-<h3>Cumbres Borrascosas (2026)</h3>
-<p class="right">La tragedia golpea cuando Heathcliff se enamora de Catherine Earnshaw.</p>
-</div>
-
-<!-- DERECHA -->
 <div class="card">
 <a href="https://t.me/c/3872012854/179">
 <img src="https://www.themoviedb.org/t/p/w1280/3dH7p6eAfzDElYYFKfYWpf9xlsG.jpg">
 </a>
-<h3>GOAT: La cabra que cambió el juego (2026)</h3>
-<p class="left">Will, un pequeño cabrito con grandes sueños, busca triunfar en un deporte dominado por los más fuertes.</p>
+<h3>GOAT (2026)</h3>
+<div class="preview">Un pequeño cabrito busca convertirse en leyenda en un deporte extremo.</div>
 </div>
 
-<div class="card">
-<a href="https://t.me/c/3872012854/81">
-<img src="https://www.themoviedb.org/t/p/w1280/q7aijAKE98Fcp6dgR6oWiUkFO2g.jpg">
-</a>
-<h3>El Día del Fin del Mundo (2026)</h3>
-<p class="left">Una familia abandona su refugio para sobrevivir en un mundo devastado.</p>
 </div>
 
-<div class="card">
-<a href="https://t.me/c/3872012854/11">
-<img src="https://www.themoviedb.org/t/p/w1280/6yUxfwcDYR0RRfbxwGA7rhwreWU.jpg">
-</a>
-<h3>Exterminio (2026)</h3>
-<p class="left">Un científico enfrenta consecuencias que pueden cambiar el mundo.</p>
-</div>
+<script>
+/* 🔥 POSICION AUTOMATICA */
+document.querySelectorAll(".card").forEach(card => {
+  card.addEventListener("mouseenter", () => {
+    const preview = card.querySelector(".preview");
+    const rect = card.getBoundingClientRect();
 
-<!-- SIGUE IGUAL: alterna right / left -->
+    // espacio disponible
+    const spaceRight = window.innerWidth - rect.right;
+    const spaceLeft = rect.left;
 
-</div>
+    if (spaceRight < 280) {
+      preview.style.left = "auto";
+      preview.style.right = "105%";
+    } else {
+      preview.style.left = "105%";
+      preview.style.right = "auto";
+    }
+  });
+});
+</script>
 
 </body>
 </html>
