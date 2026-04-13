@@ -128,11 +128,13 @@ header {
 
 <div class="grid">
 
+<!-- TODAS TUS PELICULAS -->
+
 <a class="card-link" href="https://t.me/c/3872012854/2496">
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/pLQQMO77ohibggTKV6wmFs5LHYf.jpg">
 <h3>Super Mario Galaxy: La película (2026)</h3>
-<div class="preview">Mario y Luigi se enfrentan una nueva amenaza: Bowser Jr. viajan por las estrellas para detenerlo.</div>
+<div class="preview">Mario y Luigi se enfrentan una nueva amenaza: Bowser Jr., viajando por las estrellas.</div>
 </div>
 </a>
 
@@ -148,7 +150,7 @@ header {
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/kCb3QJNLi0alrk7i5aCphkkuoFl.jpg">
 <h3>Cumbres Borrascosas (2026)</h3>
-<div class="preview">Una historia de amor trágico en Inglaterra.</div>
+<div class="preview">Historia trágica de amor en la Inglaterra del siglo XVIII.</div>
 </div>
 </a>
 
@@ -156,7 +158,7 @@ header {
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/3dH7p6eAfzDElYYFKfYWpf9xlsG.jpg">
 <h3>GOAT (2026)</h3>
-<div class="preview">Un pequeño cabrito busca convertirse en leyenda.</div>
+<div class="preview">Un cabrito con sueños busca convertirse en leyenda.</div>
 </div>
 </a>
 
@@ -164,7 +166,7 @@ header {
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/q7aijAKE98Fcp6dgR6oWiUkFO2g.jpg">
 <h3>El Día del Fin del Mundo (2026)</h3>
-<div class="preview">Una familia lucha por sobrevivir tras el apocalipsis.</div>
+<div class="preview">Una familia lucha por sobrevivir en un mundo devastado.</div>
 </div>
 </a>
 
@@ -172,7 +174,7 @@ header {
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/6yUxfwcDYR0RRfbxwGA7rhwreWU.jpg">
 <h3>Exterminio (2026)</h3>
-<div class="preview">Un científico enfrenta consecuencias que cambiarán el mundo.</div>
+<div class="preview">Un científico enfrenta consecuencias que cambian el mundo.</div>
 </div>
 </a>
 
@@ -180,7 +182,7 @@ header {
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/SPGBZj12OVOCZdYJVPIJcpOYvZ.jpg">
 <h3>Máquina de guerra (2026)</h3>
-<div class="preview">Un ingeniero lidera una misión de supervivencia.</div>
+<div class="preview">Un ingeniero lidera una misión peligrosa.</div>
 </div>
 </a>
 
@@ -188,7 +190,7 @@ header {
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/mgqAZeEI5hnAgeVZ0kAdYiPy1Rs.jpg">
 <h3>Sin piedad (2026)</h3>
-<div class="preview">Un detective tiene 90 minutos para demostrar su inocencia.</div>
+<div class="preview">Un detective tiene 90 minutos para probar su inocencia.</div>
 </div>
 </a>
 
@@ -196,7 +198,7 @@ header {
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/x8ygUQ4YNd8iy0oEusS1bHI08A6.jpg">
 <h3>La Empleada (2025)</h3>
-<div class="preview">Una joven descubre secretos en una mansión inquietante.</div>
+<div class="preview">Una joven descubre oscuros secretos en una mansión.</div>
 </div>
 </a>
 
@@ -236,13 +238,14 @@ header {
 <div class="card">
 <img src="https://www.themoviedb.org/t/p/w1280/2EI8HmeQgbryWw5clWYc4vYj1tU.jpg">
 <h3>Caminos del crimen (2026)</h3>
-<div class="preview">Un ladrón planea su último gran golpe.</div>
+<div class="preview">Un ladrón planea su último golpe.</div>
 </div>
 </a>
 
 </div>
 
 <script>
+/* POSICION AUTOMATICA */
 document.querySelectorAll(".card").forEach(card => {
   card.addEventListener("mouseenter", () => {
     const preview = card.querySelector(".preview");
@@ -255,6 +258,22 @@ document.querySelectorAll(".card").forEach(card => {
     } else {
       preview.style.left = "105%";
       preview.style.right = "auto";
+    }
+  });
+});
+
+/* 🔥 MODO INTELIGENTE */
+document.querySelectorAll("a.card-link").forEach(link => {
+  link.addEventListener("click", function(e) {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // abrir app telegram
+      e.preventDefault();
+      window.location.href = this.href;
+    } else {
+      // nueva pestaña en PC
+      this.setAttribute("target", "_blank");
     }
   });
 });
