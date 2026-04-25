@@ -4,15 +4,17 @@
 <meta charset="UTF-8">
 <title>MiCuartoSecreto Pro</title>
 
+<!-- VIDEO.JS -->
+<link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+<script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+
 <style>
 body { margin:0; background:#0b0b0b; color:white; font-family:Arial; }
 .header { padding:20px; font-size:28px; font-weight:bold; position:fixed; top:0; width:100%; background:rgba(0,0,0,0.8); z-index:10; }
 
-/* SEARCH */
 .search-container { padding:100px 20px 0 20px; }
 #search { width:100%; padding:12px; border-radius:8px; border:none; outline:none; }
 
-/* HERO / BANNER */
 .hero {
   width:100%;
   height:65vh;
@@ -32,11 +34,9 @@ body { margin:0; background:#0b0b0b; color:white; font-family:Arial; }
 .hero-content { position:relative; z-index:2; }
 .hero h1 { font-size:40px; margin:0; color:white; }
 
-/* CAROUSEL */
 .carousel { display:flex; overflow-x:auto; padding:20px; gap:15px; scroll-behavior:smooth; }
 .carousel::-webkit-scrollbar { display:none; }
 
-/* CARD */
 .card {
   min-width:180px;
   cursor:pointer;
@@ -53,12 +53,15 @@ body { margin:0; background:#0b0b0b; color:white; font-family:Arial; }
 }
 .card:hover { transform:scale(1.15); z-index:10; }
 
-/* PLAYER */
 .player { position:fixed; inset:0; background:black; display:none; align-items:center; justify-content:center; z-index:999; }
-video { width:85%; }
-.close { position:absolute; top:20px; right:20px; font-size:28px; cursor:pointer; }
 
-/* RESPONSIVE */
+.video-js {
+  width:85% !important;
+  height:auto !important;
+}
+
+.close { position:absolute; top:20px; right:20px; font-size:28px; cursor:pointer; z-index:1000; }
+
 @media (max-width:768px) {
   .card img { width: 120px; height: 180px; }
   .hero { height:50vh; padding:20px; }
@@ -71,52 +74,47 @@ video { width:85%; }
 
 <div class="header">🎬 MiCuartoSecreto</div>
 
-<!-- SEARCH -->
 <div class="search-container">
   <input id="search" placeholder="🔎 Buscar..." />
 </div>
 
-<!-- HERO / BANNER -->
 <div class="hero" id="hero">
   <div class="hero-content">
     <h1 id="heroTitle">Cargando...</h1>
   </div>
 </div>
 
-<!-- CATALOGO -->
 <div class="carousel" id="row"></div>
 
 <!-- PLAYER -->
 <div class="player" id="player">
   <span class="close" onclick="closeVideo()">✖</span>
-  <video id="video" controls autoplay></video>
+
+  <video
+    id="video"
+    class="video-js vjs-default-skin"
+    controls
+    preload="auto"
+  ></video>
 </div>
 
 <script>
 const API = "https://lively-bush-a86a.rigobertin100.workers.dev/";
 
-/* ============================
-🔥 BANNER CUSTOM EDITABLE
-============================ */
-/* Pon aquí la URL de tu banner inicial */
 const CUSTOM_BANNER = "https://static.vecteezy.com/system/resources/previews/017/572/034/non_2x/online-cinema-banner-realistic-computer-monitor-movie-brochure-design-template-banner-for-movie-premiere-show-blue-curtain-theater-marketing-luxury-poster-illustration-vector.jpg";
 
-/* ============================
-🔥 OVERRIDES POSTERS / TITULOS
-============================ */
 const OVERRIDES = {
   "Quieres.Ser.Mi.Novia.2026.mp4": {
     titulo: "Quieres Ser Mi Novia 2026",
     img: "https://www.themoviedb.org/t/p/w1280/oscW8xV8EhRYj7iAhyVlBohKqxo.jpg"
-  },
-  "Bolas Arriba 2026.mp4": {
-    img: "https://tu-dominio.com/imagenes/poster_bolasarriba.jpg"
   }
 };
 
 let allVideos = [];
 let debounceTimer = null;
 const row = document.getElementById("row");
+
+let player = videojs("video");
 
 async function load() {
   const res = await fetch(API);
@@ -143,7 +141,6 @@ function render(videos) {
 
     row.appendChild(card);
 
-    // HERO inicial
     if(index===0){
       document.getElementById("hero").style.backgroundImage=`url(${CUSTOM_BANNER})`;
       document.getElementById("heroTitle").innerText="🎬 Bienvenido";
@@ -151,14 +148,32 @@ function render(videos) {
   });
 }
 
-function play(video) {
-  document.getElementById("video").src=video.url;
+function play(videoData) {
+
+  player.pause();
+
+  // Detectar tipo (MP4 o HLS)
+  const isHLS = videoData.url.includes(".m3u8");
+
+  player.src({
+    src: videoData.url,
+    type: isHLS ? "application/x-mpegURL" : "video/mp4"
+  });
+
+  player.load();
+  player.play();
+
   document.getElementById("player").style.display="flex";
-  document.getElementById("hero").style.backgroundImage=`url(${video.img})`;
-  document.getElementById("heroTitle").innerText=video.titulo;
+
+  document.getElementById("hero").style.backgroundImage=`url(${videoData.img})`;
+  document.getElementById("heroTitle").innerText=videoData.titulo;
 }
 
-/* SEARCH DEBOUNCE */
+function closeVideo() {
+  document.getElementById("player").style.display="none";
+  player.pause();
+}
+
 document.getElementById("search").addEventListener("input",(e)=>{
   clearTimeout(debounceTimer);
   debounceTimer=setTimeout(()=>{
@@ -168,12 +183,6 @@ document.getElementById("search").addEventListener("input",(e)=>{
   },300);
 });
 
-function closeVideo() {
-  document.getElementById("player").style.display="none";
-  document.getElementById("video").pause();
-}
-
-/* 🔥 PON BANNER INICIAL */
 document.getElementById("hero").style.backgroundImage=`url(${CUSTOM_BANNER})`;
 
 load();
