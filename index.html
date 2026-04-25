@@ -2,280 +2,181 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Películas - Página 1</title>
+<title>MiCuartoSecreto Pro</title>
 
 <style>
-body { 
-  font-family: Arial, sans-serif; 
-  background:#0b0f1a; 
-  color:#fff; 
-  margin:0; 
-}
+body { margin:0; background:#0b0b0b; color:white; font-family:Arial; }
+.header { padding:20px; font-size:28px; font-weight:bold; position:fixed; top:0; width:100%; background:rgba(0,0,0,0.8); z-index:10; }
 
-/* HEADER */
-header { 
-  background: linear-gradient(145deg, #002f6c, #0057b8);
-  padding:20px; 
-  text-align:center; 
-  font-size:28px; 
-  font-weight:bold;
-}
+/* SEARCH */
+.search-container { padding:100px 20px 0 20px; }
+#search { width:100%; padding:12px; border-radius:8px; border:none; outline:none; }
 
-/* NAV */
-.nav { text-align:center; margin:25px; }
-
-.nav a { 
-  color:#fff; 
-  margin:10px; 
-  text-decoration:none; 
-  padding:12px 20px; 
-  border-radius:8px;
-  background: linear-gradient(145deg, #0057b8, #003c82);
-  display:inline-block;
-}
-
-/* GRID */
-.grid { 
-  display:grid; 
-  grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); 
-  gap:25px; 
-  padding:20px; 
-}
-
-/* LINK */
-.card-link {
-  text-decoration:none;
-  color:inherit;
-}
-
-/* CARD */
-.card { 
+/* HERO / BANNER */
+.hero {
+  width:100%;
+  height:65vh;
+  background-size:cover;
+  background-position:center;
+  display:flex;
+  align-items:flex-end;
+  padding:40px;
   position:relative;
-  border-radius:15px; 
-  overflow:visible;
-  transition:0.4s;
 }
-
-.card:hover {
-  transform: scale(1.08);
-  z-index:50;
-}
-
-.card img { 
-  width:100%; 
-  height:300px; 
-  object-fit:cover;
-  border-radius:15px;
-}
-
-/* TITULO */
-.card h3 { 
-  position:absolute;
-  bottom:10px;
-  left:10px;
-  right:10px;
-  margin:0;
-  font-size:16px;
-  z-index:2;
-}
-
-/* OVERLAY */
-.card::after {
+.hero::after {
   content:"";
   position:absolute;
   inset:0;
-  border-radius:15px;
-  background:linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-  opacity:0;
-  transition:0.3s;
-  pointer-events:none;
+  background:linear-gradient(to top,#0b0b0b,transparent);
 }
+.hero-content { position:relative; z-index:2; }
+.hero h1 { font-size:40px; margin:0; color:white; }
 
-.card:hover::after {
-  opacity:1;
+/* CAROUSEL */
+.carousel { display:flex; overflow-x:auto; padding:20px; gap:15px; scroll-behavior:smooth; }
+.carousel::-webkit-scrollbar { display:none; }
+
+/* CARD */
+.card {
+  min-width:180px;
+  cursor:pointer;
+  transition:transform 0.3s ease;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
 }
-
-/* PREVIEW */
-.preview {
-  position:absolute;
-  top:0;
-  width:260px;
-  height:300px;
-  background:#111;
+.card img {
+  width: 180px;
+  height: 270px;
+  object-fit: cover;
   border-radius:10px;
-  padding:15px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.9);
-  opacity:0;
-  transition:0.3s;
-  overflow-y:auto;
-  pointer-events:none;
 }
+.card:hover { transform:scale(1.15); z-index:10; }
 
-.card:hover .preview {
-  opacity:1;
+/* PLAYER */
+.player { position:fixed; inset:0; background:black; display:none; align-items:center; justify-content:center; z-index:999; }
+video { width:85%; }
+.close { position:absolute; top:20px; right:20px; font-size:28px; cursor:pointer; }
+
+/* RESPONSIVE */
+@media (max-width:768px) {
+  .card img { width: 120px; height: 180px; }
+  .hero { height:50vh; padding:20px; }
+  .hero h1 { font-size:28px; }
 }
 </style>
-
 </head>
+
 <body>
 
-<header>🎬 PelisPlus</header>
+<div class="header">🎬 MiCuartoSecreto</div>
 
-<div class="nav">
-  <a href="index.html">🏠 Inicio</a>
+<!-- SEARCH -->
+<div class="search-container">
+  <input id="search" placeholder="🔎 Buscar..." />
 </div>
 
-<div class="grid">
-
-<!-- TODAS TUS PELICULAS -->
-
-<a class="card-link" href="https://t.me/c/3872012854/3387">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/pLQQMO77ohibggTKV6wmFs5LHYf.jpg">
-<h3>Super Mario Galaxy: La película (2026)</h3>
-<div class="preview">Mario y Luigi se enfrentan una nueva amenaza: Bowser Jr., viajando por las estrellas.</div>
+<!-- HERO / BANNER -->
+<div class="hero" id="hero">
+  <div class="hero-content">
+    <h1 id="heroTitle">Cargando...</h1>
+  </div>
 </div>
-</a>
 
-<a class="card-link" href="https://t.me/c/3872012854/1139">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/vHtH4xdcTbaCVftGwaeGFHfOB3p.jpg">
-<h3>Avatar: Fuego y ceniza (2025)</h3>
-<div class="preview">Jake Sully y Neytiri enfrentan una nueva amenaza en Pandora.</div>
-</div>
-</a>
+<!-- CATALOGO -->
+<div class="carousel" id="row"></div>
 
-<a class="card-link" href="https://t.me/c/3872012854/896">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/kCb3QJNLi0alrk7i5aCphkkuoFl.jpg">
-<h3>Cumbres Borrascosas (2026)</h3>
-<div class="preview">Historia trágica de amor en la Inglaterra del siglo XVIII.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/179">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/3dH7p6eAfzDElYYFKfYWpf9xlsG.jpg">
-<h3>GOAT (2026)</h3>
-<div class="preview">Un cabrito con sueños busca convertirse en leyenda.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/81">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/q7aijAKE98Fcp6dgR6oWiUkFO2g.jpg">
-<h3>El Día del Fin del Mundo (2026)</h3>
-<div class="preview">Una familia lucha por sobrevivir en un mundo devastado.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/11">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/6yUxfwcDYR0RRfbxwGA7rhwreWU.jpg">
-<h3>Exterminio (2026)</h3>
-<div class="preview">Un científico enfrenta consecuencias que cambian el mundo.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/15">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/SPGBZj12OVOCZdYJVPIJcpOYvZ.jpg">
-<h3>Máquina de guerra (2026)</h3>
-<div class="preview">Un ingeniero lidera una misión peligrosa.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/3391">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/oscW8xV8EhRYj7iAhyVlBohKqxo.jpg">
-<h3>¿Quieres Ser Mi Novia? (2026)</h3>
-<div class="preview">La relación de Javi y Lu enfrenta pruebas cuando surgen tentaciones: una joven con quien Javi tiene química, y un hombre maduro que persigue a Lu. Entre humor y enredos, su amor es puesto a prueba</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/3389">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/ggJGx8fwwy21gEIXYusIlHcUn8z.jpg">
-<h3>Venganza (2026)</h3>
-<div class="preview">Carlos y Miguel son dos soldados de élite de las fuerzas especiales mexicanas y mejores amigos cuyas vidas cambian para siempre cuando Carlos es testigo del brutal asesinato de su esposa por manos de un despiadado asesino.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/757">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/5XhV5Sk7w4h2tCNvXovkFfTNRli.jpg">
-<h3>Scream 7 (2026)</h3>
-<div class="preview">Ghostface regresa para sembrar terror.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/69">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/LrMBxFwnsMgXTnaWqHYinn3vDN.jpg">
-<h3>Zootopia 2 (2025)</h3>
-<div class="preview">Un nuevo misterio sacude la ciudad.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/83">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/pG39vgTEhHeYIlcPJtHpxNLdPPM.jpg">
-<h3>Equipo Demolición (2026)</h3>
-<div class="preview">Dos hermanos investigan un asesinato.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/837">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/i4EiDq1lXEEJIc439BVzdreQZEX.jpg">
-<h3>Silent Hill (2026)</h3>
-<div class="preview">Un regreso aterrador al pueblo maldito.</div>
-</div>
-</a>
-
-<a class="card-link" href="https://t.me/c/3872012854/1101">
-<div class="card">
-<img src="https://www.themoviedb.org/t/p/w1280/2EI8HmeQgbryWw5clWYc4vYj1tU.jpg">
-<h3>Caminos del crimen (2026)</h3>
-<div class="preview">Un ladrón planea su último golpe.</div>
-</div>
-</a>
-
+<!-- PLAYER -->
+<div class="player" id="player">
+  <span class="close" onclick="closeVideo()">✖</span>
+  <video id="video" controls autoplay></video>
 </div>
 
 <script>
-/* POSICION AUTOMATICA */
-document.querySelectorAll(".card").forEach(card => {
-  card.addEventListener("mouseenter", () => {
-    const preview = card.querySelector(".preview");
-    const rect = card.getBoundingClientRect();
-    const spaceRight = window.innerWidth - rect.right;
+const API = "https://lively-bush-a86a.rigobertin100.workers.dev/";
 
-    if (spaceRight < 280) {
-      preview.style.left = "auto";
-      preview.style.right = "105%";
-    } else {
-      preview.style.left = "105%";
-      preview.style.right = "auto";
+/* ============================
+🔥 BANNER CUSTOM EDITABLE
+============================ */
+/* Pon aquí la URL de tu banner inicial */
+const CUSTOM_BANNER = "https://static.vecteezy.com/system/resources/previews/017/572/034/non_2x/online-cinema-banner-realistic-computer-monitor-movie-brochure-design-template-banner-for-movie-premiere-show-blue-curtain-theater-marketing-luxury-poster-illustration-vector.jpg";
+
+/* ============================
+🔥 OVERRIDES POSTERS / TITULOS
+============================ */
+const OVERRIDES = {
+  "Quieres.Ser.Mi.Novia.2026.mp4": {
+    titulo: "Quieres Ser Mi Novia 2026",
+    img: "https://www.themoviedb.org/t/p/w1280/oscW8xV8EhRYj7iAhyVlBohKqxo.jpg"
+  },
+  "Bolas Arriba 2026.mp4": {
+    img: "https://tu-dominio.com/imagenes/poster_bolasarriba.jpg"
+  }
+};
+
+let allVideos = [];
+let debounceTimer = null;
+const row = document.getElementById("row");
+
+async function load() {
+  const res = await fetch(API);
+  allVideos = await res.json();
+  render(allVideos);
+}
+
+function render(videos) {
+  row.innerHTML = "";
+
+  videos.forEach((video,index)=>{
+    const override = OVERRIDES[video.titulo];
+    const titulo = override?.titulo || video.titulo;
+    const img = override?.img || video.img;
+
+    const card = document.createElement("div");
+    card.className="card";
+
+    const image = document.createElement("img");
+    image.src=img;
+
+    card.appendChild(image);
+    card.onclick = ()=>play({url:video.url,img,titulo});
+
+    row.appendChild(card);
+
+    // HERO inicial
+    if(index===0){
+      document.getElementById("hero").style.backgroundImage=`url(${CUSTOM_BANNER})`;
+      document.getElementById("heroTitle").innerText="🎬 Bienvenido";
     }
   });
+}
+
+function play(video) {
+  document.getElementById("video").src=video.url;
+  document.getElementById("player").style.display="flex";
+  document.getElementById("hero").style.backgroundImage=`url(${video.img})`;
+  document.getElementById("heroTitle").innerText=video.titulo;
+}
+
+/* SEARCH DEBOUNCE */
+document.getElementById("search").addEventListener("input",(e)=>{
+  clearTimeout(debounceTimer);
+  debounceTimer=setTimeout(()=>{
+    const value=e.target.value.toLowerCase();
+    const filtered=allVideos.filter(v=>(OVERRIDES[v.titulo]?.titulo||v.titulo).toLowerCase().includes(value));
+    render(filtered);
+  },300);
 });
 
-/* 🔥 MODO INTELIGENTE */
-document.querySelectorAll("a.card-link").forEach(link => {
-  link.addEventListener("click", function(e) {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+function closeVideo() {
+  document.getElementById("player").style.display="none";
+  document.getElementById("video").pause();
+}
 
-    if (isMobile) {
-      // abrir app telegram
-      e.preventDefault();
-      window.location.href = this.href;
-    } else {
-      // nueva pestaña en PC
-      this.setAttribute("target", "_blank");
-    }
-  });
-});
+/* 🔥 PON BANNER INICIAL */
+document.getElementById("hero").style.backgroundImage=`url(${CUSTOM_BANNER})`;
+
+load();
 </script>
 
 </body>
