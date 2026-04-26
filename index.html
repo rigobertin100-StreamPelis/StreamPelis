@@ -287,29 +287,25 @@ renderRecent();
 renderContinue();
 }
 
-function renderRow(list,id,isSeries=false){
+function renderRow(list,id){
 
-const row=document.getElementById(id);
-row.innerHTML="";
+const row = document.getElementById(id);
+row.innerHTML = "";
 
 list.forEach(v=>{
 
-const card=document.createElement("div");
-card.className="card";
-card.dataset.title=v.titulo.toLowerCase();
+const card = document.createElement("div");
+card.className = "card";
+card.dataset.title = v.titulo.toLowerCase();
 
-card.innerHTML=`
+card.innerHTML = `
 <img src="${v.img}">
 <div class="preview-fake" style="background-image:url(${v.img})"></div>
 `;
 
 card.onclick = () => {
 
-if (
-v.tipo === "serie" ||
-v.tipo === "anime" ||
-isSeries
-){
+if(v.tipo === "serie" || v.tipo === "anime"){
 openSeriesModal(v);
 }else{
 openVideo(v);
@@ -320,6 +316,7 @@ openVideo(v);
 row.appendChild(card);
 
 });
+
 }
 
 function renderRecent(){
