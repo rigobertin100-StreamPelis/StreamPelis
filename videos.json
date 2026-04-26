@@ -1,24 +1,24 @@
 [
   {
     "tipo": "pelicula",
-    "titulo": "Película Aventura",
-    "genero": "Accion",
-    "url": "https://example.com/pelicula-aventura.mp4",
-    "img": "https://via.placeholder.com/400x600?text=Pel%C3%ADcula+Aventura"
+    "titulo": "¿Quieres Ser Mi Novia? (2026)",
+    "genero": "Comedia",
+    "url": "https://pub-5e318e82ce364e58a2edcebc2b637643.r2.dev/Quieres%20Ser%20Mi%20Novia.mp4",
+    "img": "https://www.themoviedb.org/t/p/w1280/oscW8xV8EhRYj7iAhyVlBohKqxo.jpg"
   },
   {
     "tipo": "pelicula",
-    "titulo": "Película Drama",
-    "genero": "Drama",
-    "url": "https://example.com/pelicula-drama.mp4",
-    "img": "https://via.placeholder.com/400x600?text=Pel%C3%ADcula+Drama"
+    "titulo": "Super Mario Galaxy: La película (2026)",
+    "genero": "Niños",
+    "url": "https://pub-5e318e82ce364e58a2edcebc2b637643.r2.dev/The%20Super%20Mario%20Galaxy.mp4",
+    "img": "https://www.themoviedb.org/t/p/w1280/79EVB4qhyfrdlMgT8GIRAikdzsQ.jpg"
   },
   {
     "tipo": "serie",
-    "titulo": "Breaking Bad",
-    "genero": "Suspenso",
-    "temporadasUrl": "breaking-bad-temporadas.json",
-    "img": "https://via.placeholder.com/400x600?text=Breaking+Bad"
+    "titulo": "Malcolm in the Middle 2026",
+    "genero": "Comedia",
+    "temporadasUrl": "Malcolm in the Middle 2026.json",
+    "img": "https://www.themoviedb.org/t/p/w1280/65VaeGPDrKYU8TIyMjnDmeFUqY0.jpg"
   },
   {
     "tipo": "anime",
