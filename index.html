@@ -186,7 +186,7 @@ playerController.cleanup();
 
 document.getElementById("player").style.display = "none";
 
-if (currentSeries) {
+if (currentSeries && currentSeries.temporadas) {
 
 document.getElementById("seriesModal").style.display = "flex";
 
@@ -204,28 +204,31 @@ playerController.play(v);
 }
 
 function openSeriesModal(series){
-currentSeries=series;
-document.getElementById("seriesModal").style.display="flex";
-document.getElementById("seriesTitle").innerText=series.titulo;
+
+currentSeries = series;
+
+document.getElementById("seriesModal").style.display = "flex";
+document.getElementById("seriesTitle").innerText = series.titulo;
 
 fetch(series.temporadasUrl)
 .then(r=>r.json())
 .then(data=>{
 
-currentSeries.temporadas=data;
+currentSeries.temporadas = data;
 
-const select=document.getElementById("seasonSelect");
-select.innerHTML="";
+const select = document.getElementById("seasonSelect");
+select.innerHTML = "";
 
 data.forEach((t,i)=>{
-let op=document.createElement("option");
-op.value=i;
-op.innerText="Temporada "+t.numero;
+let op = document.createElement("option");
+op.value = i;
+op.innerText = "Temporada " + t.numero;
 select.appendChild(op);
 });
 
-renderEpisodes(currentSeason);
 select.value = currentSeason;
+
+renderEpisodes(currentSeason);
 
 select.onchange = () => {
 currentSeason = parseInt(select.value);
@@ -233,12 +236,15 @@ renderEpisodes(currentSeason);
 };
 
 });
+
 }
 
 window.closeSeriesModal = function () {
 
 document.getElementById("seriesModal").style.display = "none";
+
 currentSeries = null;
+currentSeason = 0;
 
 }
 
