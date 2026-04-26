@@ -179,14 +179,16 @@ this.currentId=null;
 }
 };
 
-window.closeVideo=function(){
+window.closeVideo = function () {
+
 playerController.cleanup();
 
-if(currentSeries){
-openSeriesModal(currentSeries);
-}else{
-document.getElementById("player").style.display="none";
+document.getElementById("player").style.display = "none";
+
+if (currentSeries) {
+document.getElementById("seriesModal").style.display = "flex";
 }
+
 }
 
 function openVideo(v){
@@ -221,8 +223,12 @@ select.onchange=()=>renderEpisodes(select.value);
 });
 }
 
-window.closeSeriesModal=function(){
-document.getElementById("seriesModal").style.display="none";
+window.closeSeriesModal = function () {
+
+document.getElementById("seriesModal").style.display = "none";
+
+currentSeries = null;
+
 }
 
 function renderEpisodes(index){
