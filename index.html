@@ -23,26 +23,82 @@ body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;bac
 .card img{width:100%;height:100%;object-fit:cover}
 .preview-fake{position:absolute;inset:0;opacity:0;background-size:cover;transition:.3s}
 .card:hover .preview-fake{opacity:.15}
-.player,.series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:999999}
+
+.player,.series-modal{
+position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:999999
+}
 .player{background:rgba(0,0,0,.95)}
 .series-modal{background:rgba(28,28,30,.95)}
-.player-inner,.series-inner{width:88vw;height:82vh;background:#1c1c1e;border-radius:24px;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;padding:20px}
+
+.player-inner,.series-inner{
+width:88vw;height:82vh;background:#1c1c1e;border-radius:24px;overflow:hidden;
+position:relative;display:flex;flex-direction:column;align-items:center;padding:20px
+}
+
 video{width:100%;height:100%;border-radius:24px}
-.close{position:absolute;top:14px;right:24px;font-size:30px;cursor:pointer;color:white;z-index:20}
-.episode-list{width:100%;display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;overflow-y:auto}
-.episode-list button{padding:10px 16px;border-radius:12px;border:none;background:#0a84ff;color:white;cursor:pointer;font-weight:bold}
-.season-select{margin-top:10px;padding:8px 14px;border-radius:12px;border:none;background:rgba(255,255,255,.1);color:white;font-size:16px}
-#loginModal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;justify-content:center;align-items:center;z-index:999999}
-#loginBox{background:#1c1c1e;padding:40px;border-radius:24px;display:flex;flex-direction:column;gap:16px;width:320px;align-items:center}
-#loginBox input{padding:10px 14px;border-radius:12px;border:none;width:100%;font-size:16px}
-#loginBox button{padding:10px 20px;border-radius:12px;border:none;background:#0a84ff;color:white;font-weight:bold;cursor:pointer}
+
+.close{
+position:absolute;top:14px;right:24px;font-size:30px;cursor:pointer;color:white;z-index:20
+}
+
+.episode-list{
+width:100%;display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;overflow-y:auto
+}
+
+.episode-list button{
+padding:10px 16px;border-radius:12px;border:none;background:#0a84ff;color:white;cursor:pointer;font-weight:bold
+}
+
+.season-select{
+margin-top:10px;padding:8px 14px;border-radius:12px;border:none;background:rgba(255,255,255,.1);color:white;font-size:16px
+}
+
+#loginModal{
+position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;justify-content:center;align-items:center;z-index:999999
+}
+
+#loginBox{
+background:#1c1c1e;padding:40px;border-radius:24px;display:flex;flex-direction:column;gap:16px;width:320px;align-items:center
+}
+
+#loginBox input{
+padding:10px 14px;border-radius:12px;border:none;width:100%;font-size:16px
+}
+
+#loginBox button{
+padding:10px 20px;border-radius:12px;border:none;background:#0a84ff;color:white;font-weight:bold;cursor:pointer
+}
+
 #loginError{color:red;display:none}
-.logout{margin-left:10px;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer}
+
+.logout{
+margin-left:10px;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer
+}
+
+.player-nav{
+position:absolute;
+top:14px;
+left:24px;
+z-index:20;
+display:flex;
+gap:10px;
+}
+
+.player-nav button{
+padding:8px 14px;
+border:none;
+border-radius:10px;
+background:#0a84ff;
+color:#fff;
+cursor:pointer;
+font-size:18px;
+}
 </style>
 </head>
 
 <body>
 
+<!-- LOGIN -->
 <div id="loginModal">
 <div id="loginBox">
 <h2>Iniciar Sesión</h2>
@@ -53,23 +109,36 @@ video{width:100%;height:100%;border-radius:24px}
 </div>
 </div>
 
+<!-- HEADER -->
 <div class="header">
 <div class="logo">PlusUltra</div>
+
 <div style="display:flex;align-items:center">
 <input id="search" class="search" placeholder="Buscar...">
 <button class="logout" onclick="logout()">Salir</button>
 </div>
 </div>
 
+<!-- APP -->
 <div id="app"></div>
 
+<!-- PLAYER -->
 <div class="player" id="player">
 <div class="player-inner">
+
 <span class="close" onclick="closeVideo()">✖</span>
+
+<div class="player-nav" id="playerNav">
+<button onclick="prevEpisode()">⏮</button>
+<button onclick="nextEpisode()">⏭</button>
+</div>
+
 <video id="video" controls controlsList="nodownload"></video>
+
 </div>
 </div>
 
+<!-- MODAL SERIES -->
 <div class="series-modal" id="seriesModal">
 <div class="series-inner">
 <span class="close" onclick="closeSeriesModal()">✖</span>
@@ -89,6 +158,7 @@ onAuthStateChanged,
 signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+/* FIREBASE */
 const firebaseConfig = {
 apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
 authDomain: "midata-40f73.firebaseapp.com",
@@ -101,15 +171,18 @@ appId: "1:104287406146:web:d9fad446e22629559dc5db"
 const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 
+/* VARIABLES */
 let allVideos = [];
-let currentFilter = "";
 let currentSeries = null;
 let currentSeason = 0;
+let currentEpisode = 0;
 
+/* HEADER */
 window.addEventListener("scroll",()=>{
 document.querySelector(".header").classList.toggle("scrolled",window.scrollY>20);
 });
 
+/* CONTINUAR VIENDO */
 const STORAGE_KEY="continueWatching";
 
 function getProgress(){
@@ -122,15 +195,20 @@ data[id]={time,duration,updated:Date.now()};
 localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
 }
 
+/* PLAYER */
 const playerController={
-video:null,hls:null,currentId:null,
+video:null,
+hls:null,
+currentId:null,
 
 init(){
 this.video=document.getElementById("video");
+
 let lastSave=0;
 
 this.video.addEventListener("timeupdate",()=>{
 const now=Date.now();
+
 if(this.currentId && now-lastSave>5000){
 saveProgress(this.currentId,this.video.currentTime,this.video.duration);
 lastSave=now;
@@ -139,12 +217,12 @@ lastSave=now;
 },
 
 play(v){
+
 this.cleanup();
+
 this.currentId=v.titulo;
 
 const progress=getProgress()[v.titulo];
-
-if(v.url){
 
 if(v.url.includes(".m3u8") && Hls.isSupported()){
 
@@ -168,7 +246,6 @@ this.video.play();
 
 }
 
-}
 },
 
 cleanup(){
@@ -178,19 +255,39 @@ this.video.removeAttribute("src");
 this.video.load();
 this.currentId=null;
 }
+
 };
 
-window.closeVideo = function () {
+/* ABRIR VIDEO */
+function openVideo(v){
+
+document.getElementById("player").style.display="flex";
+
+/* ocultar botones si película */
+const nav=document.getElementById("playerNav");
+
+if(currentSeries){
+nav.style.display="flex";
+}else{
+nav.style.display="none";
+}
+
+playerController.play(v);
+
+}
+
+/* CERRAR VIDEO */
+window.closeVideo=function(){
 
 playerController.cleanup();
 
-document.getElementById("player").style.display = "none";
+document.getElementById("player").style.display="none";
 
-if (currentSeries && currentSeries.temporadas) {
+if(currentSeries && currentSeries.temporadas){
 
-document.getElementById("seriesModal").style.display = "flex";
+document.getElementById("seriesModal").style.display="flex";
 
-document.getElementById("seasonSelect").value = currentSeason;
+document.getElementById("seasonSelect").value=currentSeason;
 
 renderEpisodes(currentSeason);
 
@@ -198,40 +295,36 @@ renderEpisodes(currentSeason);
 
 }
 
-function openVideo(v){
-document.getElementById("player").style.display="flex";
-playerController.play(v);
-}
-
+/* MODAL SERIES */
 function openSeriesModal(series){
 
-currentSeries = series;
+currentSeries=series;
 
-document.getElementById("seriesModal").style.display = "flex";
-document.getElementById("seriesTitle").innerText = series.titulo;
+document.getElementById("seriesModal").style.display="flex";
+document.getElementById("seriesTitle").innerText=series.titulo;
 
 fetch(series.temporadasUrl)
 .then(r=>r.json())
 .then(data=>{
 
-currentSeries.temporadas = data;
+currentSeries.temporadas=data;
 
-const select = document.getElementById("seasonSelect");
-select.innerHTML = "";
+const select=document.getElementById("seasonSelect");
+select.innerHTML="";
 
 data.forEach((t,i)=>{
-let op = document.createElement("option");
-op.value = i;
-op.innerText = "Temporada " + t.numero;
+let op=document.createElement("option");
+op.value=i;
+op.innerText="Temporada "+t.numero;
 select.appendChild(op);
 });
 
-select.value = currentSeason;
+select.value=currentSeason;
 
 renderEpisodes(currentSeason);
 
-select.onchange = () => {
-currentSeason = parseInt(select.value);
+select.onchange=()=>{
+currentSeason=parseInt(select.value);
 renderEpisodes(currentSeason);
 };
 
@@ -239,15 +332,19 @@ renderEpisodes(currentSeason);
 
 }
 
-window.closeSeriesModal = function () {
+window.closeSeriesModal=function(reset=true){
 
-document.getElementById("seriesModal").style.display = "none";
+document.getElementById("seriesModal").style.display="none";
 
-currentSeries = null;
-currentSeason = 0;
-
+if(reset){
+currentSeries=null;
+currentSeason=0;
+currentEpisode=0;
 }
 
+};
+
+/* CAPÍTULOS */
 function renderEpisodes(index){
 
 const list=document.getElementById("episodeList");
@@ -255,21 +352,74 @@ list.innerHTML="";
 
 const season=currentSeries.temporadas[index];
 
-season.episodios.forEach(ep=>{
+season.episodios.forEach((ep,i)=>{
 
 const btn=document.createElement("button");
 btn.innerText=ep.titulo;
 
 btn.onclick=()=>{
-closeSeriesModal();
+
+currentEpisode=i;
+
+closeSeriesModal(false);
+
 openVideo(ep);
+
 };
 
 list.appendChild(btn);
 
 });
+
 }
 
+/* SIGUIENTE */
+window.nextEpisode=function(){
+
+if(!currentSeries)return;
+
+const season=currentSeries.temporadas[currentSeason];
+
+/* siguiente normal */
+if(currentEpisode < season.episodios.length-1){
+
+currentEpisode++;
+openVideo(season.episodios[currentEpisode]);
+return;
+
+}
+
+/* siguiente temporada automática */
+if(currentSeason < currentSeries.temporadas.length-1){
+
+currentSeason++;
+currentEpisode=0;
+
+document.getElementById("seasonSelect").value=currentSeason;
+
+openVideo(currentSeries.temporadas[currentSeason].episodios[0]);
+
+}
+
+};
+
+/* ANTERIOR */
+window.prevEpisode=function(){
+
+if(!currentSeries)return;
+
+const season=currentSeries.temporadas[currentSeason];
+
+if(currentEpisode>0){
+
+currentEpisode--;
+openVideo(season.episodios[currentEpisode]);
+
+}
+
+};
+
+/* UI */
 function buildUI(){
 
 document.getElementById("app").innerHTML=`
@@ -281,39 +431,42 @@ document.getElementById("app").innerHTML=`
 `;
 
 renderAll();
+
 }
 
 function renderAll(){
 
 renderRow(allVideos.filter(v=>v.tipo==="pelicula"),"peliculasRow");
-renderRow(allVideos.filter(v=>v.tipo==="serie"),"seriesRow",true);
-renderRow(allVideos.filter(v=>v.tipo==="anime"),"animeRow",true);
+renderRow(allVideos.filter(v=>v.tipo==="serie"),"seriesRow");
+renderRow(allVideos.filter(v=>v.tipo==="anime"),"animeRow");
 
 renderRecent();
 renderContinue();
+
 }
 
 function renderRow(list,id){
 
-const row = document.getElementById(id);
-row.innerHTML = "";
+const row=document.getElementById(id);
+row.innerHTML="";
 
 list.forEach(v=>{
 
-const card = document.createElement("div");
-card.className = "card";
-card.dataset.title = v.titulo.toLowerCase();
+const card=document.createElement("div");
+card.className="card";
+card.dataset.title=v.titulo.toLowerCase();
 
-card.innerHTML = `
+card.innerHTML=`
 <img src="${v.img}">
 <div class="preview-fake" style="background-image:url(${v.img})"></div>
 `;
 
-card.onclick = () => {
+card.onclick=()=>{
 
-if(v.tipo === "serie" || v.tipo === "anime"){
+if(v.tipo==="serie" || v.tipo==="anime"){
 openSeriesModal(v);
 }else{
+currentSeries=null;
 openVideo(v);
 }
 
@@ -339,18 +492,21 @@ const list=Object.keys(data)
 .sort((a,b)=>data[b.titulo].updated-data[a.titulo].updated);
 
 renderRow(list,"continueRow");
+
 }
 
+/* SEARCH */
 document.getElementById("search").addEventListener("input",(e)=>{
 
-currentFilter=e.target.value.toLowerCase().trim();
+const txt=e.target.value.toLowerCase();
 
 document.querySelectorAll(".card").forEach(c=>{
-c.style.display=c.dataset.title.includes(currentFilter)?"block":"none";
+c.style.display=c.dataset.title.includes(txt)?"block":"none";
 });
 
 });
 
+/* LOGIN */
 document.getElementById("loginBtn").onclick=async()=>{
 
 const email=document.getElementById("loginUser").value.trim();
@@ -360,7 +516,7 @@ try{
 
 await signInWithEmailAndPassword(auth,email,pass);
 
-}catch(error){
+}catch(e){
 
 document.getElementById("loginError").style.display="block";
 
@@ -368,6 +524,7 @@ document.getElementById("loginError").style.display="block";
 
 };
 
+/* AUTH */
 onAuthStateChanged(auth,(user)=>{
 
 if(user){
@@ -384,11 +541,14 @@ buildUI();
 });
 
 }else{
+
 document.getElementById("loginModal").style.display="flex";
+
 }
 
 });
 
+/* LOGOUT */
 window.logout=async function(){
 await signOut(auth);
 };
