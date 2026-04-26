@@ -185,7 +185,7 @@ playerController.cleanup();
 
 document.getElementById("player").style.display = "none";
 
-if (currentSeries) {
+if (currentSeries && currentSeries.temporadas) {
 document.getElementById("seriesModal").style.display = "flex";
 }
 
@@ -226,7 +226,6 @@ select.onchange=()=>renderEpisodes(select.value);
 window.closeSeriesModal = function () {
 
 document.getElementById("seriesModal").style.display = "none";
-
 currentSeries = null;
 
 }
