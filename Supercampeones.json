@@ -1,0 +1,15 @@
+[
+  {
+    "numero": 1,
+    "episodios": [
+      {"Cap1":"Episodio 1","url":"https://pub-5e318e82ce364e58a2edcebc2b637643.r2.dev/Campeones%20Oliver%20y%20Benji%20-%2001.mp4"},
+      {"Cap2":"Episodio 2","url":"https://pub-5e318e82ce364e58a2edcebc2b637643.r2.dev/Campeones%20Oliver%20y%20Benji%20-%2002.mp4"}
+    ]
+  },
+  {
+    "numero": 2,
+    "episodios": [
+      {"Cap1":"Episodio 1","url":"https://pub-5e318e82ce364e58a2edcebc2b637643.r2.dev/Campeones%20Oliver%20y%20Benji%20-%2003.mp4"}
+    ]
+  }
+]
