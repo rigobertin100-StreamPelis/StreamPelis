@@ -6,7 +6,21 @@
 <title>PlusUltra iOS Pro</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script src="https://www.gstatic.com/cv/js/cast_sender.js?loadCastFramework=1"></script>
+<script src="https://www.gstatic.com/cv/js/cast_sender.js"></script>
+<script>
+window.castAvailable = false;
+
+window['__onGCastApiAvailable'] = function(isAvailable) {
+  console.log("Cast API disponible:", isAvailable);
+
+  if (isAvailable && window.cast && window.chrome) {
+    window.castAvailable = true;
+
+    const btn = document.getElementById("castBtn");
+    if (btn) btn.style.display = "inline-block";
+  }
+};
+</script>
 
 <style>
 body{
