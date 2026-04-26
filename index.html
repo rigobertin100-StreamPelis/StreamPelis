@@ -1,44 +1,369 @@
-[
-  {
-    "tipo": "pelicula",
-    "titulo": "¿Quieres Ser Mi Novia? (2026)",
-    "genero": "Comedia",
-    "url": "https://pub-5e318e82ce364e58a2edcebc2b637643.r2.dev/Quieres%20Ser%20Mi%20Novia.mp4",
-    "img": "https://www.themoviedb.org/t/p/w1280/oscW8xV8EhRYj7iAhyVlBohKqxo.jpg"
-  },
-  {
-    "tipo": "pelicula",
-    "titulo": "Super Mario Galaxy: La película (2026)",
-    "genero": "Niños",
-    "url": "https://pub-5e318e82ce364e58a2edcebc2b637643.r2.dev/The%20Super%20Mario%20Galaxy.mp4",
-    "img": "https://www.themoviedb.org/t/p/w1280/79EVB4qhyfrdlMgT8GIRAikdzsQ.jpg"
-  },
-  {
-    "tipo": "serie",
-    "titulo": "Malcolm in the Middle 2026",
-    "genero": "Comedia",
-    "temporadasUrl": "Malcolm_in_the_Middle_2026.json",
-    "img": "https://www.themoviedb.org/t/p/w1280/65VaeGPDrKYU8TIyMjnDmeFUqY0.jpg"
-  },
-  {
-    "tipo": "anime",
-    "titulo": "Espíritu de lucha: Hajime no Ippo",
-    "genero": "Accion",
-    "temporadasUrl": "Hajime_no_Ippo.json",
-    "img": "https://www.themoviedb.org/t/p/w1280/1LApB9C9kEkh2ZU2vzAhurNDipl.jpg"
-  },
-  {
-    "tipo": "anime",
-    "titulo": "Supercampeones J",
-    "genero": "Deporte",
-    "temporadasUrl": "Supercampeones.json",
-    "img": "https://www.themoviedb.org/t/p/w1280/cy4B2efqmnpJ4ik7jkKOYQsTeV4.jpg"
-  },
-  {
-    "tipo": "anime",
-    "titulo": "Mob_Psycho_100",
-    "genero": "Accion",
-    "temporadasUrl": "Mob_Psycho_100.json",
-    "img": "https://www.themoviedb.org/t/p/w1280/vR7hwaGQ0ySRoq1WobiNRaPs4WO.jpg"
-  }
-]
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlusUltra iOS Pro</title>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);color:white;padding-top:90px}
+.header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:9999;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1)}
+.header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.logo{font-size:34px;font-weight:700;color:#0a84ff}
+.search{padding:10px 18px;border-radius:24px;border:none;width:320px;font-size:16px;background:rgba(255,255,255,.1);color:white;outline:none}
+.row{margin-top:50px;padding-left:20px;padding-bottom:10px}
+.row h2{font-size:22px;margin-bottom:14px}
+.carousel{display:flex;gap:18px;overflow-x:auto;padding-bottom:18px}
+.carousel::-webkit-scrollbar{height:8px}
+.carousel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:4px}
+.card{width:260px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:24px;overflow:hidden;cursor:pointer;transition:.3s}
+.card:hover{transform:scale(1.08)}
+.card img{width:100%;height:100%;object-fit:cover}
+.preview-fake{position:absolute;inset:0;opacity:0;background-size:cover;transition:.3s}
+.card:hover .preview-fake{opacity:.15}
+.player,.series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:999999}
+.player{background:rgba(0,0,0,.95)}
+.series-modal{background:rgba(28,28,30,.95)}
+.player-inner,.series-inner{width:88vw;height:82vh;background:#1c1c1e;border-radius:24px;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;padding:20px}
+video{width:100%;height:100%;border-radius:24px}
+.close{position:absolute;top:14px;right:24px;font-size:30px;cursor:pointer;color:white;z-index:20}
+.episode-list{width:100%;display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;overflow-y:auto}
+.episode-list button{padding:10px 16px;border-radius:12px;border:none;background:#0a84ff;color:white;cursor:pointer;font-weight:bold}
+.season-select{margin-top:10px;padding:8px 14px;border-radius:12px;border:none;background:rgba(255,255,255,.1);color:white;font-size:16px}
+#loginModal{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;justify-content:center;align-items:center;z-index:999999}
+#loginBox{background:#1c1c1e;padding:40px;border-radius:24px;display:flex;flex-direction:column;gap:16px;width:320px;align-items:center}
+#loginBox input{padding:10px 14px;border-radius:12px;border:none;width:100%;font-size:16px}
+#loginBox button{padding:10px 20px;border-radius:12px;border:none;background:#0a84ff;color:white;font-weight:bold;cursor:pointer}
+#loginError{color:red;display:none}
+.logout{margin-left:10px;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer}
+</style>
+</head>
+
+<body>
+
+<div id="loginModal">
+<div id="loginBox">
+<h2>Iniciar Sesión</h2>
+<input id="loginUser" type="email" placeholder="Correo">
+<input id="loginPass" type="password" placeholder="Contraseña">
+<button id="loginBtn">Ingresar</button>
+<p id="loginError">Usuario o contraseña incorrectos</p>
+</div>
+</div>
+
+<div class="header">
+<div class="logo">PlusUltra</div>
+<div style="display:flex;align-items:center">
+<input id="search" class="search" placeholder="Buscar...">
+<button class="logout" onclick="logout()">Salir</button>
+</div>
+</div>
+
+<div id="app"></div>
+
+<div class="player" id="player">
+<div class="player-inner">
+<span class="close" onclick="closeVideo()">✖</span>
+<video id="video" controls controlsList="nodownload"></video>
+</div>
+</div>
+
+<div class="series-modal" id="seriesModal">
+<div class="series-inner">
+<span class="close" onclick="closeSeriesModal()">✖</span>
+<h2 id="seriesTitle"></h2>
+<select id="seasonSelect" class="season-select"></select>
+<div class="episode-list" id="episodeList"></div>
+</div>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+getAuth,
+signInWithEmailAndPassword,
+onAuthStateChanged,
+signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
+authDomain: "midata-40f73.firebaseapp.com",
+projectId: "midata-40f73",
+storageBucket: "midata-40f73.firebasestorage.app",
+messagingSenderId: "104287406146",
+appId: "1:104287406146:web:d9fad446e22629559dc5db"
+};
+
+const appFirebase = initializeApp(firebaseConfig);
+const auth = getAuth(appFirebase);
+
+let allVideos = [];
+let currentFilter = "";
+let currentSeries = null;
+
+window.addEventListener("scroll",()=>{
+document.querySelector(".header").classList.toggle("scrolled",window.scrollY>20);
+});
+
+const STORAGE_KEY="continueWatching";
+
+function getProgress(){
+return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
+}
+
+function saveProgress(id,time,duration){
+const data=getProgress();
+data[id]={time,duration,updated:Date.now()};
+localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+}
+
+const playerController={
+video:null,hls:null,currentId:null,
+
+init(){
+this.video=document.getElementById("video");
+let lastSave=0;
+
+this.video.addEventListener("timeupdate",()=>{
+const now=Date.now();
+if(this.currentId && now-lastSave>5000){
+saveProgress(this.currentId,this.video.currentTime,this.video.duration);
+lastSave=now;
+}
+});
+},
+
+play(v){
+this.cleanup();
+this.currentId=v.titulo;
+
+const progress=getProgress()[v.titulo];
+
+if(v.url){
+
+if(v.url.includes(".m3u8") && Hls.isSupported()){
+
+this.hls=new Hls();
+this.hls.loadSource(v.url);
+this.hls.attachMedia(this.video);
+
+this.hls.on(Hls.Events.MANIFEST_PARSED,()=>{
+if(progress?.time)this.video.currentTime=progress.time;
+this.video.play();
+});
+
+}else{
+
+this.video.src=v.url;
+
+this.video.onloadedmetadata=()=>{
+if(progress?.time)this.video.currentTime=progress.time;
+this.video.play();
+};
+
+}
+
+}
+},
+
+cleanup(){
+if(this.hls){this.hls.destroy();this.hls=null;}
+this.video.pause();
+this.video.removeAttribute("src");
+this.video.load();
+this.currentId=null;
+}
+};
+
+window.closeVideo=function(){
+playerController.cleanup();
+
+if(currentSeries){
+openSeriesModal(currentSeries);
+}else{
+document.getElementById("player").style.display="none";
+}
+}
+
+function openVideo(v){
+document.getElementById("player").style.display="flex";
+playerController.play(v);
+}
+
+function openSeriesModal(series){
+currentSeries=series;
+document.getElementById("seriesModal").style.display="flex";
+document.getElementById("seriesTitle").innerText=series.titulo;
+
+fetch(series.temporadasUrl)
+.then(r=>r.json())
+.then(data=>{
+
+currentSeries.temporadas=data;
+
+const select=document.getElementById("seasonSelect");
+select.innerHTML="";
+
+data.forEach((t,i)=>{
+let op=document.createElement("option");
+op.value=i;
+op.innerText="Temporada "+t.numero;
+select.appendChild(op);
+});
+
+renderEpisodes(0);
+select.onchange=()=>renderEpisodes(select.value);
+
+});
+}
+
+window.closeSeriesModal=function(){
+document.getElementById("seriesModal").style.display="none";
+}
+
+function renderEpisodes(index){
+
+const list=document.getElementById("episodeList");
+list.innerHTML="";
+
+const season=currentSeries.temporadas[index];
+
+season.episodios.forEach(ep=>{
+
+const btn=document.createElement("button");
+btn.innerText=ep.titulo;
+
+btn.onclick=()=>{
+closeSeriesModal();
+openVideo(ep);
+};
+
+list.appendChild(btn);
+
+});
+}
+
+function buildUI(){
+
+document.getElementById("app").innerHTML=`
+<div class="row"><h2>🆕 Agregadas recientemente</h2><div class="carousel" id="recentRow"></div></div>
+<div class="row"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
+<div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
+<div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
+<div class="row"><h2>🌸 Anime</h2><div class="carousel" id="animeRow"></div></div>
+`;
+
+renderAll();
+}
+
+function renderAll(){
+
+renderRow(allVideos.filter(v=>v.tipo==="pelicula"),"peliculasRow");
+renderRow(allVideos.filter(v=>v.tipo==="serie"),"seriesRow",true);
+renderRow(allVideos.filter(v=>v.tipo==="anime"),"animeRow",true);
+
+renderRecent();
+renderContinue();
+}
+
+function renderRow(list,id,isSeries=false){
+
+const row=document.getElementById(id);
+row.innerHTML="";
+
+list.forEach(v=>{
+
+const card=document.createElement("div");
+card.className="card";
+card.dataset.title=v.titulo.toLowerCase();
+
+card.innerHTML=`
+<img src="${v.img}">
+<div class="preview-fake" style="background-image:url(${v.img})"></div>
+`;
+
+card.onclick=()=>{
+if(isSeries) openSeriesModal(v);
+else openVideo(v);
+};
+
+row.appendChild(card);
+
+});
+}
+
+function renderRecent(){
+renderRow(allVideos.slice(-10),"recentRow");
+}
+
+function renderContinue(){
+
+const data=getProgress();
+
+const list=Object.keys(data)
+.map(t=>allVideos.find(v=>v.titulo===t))
+.filter(Boolean)
+.sort((a,b)=>data[b.titulo].updated-data[a.titulo].updated);
+
+renderRow(list,"continueRow");
+}
+
+document.getElementById("search").addEventListener("input",(e)=>{
+
+currentFilter=e.target.value.toLowerCase().trim();
+
+document.querySelectorAll(".card").forEach(c=>{
+c.style.display=c.dataset.title.includes(currentFilter)?"block":"none";
+});
+
+});
+
+document.getElementById("loginBtn").onclick=async()=>{
+
+const email=document.getElementById("loginUser").value.trim();
+const pass=document.getElementById("loginPass").value.trim();
+
+try{
+
+await signInWithEmailAndPassword(auth,email,pass);
+
+}catch(error){
+
+document.getElementById("loginError").style.display="block";
+
+}
+
+};
+
+onAuthStateChanged(auth,(user)=>{
+
+if(user){
+
+document.getElementById("loginModal").style.display="none";
+
+playerController.init();
+
+fetch("videos.json")
+.then(r=>r.json())
+.then(data=>{
+allVideos=data;
+buildUI();
+});
+
+}else{
+document.getElementById("loginModal").style.display="flex";
+}
+
+});
+
+window.logout=async function(){
+await signOut(auth);
+};
+
+</script>
+</body>
+</html>
