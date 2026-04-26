@@ -1,0 +1,30 @@
+[
+  {
+    "tipo": "pelicula",
+    "titulo": "Película Aventura",
+    "genero": "Accion",
+    "url": "https://example.com/pelicula-aventura.mp4",
+    "img": "https://via.placeholder.com/400x600?text=Pel%C3%ADcula+Aventura"
+  },
+  {
+    "tipo": "pelicula",
+    "titulo": "Película Drama",
+    "genero": "Drama",
+    "url": "https://example.com/pelicula-drama.mp4",
+    "img": "https://via.placeholder.com/400x600?text=Pel%C3%ADcula+Drama"
+  },
+  {
+    "tipo": "serie",
+    "titulo": "Breaking Bad",
+    "genero": "Suspenso",
+    "temporadasUrl": "breaking-bad-temporadas.json",
+    "img": "https://via.placeholder.com/400x600?text=Breaking+Bad"
+  },
+  {
+    "tipo": "anime",
+    "titulo": "Naruto",
+    "genero": "Accion",
+    "temporadasUrl": "naruto-temporadas.json",
+    "img": "https://via.placeholder.com/400x600?text=Naruto"
+  }
+]
