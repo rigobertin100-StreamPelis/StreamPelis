@@ -17,14 +17,14 @@
     "tipo": "serie",
     "titulo": "Malcolm in the Middle 2026",
     "genero": "Comedia",
-    "temporadasUrl": "Malcolm in the Middle 2026.json",
+    "temporadasUrl": "Malcolm_in_the_Middle_2026.json",
     "img": "https://www.themoviedb.org/t/p/w1280/65VaeGPDrKYU8TIyMjnDmeFUqY0.jpg"
   },
   {
     "tipo": "anime",
     "titulo": "Espíritu de lucha: Hajime no Ippo",
     "genero": "Accion",
-    "temporadasUrl": "Hajime no Ippo.json",
+    "temporadasUrl": "Hajime_no_Ippo.json",
     "img": "https://www.themoviedb.org/t/p/w1280/1LApB9C9kEkh2ZU2vzAhurNDipl.jpg"
   }
   {
@@ -36,7 +36,7 @@
   }
   {
     "tipo": "anime",
-    "titulo": "Mob Psycho 100",
+    "titulo": "Mob_Psycho_100",
     "genero": "Accion",
     "temporadasUrl": "Mob Psycho 100.json",
     "img": "https://www.themoviedb.org/t/p/w1280/vR7hwaGQ0ySRoq1WobiNRaPs4WO.jpg"
