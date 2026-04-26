@@ -22,9 +22,23 @@
   },
   {
     "tipo": "anime",
-    "titulo": "Naruto",
+    "titulo": "Espíritu de lucha: Hajime no Ippo",
     "genero": "Accion",
-    "temporadasUrl": "naruto-temporadas.json",
-    "img": "https://via.placeholder.com/400x600?text=Naruto"
+    "temporadasUrl": "Hajime no Ippo.json",
+    "img": "https://www.themoviedb.org/t/p/w1280/1LApB9C9kEkh2ZU2vzAhurNDipl.jpg"
+  }
+  {
+    "tipo": "anime",
+    "titulo": "Supercampeones J",
+    "genero": "Deporte",
+    "temporadasUrl": "Supercampeones.json",
+    "img": "https://www.themoviedb.org/t/p/w1280/cy4B2efqmnpJ4ik7jkKOYQsTeV4.jpg"
+  }
+  {
+    "tipo": "anime",
+    "titulo": "Mob Psycho 100",
+    "genero": "Accion",
+    "temporadasUrl": "Mob Psycho 100.json",
+    "img": "https://www.themoviedb.org/t/p/w1280/vR7hwaGQ0ySRoq1WobiNRaPs4WO.jpg"
   }
 ]
