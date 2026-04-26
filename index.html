@@ -8,105 +8,274 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);color:#fff;padding-top:90px}
-.header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:9999;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1)}
-.header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5)}
-.logo{font-size:34px;font-weight:700;color:#0a84ff}
-.search{padding:10px 18px;border-radius:24px;border:none;width:320px;font-size:16px;background:rgba(255,255,255,.1);color:#fff;outline:none}
-.row{margin-top:50px;padding-left:20px;padding-bottom:10px}
-.row h2{font-size:22px;margin-bottom:14px}
-.carousel{display:flex;gap:18px;overflow-x:auto;padding-bottom:18px}
-.carousel::-webkit-scrollbar{height:8px}
-.carousel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:4px}
-.card{width:260px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:24px;overflow:hidden;cursor:pointer;transition:.3s}
-.card:hover{transform:scale(1.08)}
-.card img{width:100%;height:100%;object-fit:cover}
-.preview-fake{position:absolute;inset:0;opacity:0;background-size:cover;transition:.3s}
-.card:hover .preview-fake{opacity:.15}
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);
+color:white;
+padding-top:90px;
+}
+
+.header{
+position:fixed;
+top:0;left:0;width:100%;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:18px 28px;
+z-index:9999;
+background:rgba(28,28,30,.35);
+backdrop-filter:blur(25px);
+transition:.3s;
+border-bottom:1px solid rgba(255,255,255,.1);
+}
+
+.header.scrolled{
+background:rgba(28,28,30,.9);
+box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+
+.logo{
+font-size:34px;
+font-weight:700;
+color:#0a84ff;
+}
+
+.search{
+padding:10px 18px;
+border-radius:24px;
+border:none;
+width:320px;
+font-size:16px;
+background:rgba(255,255,255,.1);
+color:white;
+outline:none;
+}
+
+.row{
+margin-top:50px;
+padding-left:20px;
+padding-bottom:10px;
+}
+
+.row h2{
+font-size:22px;
+margin-bottom:14px;
+}
+
+.carousel{
+display:flex;
+gap:18px;
+overflow-x:auto;
+padding-bottom:18px;
+}
+
+.carousel::-webkit-scrollbar{
+height:8px;
+}
+
+.carousel::-webkit-scrollbar-thumb{
+background:rgba(255,255,255,.2);
+border-radius:4px;
+}
+
+.card{
+width:260px;
+flex-shrink:0;
+aspect-ratio:2/3;
+position:relative;
+border-radius:24px;
+overflow:hidden;
+cursor:pointer;
+transition:.3s;
+}
+
+.card:hover{
+transform:scale(1.08);
+}
+
+.card img{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.preview-fake{
+position:absolute;
+inset:0;
+opacity:0;
+background-size:cover;
+transition:.3s;
+}
+
+.card:hover .preview-fake{
+opacity:.15;
+}
 
 .player,.series-modal{
-position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:999999
+position:fixed;
+inset:0;
+display:none;
+justify-content:center;
+align-items:center;
+z-index:999999;
 }
-.player{background:rgba(0,0,0,.95)}
-.series-modal{background:rgba(28,28,30,.95)}
+
+.player{
+background:rgba(0,0,0,.95);
+}
+
+.series-modal{
+background:rgba(28,28,30,.95);
+}
 
 .player-inner,.series-inner{
-width:88vw;height:82vh;background:#1c1c1e;border-radius:24px;overflow:hidden;
-position:relative;display:flex;flex-direction:column;align-items:center;padding:20px
+width:88vw;
+height:82vh;
+background:#1c1c1e;
+border-radius:24px;
+overflow:hidden;
+position:relative;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding:20px;
 }
 
-video{width:100%;height:100%;border-radius:24px}
+video{
+width:100%;
+height:100%;
+border-radius:24px;
+}
 
 .close{
-position:absolute;top:14px;right:24px;font-size:30px;cursor:pointer;color:#fff;z-index:20
-}
-
-.episode-list{
-width:100%;display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;overflow-y:auto
-}
-
-.episode-list button{
-padding:10px 16px;border-radius:12px;border:none;background:#0a84ff;color:#fff;cursor:pointer;font-weight:bold
-}
-
-.season-select{
-margin-top:10px;padding:8px 14px;border-radius:12px;border:none;background:rgba(255,255,255,.1);color:#fff;font-size:16px
-}
-
-#loginModal{
-position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;justify-content:center;align-items:center;z-index:999999
-}
-
-#loginBox{
-background:#1c1c1e;padding:40px;border-radius:24px;display:flex;flex-direction:column;gap:16px;width:320px;align-items:center
-}
-
-#loginBox input{
-padding:10px 14px;border-radius:12px;border:none;width:100%;font-size:16px
-}
-
-#loginBox button{
-padding:10px 20px;border-radius:12px;border:none;background:#0a84ff;color:#fff;font-weight:bold;cursor:pointer
-}
-
-#loginError{color:red;display:none}
-
-.logout{
-margin-left:10px;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer
+position:absolute;
+top:14px;
+right:24px;
+font-size:30px;
+cursor:pointer;
+color:white;
+z-index:20;
 }
 
 .player-nav{
-position:absolute;top:14px;left:24px;z-index:20;display:flex;gap:10px;
+position:absolute;
+top:14px;
+left:24px;
+z-index:20;
+display:flex;
+gap:10px;
+}
+
+.player-nav button,
+.episode-list button,
+.continue-btn,
+.logout,
+#loginBox button{
+padding:10px 14px;
+border:none;
+border-radius:12px;
+background:#0a84ff;
+color:#fff;
+cursor:pointer;
+font-weight:bold;
+}
+
+.logout{
+background:#ff3b30;
+margin-left:10px;
 }
 
 .player-nav button{
-padding:8px 14px;border:none;border-radius:10px;background:#0a84ff;color:#fff;cursor:pointer;font-size:18px;
+font-size:18px;
+padding:8px 14px;
+border-radius:10px;
 }
 
-.continue-card{position:relative}
+.episode-list{
+width:100%;
+display:flex;
+flex-wrap:wrap;
+gap:12px;
+margin-top:20px;
+overflow-y:auto;
+}
+
+.season-select{
+margin-top:10px;
+padding:8px 14px;
+border-radius:12px;
+border:none;
+background:rgba(255,255,255,.1);
+color:white;
+font-size:16px;
+}
+
+#loginModal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.95);
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:999999;
+}
+
+#loginBox{
+background:#1c1c1e;
+padding:40px;
+border-radius:24px;
+display:flex;
+flex-direction:column;
+gap:16px;
+width:320px;
+align-items:center;
+}
+
+#loginBox input{
+padding:10px 14px;
+border-radius:12px;
+border:none;
+width:100%;
+font-size:16px;
+}
+
+#loginError{
+display:none;
+color:#ff453a;
+}
+
+.continue-card{
+position:relative;
+}
 
 .continue-overlay{
-position:absolute;left:0;right:0;bottom:0;padding:14px;
+position:absolute;
+left:0;
+right:0;
+bottom:0;
+padding:14px;
 background:linear-gradient(to top,rgba(0,0,0,.88),transparent);
-display:flex;flex-direction:column;gap:6px;
+display:flex;
+flex-direction:column;
+gap:6px;
 }
 
-.continue-btn{
-background:#0a84ff;border:none;color:#fff;padding:8px 14px;border-radius:12px;
-font-weight:bold;cursor:pointer;width:max-content;font-size:14px;
+.continue-info{
+font-size:14px;
+font-weight:500;
 }
-
-.continue-info{font-size:14px;opacity:.95;font-weight:500}
 
 .continue-line{
-height:3px;border-radius:999px;background:#0a84ff;margin-top:4px;
+height:3px;
+border-radius:999px;
+background:#0a84ff;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div id="loginModal">
 <div id="loginBox">
 <h2>Iniciar Sesión</h2>
@@ -117,19 +286,17 @@ height:3px;border-radius:999px;background:#0a84ff;margin-top:4px;
 </div>
 </div>
 
-<!-- HEADER -->
 <div class="header">
 <div class="logo">PlusUltra</div>
-<div style="display:flex;align-items:center">
+
+<div style="display:flex;align-items:center;">
 <input id="search" class="search" placeholder="Buscar...">
 <button class="logout" onclick="logout()">Salir</button>
 </div>
 </div>
 
-<!-- APP -->
 <div id="app"></div>
 
-<!-- PLAYER -->
 <div class="player" id="player">
 <div class="player-inner">
 
@@ -145,7 +312,6 @@ height:3px;border-radius:999px;background:#0a84ff;margin-top:4px;
 </div>
 </div>
 
-<!-- MODAL SERIES -->
 <div class="series-modal" id="seriesModal">
 <div class="series-inner">
 <span class="close" onclick="closeSeriesModal()">✖</span>
@@ -165,31 +331,28 @@ onAuthStateChanged,
 signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-/* FIREBASE */
 const firebaseConfig = {
-apiKey: "TU_APIKEY",
+apiKey: "TU_API_KEY",
 authDomain: "TU_PROJECT.firebaseapp.com",
 projectId: "TU_PROJECT",
 storageBucket: "TU_PROJECT.appspot.com",
-messagingSenderId: "000000000",
-appId: "TU_APP_ID"
+messagingSenderId: "XXXX",
+appId: "XXXX"
 };
 
 const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 
-/* VARIABLES */
 let allVideos = [];
 let currentSeries = null;
 let currentSeason = 0;
 let currentEpisode = 0;
 
-/* HEADER */
 window.addEventListener("scroll",()=>{
-document.querySelector(".header").classList.toggle("scrolled",window.scrollY>20);
+document.querySelector(".header")
+.classList.toggle("scrolled",window.scrollY>20);
 });
 
-/* STORAGE */
 const STORAGE_KEY="continueWatching";
 
 function getProgress(){
@@ -197,7 +360,6 @@ return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
 }
 
 function saveProgress(id,time,duration){
-
 const data=getProgress();
 
 data[id]={
@@ -209,10 +371,8 @@ episode:currentSeries ? currentEpisode : null
 };
 
 localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
-
 }
 
-/* PLAYER */
 const playerController={
 video:null,
 hls:null,
@@ -227,14 +387,17 @@ this.video.addEventListener("timeupdate",()=>{
 const now=Date.now();
 
 if(this.currentId && now-lastSave>5000){
-saveProgress(this.currentId,this.video.currentTime,this.video.duration);
+saveProgress(
+this.currentId,
+this.video.currentTime,
+this.video.duration
+);
 lastSave=now;
 }
 });
 },
 
 play(v){
-
 this.cleanup();
 
 this.currentId=v.titulo;
@@ -248,7 +411,7 @@ this.hls.loadSource(v.url);
 this.hls.attachMedia(this.video);
 
 this.hls.on(Hls.Events.MANIFEST_PARSED,()=>{
-if(progress?.time)this.video.currentTime=progress.time;
+if(progress?.time) this.video.currentTime=progress.time;
 this.video.play();
 });
 
@@ -257,40 +420,39 @@ this.video.play();
 this.video.src=v.url;
 
 this.video.onloadedmetadata=()=>{
-if(progress?.time)this.video.currentTime=progress.time;
+if(progress?.time) this.video.currentTime=progress.time;
 this.video.play();
 };
 
 }
-
 },
 
 cleanup(){
-if(this.hls){this.hls.destroy();this.hls=null;}
+if(this.hls){
+this.hls.destroy();
+this.hls=null;
+}
+
 this.video.pause();
 this.video.removeAttribute("src");
 this.video.load();
 this.currentId=null;
 }
-
 };
 
-/* VIDEO */
 function openVideo(v){
 
 document.getElementById("player").style.display="flex";
 
-const nav=document.getElementById("playerNav");
-nav.style.display=currentSeries ? "flex" : "none";
+document.getElementById("playerNav").style.display=
+currentSeries ? "flex" : "none";
 
 playerController.play(v);
-
 }
 
 window.closeVideo=function(){
 
 playerController.cleanup();
-
 document.getElementById("player").style.display="none";
 
 if(currentSeries && currentSeries.temporadas){
@@ -300,10 +462,8 @@ document.getElementById("seasonSelect").value=currentSeason;
 renderEpisodes(currentSeason);
 
 }
-
 };
 
-/* SERIES */
 function openSeriesModal(series){
 
 currentSeries=series;
@@ -337,7 +497,6 @@ renderEpisodes(currentSeason);
 };
 
 });
-
 }
 
 window.closeSeriesModal=function(reset=true){
@@ -349,7 +508,6 @@ currentSeries=null;
 currentSeason=0;
 currentEpisode=0;
 }
-
 };
 
 function renderEpisodes(index){
@@ -373,34 +531,39 @@ openVideo(ep);
 list.appendChild(btn);
 
 });
-
 }
 
-/* NAV PLAYER */
 window.nextEpisode=function(){
 
-if(!currentSeries)return;
+if(!currentSeries) return;
 
 const season=currentSeries.temporadas[currentSeason];
 
 if(currentEpisode < season.episodios.length-1){
+
 currentEpisode++;
 openVideo(season.episodios[currentEpisode]);
 return;
+
 }
 
 if(currentSeason < currentSeries.temporadas.length-1){
+
 currentSeason++;
 currentEpisode=0;
-document.getElementById("seasonSelect").value=currentSeason;
-openVideo(currentSeries.temporadas[currentSeason].episodios[0]);
-}
 
+document.getElementById("seasonSelect").value=currentSeason;
+
+openVideo(
+currentSeries.temporadas[currentSeason].episodios[0]
+);
+
+}
 };
 
 window.prevEpisode=function(){
 
-if(!currentSeries)return;
+if(!currentSeries) return;
 
 const season=currentSeries.temporadas[currentSeason];
 
@@ -408,10 +571,8 @@ if(currentEpisode>0){
 currentEpisode--;
 openVideo(season.episodios[currentEpisode]);
 }
-
 };
 
-/* UI */
 function buildUI(){
 
 document.getElementById("app").innerHTML=`
@@ -423,7 +584,6 @@ document.getElementById("app").innerHTML=`
 `;
 
 renderAll();
-
 }
 
 function renderAll(){
@@ -434,7 +594,6 @@ renderRow(allVideos.filter(v=>v.tipo==="anime"),"animeRow");
 
 renderRecent();
 renderContinue();
-
 }
 
 function renderRow(list,id){
@@ -467,7 +626,6 @@ openVideo(v);
 row.appendChild(card);
 
 });
-
 }
 
 function renderRecent(){
@@ -490,21 +648,20 @@ list.forEach(v=>{
 
 const prog=data[v.titulo];
 
-if(!prog.duration || prog.time >= prog.duration*.95) return;
+if(!prog.duration || prog.time>=prog.duration*.95) return;
 
 const remain=Math.ceil((prog.duration-prog.time)/60);
 
 let info=`Quedan ${remain} min`;
 
 if(v.tipo==="serie" || v.tipo==="anime"){
-info=`T${(prog.season??0)+1}:E${(prog.episode??0)+1} • ${remain} min restantes`;
+info=`T${(prog.season||0)+1}:E${(prog.episode||0)+1} • ${remain} min restantes`;
 }
 
 const percent=Math.max(8,(prog.time/prog.duration)*100);
 
 const card=document.createElement("div");
 card.className="card continue-card";
-card.dataset.title=v.titulo.toLowerCase();
 
 card.innerHTML=`
 <img src="${v.img}">
@@ -527,8 +684,8 @@ openVideo(v);
 }else{
 
 currentSeries=v;
-currentSeason=prog.season || 0;
-currentEpisode=prog.episode || 0;
+currentSeason=prog.season||0;
+currentEpisode=prog.episode||0;
 
 fetch(v.temporadasUrl)
 .then(r=>r.json())
@@ -536,9 +693,9 @@ fetch(v.temporadasUrl)
 
 currentSeries.temporadas=data;
 
-const ep=data[currentSeason].episodios[currentEpisode];
-
-openVideo(ep);
+openVideo(
+data[currentSeason].episodios[currentEpisode]
+);
 
 });
 
@@ -549,21 +706,19 @@ openVideo(ep);
 row.appendChild(card);
 
 });
-
 }
 
-/* SEARCH */
 document.getElementById("search").addEventListener("input",(e)=>{
 
 const txt=e.target.value.toLowerCase();
 
 document.querySelectorAll(".card").forEach(c=>{
-c.style.display=c.dataset.title.includes(txt)?"block":"none";
+c.style.display=
+c.dataset.title.includes(txt) ? "block" : "none";
 });
 
 });
 
-/* LOGIN */
 document.getElementById("loginBtn").onclick=async()=>{
 
 const email=document.getElementById("loginUser").value.trim();
@@ -577,7 +732,6 @@ document.getElementById("loginError").style.display="block";
 
 };
 
-/* AUTH */
 onAuthStateChanged(auth,(user)=>{
 
 if(user){
@@ -594,12 +748,13 @@ buildUI();
 });
 
 }else{
+
 document.getElementById("loginModal").style.display="flex";
+
 }
 
 });
 
-/* LOGOUT */
 window.logout=async function(){
 await signOut(auth);
 };
