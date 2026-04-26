@@ -303,9 +303,18 @@ card.innerHTML=`
 <div class="preview-fake" style="background-image:url(${v.img})"></div>
 `;
 
-card.onclick=()=>{
-if(isSeries) openSeriesModal(v);
-else openVideo(v);
+card.onclick = () => {
+
+if (
+v.tipo === "serie" ||
+v.tipo === "anime" ||
+isSeries
+){
+openSeriesModal(v);
+}else{
+openVideo(v);
+}
+
 };
 
 row.appendChild(card);
