@@ -93,6 +93,48 @@ color:#fff;
 cursor:pointer;
 font-size:18px;
 }
+
+.continue-card{
+position:relative;
+}
+
+.continue-overlay{
+position:absolute;
+left:0;
+right:0;
+bottom:0;
+padding:14px;
+background:linear-gradient(to top,rgba(0,0,0,.88),transparent);
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
+.continue-btn{
+background:#0a84ff;
+border:none;
+color:#fff;
+padding:8px 14px;
+border-radius:12px;
+font-weight:bold;
+cursor:pointer;
+width:max-content;
+font-size:14px;
+}
+
+.continue-info{
+font-size:14px;
+opacity:.95;
+font-weight:500;
+}
+
+.continue-line{
+height:3px;
+border-radius:999px;
+background:#0a84ff;
+margin-top:4px;
+}
+
 </style>
 </head>
 
@@ -190,9 +232,19 @@ return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
 }
 
 function saveProgress(id,time,duration){
-const data=getProgress();
-data[id]={time,duration,updated:Date.now()};
-localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+
+const data = getProgress();
+
+data[id] = {
+time,
+duration,
+updated: Date.now(),
+season: currentSeries ? currentSeason : null,
+episode: currentSeries ? currentEpisode : null
+};
+
+localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
 }
 
 /* PLAYER */
@@ -484,16 +536,80 @@ renderRow(allVideos.slice(-10),"recentRow");
 
 function renderContinue(){
 
-const data=getProgress();
+const data = getProgress();
 
-const list=Object.keys(data)
+const list = Object.keys(data)
 .map(t=>allVideos.find(v=>v.titulo===t))
 .filter(Boolean)
 .sort((a,b)=>data[b.titulo].updated-data[a.titulo].updated);
 
-renderRow(list,"continueRow");
+const row = document.getElementById("continueRow");
+row.innerHTML = "";
+
+list.forEach(v=>{
+
+const prog = data[v.titulo];
+
+if(!prog.duration || prog.time >= prog.duration * 0.95) return;
+
+const remain = Math.ceil((prog.duration - prog.time)/60);
+
+let info = `Quedan ${remain} min`;
+
+if(v.tipo==="serie" || v.tipo==="anime"){
+
+const temp = (prog.season ?? currentSeason) + 1;
+const ep = (prog.episode ?? currentEpisode) + 1;
+
+info = `T${temp}:E${ep} • ${remain} min restantes`;
+}
+
+const percent = Math.max(8,(prog.time/prog.duration)*100);
+
+const card = document.createElement("div");
+card.className = "card continue-card";
+card.dataset.title = v.titulo.toLowerCase();
+
+card.innerHTML = `
+<img src="${v.img}">
+<div class="preview-fake" style="background-image:url(${v.img})"></div>
+
+<div class="continue-overlay">
+<button class="continue-btn">▶ Continuar</button>
+<div class="continue-info">${info}</div>
+<div class="continue-line" style="width:${percent}%"></div>
+</div>
+`;
+
+card.onclick = ()=>{
+
+if(v.tipo==="pelicula"){
+
+currentSeries = null;
+openVideo(v);
+
+}else{
+
+currentSeries = v;
+currentSeason = prog.season || 0;
+currentEpisode = prog.episode || 0;
+
+fetch(v.temporadasUrl)
+.then(r=>r.json())
+.then(data=>{
+
+currentSeries.temporadas = data;
+
+const ep =
+data[currentSeason].episodios[currentEpisode];
+
+openVideo(ep);
+
+});
 
 }
+
+};
 
 /* SEARCH */
 document.getElementById("search").addEventListener("input",(e)=>{
