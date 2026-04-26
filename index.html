@@ -6,6 +6,7 @@
 <title>PlusUltra iOS Pro</title>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://www.gstatic.com/cv/js/cast_sender.js?loadCastFramework=1"></script>
 
 <style>
 body{
@@ -305,6 +306,10 @@ background:#0a84ff;
 <div class="player-nav" id="playerNav">
 <button onclick="prevEpisode()">⏮</button>
 <button onclick="nextEpisode()">⏭</button>
+
+<!-- ➕ CAST -->
+<button id="castBtn" onclick="castVideo()">📺 Cast</button>
+
 </div>
 
 <video id="video" controls controlsList="nodownload"></video>
@@ -762,6 +767,66 @@ document.getElementById("loginModal").style.display="flex";
 window.logout=async function(){
 await signOut(auth);
 };
+
+// ============================
+// 📺 CAST (SAFE - NO BREAK)
+// ============================
+
+let castReady = false;
+let castContext = null;
+
+window.__onGCastApiAvailable = function(isAvailable) {
+  if (!isAvailable) return;
+
+  try {
+    castContext = cast.framework.CastContext.getInstance();
+
+    castContext.setOptions({
+      receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+      autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+    });
+
+    castReady = true;
+    console.log("Cast listo");
+
+  } catch (e) {
+    console.log("Cast error:", e);
+  }
+};
+
+window.castVideo = function () {
+  if (!castReady || !castContext) {
+    alert("Chromecast no disponible");
+    return;
+  }
+
+  const video = document.getElementById("video");
+  const url = video.src;
+
+  if (!url) return;
+
+  castContext.requestSession().then(() => {
+
+    const session = castContext.getCurrentSession();
+
+    const mediaInfo = new chrome.cast.media.MediaInfo(url, "video/mp4");
+
+    const request = new chrome.cast.media.LoadRequest(mediaInfo);
+
+    session.loadMedia(request)
+      .then(() => console.log("📺 En TV"))
+      .catch(err => console.log(err));
+
+  }).catch(err => console.log(err));
+};
+
+// opcional: ocultar botón si no hay cast
+setTimeout(() => {
+  if (!castReady) {
+    const btn = document.getElementById("castBtn");
+    if (btn) btn.style.display = "none";
+  }
+}, 3000);
 
 </script>
 </body>
