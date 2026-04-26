@@ -5,7 +5,6 @@
 <title>PlusUltra iOS Pro</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
-/* Estilos base del diseño que tienes */
 body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto; background:linear-gradient(to bottom,#1c1c1e,#2c2c2e); color:white; padding-top:90px; }
 .header { position:fixed; top:0; left:0; width:100%; display:flex; align-items:center; justify-content:space-between; padding:18px 28px; z-index:9999; background:rgba(28,28,30,0.35); backdrop-filter:blur(25px); transition:0.3s; border-bottom:1px solid rgba(255,255,255,0.1);}
 .header.scrolled { background: rgba(28,28,30,0.9); box-shadow:0 10px 30px rgba(0,0,0,0.5);}
@@ -80,7 +79,11 @@ const playerController={video:null,hls:null,currentId:null,
   play(v){this.cleanup(); this.currentId=v.titulo; const progress=getProgress()[v.titulo]; if(v.url){ if(v.url.includes(".m3u8") && Hls.isSupported()){this.hls=new Hls(); this.hls.loadSource(v.url); this.hls.attachMedia(this.video); this.hls.on(Hls.Events.MANIFEST_PARSED,()=>{ if(progress && progress.time) this.video.currentTime=progress.time; this.video.play();});} else {this.video.src=v.url; this.video.onloadedmetadata=()=>{ if(progress && progress.time) this.video.currentTime=progress.time; this.video.play(); }; } } },
   cleanup(){if(this.hls){this.hls.destroy(); this.hls=null;} this.video.pause(); this.video.removeAttribute("src"); this.video.load(); this.currentId=null;}
 };
-function openVideo(v){document.getElementById("player").style.display="flex"; playerController.play(v);}
+function openVideo(v, fromSeries=false){
+  document.getElementById("player").style.display="flex";
+  playerController.play(v);
+  if(!fromSeries){ closeSeriesModal(); } // Mantener modal si es serie/anime
+}
 function closeVideo(){playerController.cleanup(); document.getElementById("player").style.display="none";}
 
 /* SERIES / ANIME MODAL */
@@ -105,7 +108,7 @@ function renderEpisodes(seasonIndex){
   season.episodios.forEach(ep=>{
     const btn=document.createElement("button");
     btn.innerText=ep.titulo;
-    btn.onclick=()=>{closeSeriesModal(); openVideo(ep);}
+    btn.onclick=()=>{ openVideo(ep, true); } // flag para no cerrar modal
     episodeList.appendChild(btn);
   });
 }
