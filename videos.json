@@ -26,19 +26,19 @@
     "genero": "Accion",
     "temporadasUrl": "Hajime_no_Ippo.json",
     "img": "https://www.themoviedb.org/t/p/w1280/1LApB9C9kEkh2ZU2vzAhurNDipl.jpg"
-  }
+  },
   {
     "tipo": "anime",
     "titulo": "Supercampeones J",
     "genero": "Deporte",
     "temporadasUrl": "Supercampeones.json",
     "img": "https://www.themoviedb.org/t/p/w1280/cy4B2efqmnpJ4ik7jkKOYQsTeV4.jpg"
-  }
+  },
   {
     "tipo": "anime",
     "titulo": "Mob_Psycho_100",
     "genero": "Accion",
-    "temporadasUrl": "Mob Psycho 100.json",
+    "temporadasUrl": "Mob_Psycho_100.json",
     "img": "https://www.themoviedb.org/t/p/w1280/vR7hwaGQ0ySRoq1WobiNRaPs4WO.jpg"
   }
 ]
