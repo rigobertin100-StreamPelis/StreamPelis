@@ -3,164 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <title>MiCuartoSecreto Netflix</title>
-
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
 <style>
-
-/* =========================
-   BASE
-========================= */
-body{
-  margin:0;
-  font-family:Arial;
-  background:#050b18;
-  color:white;
-  padding-top:70px;
-}
-
-/* =========================
-   HEADER NETFLIX
-========================= */
-.header{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  display:flex;
-  justify-content:flex-start;
-  align-items:center;
-  padding:12px 20px;
-  z-index:9999;
-
-  background:rgba(5, 11, 24, 0.35);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  transition:0.3s ease;
-}
-
-.header.scrolled{
-  background:rgba(5, 11, 24, 0.85);
-  box-shadow:0 10px 30px rgba(0,0,0,0.5);
-}
-
-.logo{
-  font-size:34px;
-  font-weight:800;
-  color:#00b7ff;
-  text-shadow:
-    0 0 5px #00b7ff,
-    0 0 15px #008cff,
-    0 0 30px #0055ff;
-}
-
-.search{
-  position:absolute;
-  right:20px;
-  padding:8px;
-  border-radius:20px;
-  border:none;
-}
-
-/* =========================
-   ROWS
-========================= */
-.row{
-  margin-top:60px;
-  padding-left:20px;
-}
-
-.carousel{
-  display:flex;
-  gap:15px;
-  overflow-x:auto;
-}
-
+body{margin:0;font-family:Arial;background:#050b18;color:white;padding-top:70px;}
+.header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;padding:12px 20px;z-index:9999;background:rgba(5,11,24,0.35);backdrop-filter:blur(12px);}
+.header.scrolled{background:rgba(5,11,24,0.85);box-shadow:0 10px 30px rgba(0,0,0,0.5);}
+.logo{font-size:34px;font-weight:800;color:#00b7ff;text-shadow:0 0 15px #008cff;}
+.search{position:absolute;right:20px;padding:8px;border-radius:20px;border:none;width:220px;}
+.row{margin-top:60px;padding-left:20px;}
+.carousel{display:flex;gap:15px;overflow-x:auto;}
 .carousel::-webkit-scrollbar{display:none;}
-
-/* =========================
-   CARDS
-========================= */
-.card{
-  width:250px;
-  flex-shrink:0;
-  aspect-ratio:2/3;
-  position:relative;
-  border-radius:10px;
-  overflow:hidden;
-  cursor:pointer;
-}
-
-.card img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-/* preview fake (NO video) */
-.preview-fake{
-  position:absolute;
-  inset:0;
-  background-size:cover;
-  background-position:center;
-  opacity:0;
-  transform:scale(1);
-  transition:0.3s;
-}
-
-.card:hover .preview-fake{
-  opacity:1;
-  transform:scale(1.08);
-}
-
-/* progress bar */
-.progress-bar{
-  position:absolute;
-  bottom:0;
-  left:0;
-  height:4px;
-  background:red;
-}
-
-/* =========================
-   PLAYER
-========================= */
-.player{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.85);
-  display:none;
-  justify-content:center;
-  align-items:center;
-  z-index:999999;
-}
-
-.player-inner{
-  width:80vw;
-  height:80vh;
-  background:black;
-  border-radius:12px;
-  overflow:hidden;
-  position:relative;
-}
-
-video{
-  width:100%;
-  height:100%;
-}
-
-.close{
-  position:absolute;
-  top:10px;
-  right:15px;
-  font-size:28px;
-  cursor:pointer;
-}
-
+.card{width:250px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:10px;overflow:hidden;cursor:pointer;transition:0.3s;}
+.card:hover{transform:scale(1.08);}
+.card img{width:100%;height:100%;object-fit:cover;}
+.preview-fake{position:absolute;inset:0;opacity:0;background-size:cover;transition:0.3s;}
+.card:hover .preview-fake{opacity:1;}
+.progress-bar{position:absolute;bottom:0;left:0;height:4px;background:red;}
+.player{position:fixed;inset:0;background:rgba(0,0,0,0.9);display:none;justify-content:center;align-items:center;z-index:999999;}
+.player-inner{width:80vw;height:80vh;background:black;border-radius:12px;overflow:hidden;position:relative;}
+video{width:100%;height:100%;}
+.close{position:absolute;top:10px;right:15px;font-size:28px;cursor:pointer;z-index:20;}
 </style>
 </head>
-
 <body>
 
 <!-- HEADER -->
@@ -175,17 +39,18 @@ video{
 <div class="player" id="player">
   <div class="player-inner">
     <span class="close" onclick="closeVideo()">✖</span>
-    <video id="video" controls></video>
+    <video id="video" controls controlsList="nodownload"></video>
   </div>
 </div>
 
+<!-- VIDEOS JS -->
+<script src="videos.js"></script>
+
 <script>
-
-const API = "https://lively-bush-a86a.rigobertin100.workers.dev/";
-const TMDB_KEY = "9db71febe6f2e19d653ab88b8ff729b6";
-
-let allVideos = [];
+let allVideos = videos; // videos viene de videos.js
 let currentIndex = 0;
+let currentFilter = "";
+let autoNext = true;
 
 /* =========================
    HEADER SCROLL
@@ -200,287 +65,111 @@ window.addEventListener("scroll",()=>{
    STORAGE
 ========================= */
 const STORAGE_KEY = "continueWatching";
-
-function getProgress(){
-  return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");
-}
-
-function saveProgress(id,time,duration){
-  const data = getProgress();
-  data[id] = {time,duration,updated:Date.now()};
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
-}
+function getProgress(){return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}");}
+function saveProgress(id,time,duration){const data=getProgress();data[id]={time,duration,updated:Date.now()};localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
 
 /* =========================
-   PLAYER ENGINE
+   PLAYER
 ========================= */
 const playerController = {
-  video:null,
-  hls:null,
-  currentId:null,
-
+  video:null,hls:null,currentId:null,
   init(){
     this.video = document.getElementById("video");
-
     this.video.addEventListener("timeupdate",()=>{
-      if(this.currentId){
-        saveProgress(this.currentId,this.video.currentTime,this.video.duration);
-      }
+      if(this.currentId) saveProgress(this.currentId,this.video.currentTime,this.video.duration);
     });
-
-    this.video.addEventListener("ended",()=>playNext());
+    this.video.addEventListener("ended",()=>{if(autoNext) playNext();});
   },
-
   play(v){
-
     this.cleanup();
-
     this.currentId = v.titulo;
     currentIndex = allVideos.findIndex(x=>x.titulo===v.titulo);
-
-    const progress = getProgress()[this.currentId];
-
     if(v.url.includes(".m3u8") && Hls.isSupported()){
-
       this.hls = new Hls();
       this.hls.loadSource(v.url);
       this.hls.attachMedia(this.video);
-
-      this.hls.on(Hls.Events.MANIFEST_PARSED,()=>{
-        if(progress) this.video.currentTime = progress.time || 0;
-        this.video.play();
-      });
-
+      this.hls.on(Hls.Events.MANIFEST_PARSED,()=>{this.video.play();});
     } else {
-
       this.video.src = v.url;
-
-      this.video.onloadedmetadata = ()=>{
-        if(progress) this.video.currentTime = progress.time || 0;
-        this.video.play();
-      };
+      this.video.onloadedmetadata = ()=>{this.video.play();};
     }
   },
-
   cleanup(){
-
-    if(this.hls){
-      this.hls.destroy();
-      this.hls=null;
-    }
-
+    if(this.hls){this.hls.destroy();this.hls=null;}
     this.video.pause();
     this.video.removeAttribute("src");
     this.video.load();
-
     this.currentId=null;
   }
 };
 
-/* NEXT VIDEO */
-function playNext(){
-  const next = allVideos[currentIndex+1];
-  if(next) playerController.play(next);
-}
+function playNext(){const n=allVideos[currentIndex+1]; if(n) playerController.play(n);}
+function closeVideo(){playerController.cleanup(); document.getElementById("player").style.display="none";}
+function openVideo(v){document.getElementById("player").style.display="flex"; playerController.play(v);}
 
 /* =========================
-   LOAD
+   CATEGORÍAS AUTOMÁTICAS
 ========================= */
-async function load(){
-
-  playerController.init();
-
-  const res = await fetch(API);
-  allVideos = await res.json();
-
-  await classifyTMDB();
-  buildUI();
-}
-
-/* =========================
-   TMDB
-========================= */
-async function fetchTMDB(title){
-  try{
-    const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(title)}`);
-    const data = await res.json();
-    return data.results?.[0];
-  }catch{return null;}
-}
-
-/* =========================
-   CATEGORIES
-========================= */
-const genreMap = {
-  28:"action",
-  18:"drama",
-  35:"comedy",
-  27:"horror"
-};
-
-let categories = {
-  action:[],
-  drama:[],
-  comedy:[],
-  horror:[],
-  other:[]
-};
-
-async function classifyTMDB(){
-
-  for(const v of allVideos){
-
-    const tmdb = await fetchTMDB(v.titulo);
-
-    if(tmdb && tmdb.genre_ids){
-
-      let ok=false;
-
-      tmdb.genre_ids.forEach(id=>{
-        const cat = genreMap[id];
-        if(cat){
-          categories[cat].push(v);
-          ok=true;
-        }
-      });
-
-      if(!ok) categories.other.push(v);
-
-    } else {
-      categories.other.push(v);
-    }
-  }
-}
+const categories = {};
+allVideos.forEach(v => {
+  if(!categories[v.genero]) categories[v.genero] = [];
+  categories[v.genero].push(v);
+});
 
 /* =========================
    UI
 ========================= */
 function buildUI(){
-
   const app = document.getElementById("app");
-
-  app.innerHTML = `
-    <div class="row">
-      <h2>🔄 Continuar viendo</h2>
-      <div class="carousel" id="continueRow"></div>
-    </div>
-
-    <div class="row">
-      <h2>🆕 Agregadas recientemente</h2>
-      <div class="carousel" id="recentRow"></div>
-    </div>
-
-    <div class="row">
-      <h2>🎬 Acción</h2>
-      <div class="carousel" id="actionRow"></div>
-    </div>
-
-    <div class="row">
-      <h2>🎭 Drama</h2>
-      <div class="carousel" id="dramaRow"></div>
-    </div>
-
-    <div class="row">
-      <h2>😂 Comedia</h2>
-      <div class="carousel" id="comedyRow"></div>
-    </div>
-
-    <div class="row">
-      <h2>👻 Terror</h2>
-      <div class="carousel" id="horrorRow"></div>
-    </div>
-  `;
-
-  renderContinue();
-  renderRow(allVideos.slice(-10),"recentRow");
-
-  renderRow(categories.action,"actionRow");
-  renderRow(categories.drama,"dramaRow");
-  renderRow(categories.comedy,"comedyRow");
-  renderRow(categories.horror,"horrorRow");
+  app.innerHTML = `<div class="row"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
+                   <div class="row"><h2>🆕 Agregadas recientemente</h2><div class="carousel" id="recentRow"></div></div>`;
+  
+  for(let genero in categories){
+    app.innerHTML += `<div class="row"><h2>🎬 ${genero}</h2><div class="carousel" id="${genero}Row"></div></div>`;
+  }
+  
+  renderAll();
 }
 
-/* =========================
-   CONTINUE REAL
-========================= */
+function renderAll(){
+  renderRow(allVideos.slice(-10),"recentRow");
+  for(let genero in categories){
+    renderRow(categories[genero], genero + "Row");
+  }
+  renderContinue();
+}
+
 function renderContinue(){
-
   const data = getProgress();
-
   const list = Object.keys(data)
-    .map(title=>allVideos.find(v=>v.titulo===title))
+    .map(t=>allVideos.find(v=>v.titulo===t))
     .filter(Boolean)
     .sort((a,b)=>data[b.titulo].updated-data[a.titulo].updated);
-
   renderRow(list,"continueRow");
 }
 
-/* =========================
-   RENDER
-========================= */
 function renderRow(list,id){
-
-  const row = document.getElementById(id);
+  const row=document.getElementById(id);
   row.innerHTML="";
-
   list.forEach(v=>{
-
-    const progress = getProgress()[v.titulo];
-
     const card=document.createElement("div");
     card.className="card";
     card.dataset.title=v.titulo.toLowerCase();
-
-    const img=document.createElement("img");
-    img.src=v.img;
-    card.appendChild(img);
-
-    const preview=document.createElement("div");
-    preview.className="preview-fake";
-    preview.style.backgroundImage=`url(${v.img})`;
-    card.appendChild(preview);
-
-    if(progress && progress.duration){
-      const bar=document.createElement("div");
-      bar.className="progress-bar";
-      bar.style.width=((progress.time/progress.duration)*100)+"%";
-      card.appendChild(bar);
-    }
-
-    card.onclick=()=>{
-      document.getElementById("player").style.display="flex";
-      playerController.play(v);
-    };
-
+    card.innerHTML=`<img src="${v.img}"><div class="preview-fake" style="background-image:url(${v.img})"></div>`;
+    card.onclick=()=>openVideo(v);
     row.appendChild(card);
   });
+  applyFilter();
 }
 
-/* =========================
-   CLOSE FIXED
-========================= */
-function closeVideo(){
-  playerController.cleanup();
-  document.getElementById("player").style.display="none";
-  renderContinue();
-}
+document.getElementById("search").addEventListener("input",(e)=>{currentFilter=e.target.value.toLowerCase().trim(); applyFilter();});
+function applyFilter(){document.querySelectorAll(".card").forEach(c=>{c.style.display=c.dataset.title.includes(currentFilter)?"block":"none";});}
 
 /* =========================
-   SEARCH FIX
+   INICIALIZAR
 ========================= */
-document.getElementById("search").addEventListener("input",(e)=>{
-  const val=e.target.value.toLowerCase().trim();
-
-  document.querySelectorAll(".card").forEach(c=>{
-    const title=c.dataset.title||"";
-    c.style.display=title.includes(val)?"block":"none";
-  });
-});
-
-/* START */
-load();
-
+playerController.init();
+buildUI();
 </script>
-
 </body>
 </html>
