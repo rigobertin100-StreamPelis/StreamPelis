@@ -286,6 +286,31 @@ height:3px;
 border-radius:999px;
 background:#0a84ff;
 }
+
+.season-select {
+    margin-top:10px;
+    padding:10px 14px;
+    border-radius:12px;
+    background:rgba(255,255,255,.1);
+    color:white;
+    font-size:16px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.season-option {
+    padding:8px 12px;
+    background:#0a84ff;
+    border-radius:10px;
+    cursor:pointer;
+    user-select:none;
+}
+
+.season-option.active {
+    background:#005fcc;
+}
+
 </style>
 </head>
 
@@ -335,7 +360,7 @@ background:#0a84ff;
 <div class="series-inner">
 <span class="close" onclick="closeSeriesModal()">✖</span>
 <h2 id="seriesTitle"></h2>
-<select id="seasonSelect" class="season-select"></select>
+<div id="seasonSelect" class="season-select"></div>
 <div class="episode-list" id="episodeList"></div>
 </div>
 </div>
@@ -496,24 +521,35 @@ fetch(series.temporadasUrl)
 
 currentSeries.temporadas=data;
 
-const select=document.getElementById("seasonSelect");
-select.innerHTML="";
+const seasonBox = document.getElementById("seasonSelect");
+seasonBox.innerHTML = "";
 
-data.forEach((t,i)=>{
-const op=document.createElement("option");
-op.value=i;
-op.innerText="Temporada "+t.numero;
-select.appendChild(op);
+data.forEach((t, i) => {
+
+    const btn = document.createElement("div");
+    btn.className = "season-option";
+    btn.innerText = "Temporada " + t.numero;
+
+    if (i === currentSeason) {
+        btn.classList.add("active");
+    }
+
+    btn.onclick = () => {
+
+        currentSeason = i;
+
+        document.querySelectorAll(".season-option")
+            .forEach(b => b.classList.remove("active"));
+
+        btn.classList.add("active");
+
+        renderEpisodes(currentSeason);
+    };
+
+    seasonBox.appendChild(btn);
 });
 
-select.value=currentSeason;
-
 renderEpisodes(currentSeason);
-
-select.onchange=()=>{
-currentSeason=parseInt(select.value);
-renderEpisodes(currentSeason);
-};
 
 });
 }
