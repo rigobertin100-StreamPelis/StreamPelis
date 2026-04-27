@@ -66,7 +66,20 @@ background:rgba(255,255,255,.1);
 color:white;
 outline:none;
 }
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
 
+.search{
+  width:260px; /* más chico para que quepa */
+}
+
+.logout{
+  white-space:nowrap;
+}
+  
 .row{
 margin-top:50px;
 padding-left:20px;
@@ -95,7 +108,7 @@ border-radius:4px;
 }
 
 .card{
-width:260px;
+width:200px;
 flex-shrink:0;
 aspect-ratio:2/3;
 position:relative;
@@ -348,7 +361,7 @@ background:#0a84ff;
 <div class="header">
 <div class="logo">PlusUltra</div>
 
-<div style="display:flex;align-items:center;">
+<div class="header-right">
 <input id="search" class="search" placeholder="Buscar...">
 <button class="logout" onclick="logout()">Salir</button>
 </div>
