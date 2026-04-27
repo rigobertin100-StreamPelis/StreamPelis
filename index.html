@@ -417,97 +417,98 @@ episode:currentSeries ? currentEpisode : null
 localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
 }
 
-const playerController={
-video:null,
-hls:null,
-currentId:null,
+const playerController = {
+  video:null,
+  hls:null,
+  currentId:null,
 
-init(){
-  this.video = document.getElementById("video");
+  init(){
+    this.video = document.getElementById("video");
 
-  let lastSave = 0;
+    let lastSave = 0;
 
-  this.video.addEventListener("timeupdate",()=>{
-    const now = Date.now();
+    this.video.addEventListener("timeupdate", () => {
+      const now = Date.now();
 
-    if(this.currentId && now-lastSave>5000){
-      saveProgress(
-        this.currentId,
-        this.video.currentTime,
-        this.video.duration
-      );
-      lastSave = now;
+      if(this.currentId && now - lastSave > 5000){
+        saveProgress(
+          this.currentId,
+          this.video.currentTime,
+          this.video.duration
+        );
+        lastSave = now;
+      }
+    });
+
+    // AUTO NEXT / AUTO CLOSE
+    this.video.addEventListener("ended", () => {
+
+      if(currentSeries){
+
+        const season = currentSeries.temporadas[currentSeason];
+
+        const isLastEpisode = currentEpisode === season.episodios.length - 1;
+        const isLastSeason = currentSeason === currentSeries.temporadas.length - 1;
+
+        if(isLastEpisode && isLastSeason){
+          closeVideo();
+        } else {
+          nextEpisode();
+        }
+
+      } else {
+        closeVideo();
+      }
+
+    });
+
+  },
+
+  play(v){
+    this.cleanup();
+
+    this.currentId = currentSeries
+      ? `${currentSeries.titulo}-S${currentSeason}-E${currentEpisode}`
+      : v.titulo;
+
+    const progress = getProgress()[this.currentId];
+
+    if(v.url.includes(".m3u8") && Hls.isSupported()){
+
+      this.hls = new Hls();
+      this.hls.loadSource(v.url);
+      this.hls.attachMedia(this.video);
+
+      this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if(progress?.time) this.video.currentTime = progress.time;
+        this.video.play();
+      });
+
+    } else {
+
+      this.video.src = v.url;
+
+      this.video.onloadedmetadata = () => {
+        if(progress?.time) this.video.currentTime = progress.time;
+        this.video.play();
+      };
+
     }
-  });
+  },
 
-  // 👇 NUEVO (AQUÍ VA)
-this.video.addEventListener("ended", () => {
-
-  if(currentSeries){
-
-    const season = currentSeries.temporadas[currentSeason];
-
-    const isLastEpisode = currentEpisode === season.episodios.length - 1;
-    const isLastSeason = currentSeason === currentSeries.temporadas.length - 1;
-
-    if(isLastEpisode && isLastSeason){
-      closeVideo(); // termina toda la serie
-    }else{
-      nextEpisode(); // sigue normal
+  cleanup(){
+    if(this.hls){
+      this.hls.destroy();
+      this.hls = null;
     }
 
-  }else{
-    closeVideo();
+    this.video.pause();
+    this.video.removeAttribute("src");
+    this.video.load();
+    this.currentId = null;
   }
-
-});
-},
-
-play(v){
-this.cleanup();
-
-this.currentId = currentSeries
-  ? `${currentSeries.titulo}-S${currentSeason}-E${currentEpisode}`
-  : v.titulo;
-
-const progress = getProgress()[this.currentId];
-
-if(v.url.includes(".m3u8") && Hls.isSupported()){
-
-this.hls=new Hls();
-this.hls.loadSource(v.url);
-this.hls.attachMedia(this.video);
-
-this.hls.on(Hls.Events.MANIFEST_PARSED,()=>{
-if(progress?.time) this.video.currentTime=progress.time;
-this.video.play();
-});
-
-}else{
-
-this.video.src=v.url;
-
-this.video.onloadedmetadata=()=>{
-if(progress?.time) this.video.currentTime=progress.time;
-this.video.play();
 };
-
-}
-},
-
-cleanup(){
-if(this.hls){
-this.hls.destroy();
-this.hls=null;
-}
-
-this.video.pause();
-this.video.removeAttribute("src");
-this.video.load();
-this.currentId=null;
-}
-};
-
+  
 function openVideo(v){
 
 document.getElementById("player").style.display="flex";
