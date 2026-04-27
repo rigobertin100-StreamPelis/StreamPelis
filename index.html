@@ -747,31 +747,31 @@ return allVideos.find(v => v.titulo === id);
 .filter(Boolean)
 .reduce((acc, v) => {
 
-// si es serie/anime → agrupar por titulo
-if(v.tipo==="serie" || v.tipo==="anime"){
+  // SERIES / ANIME
+  if(v.tipo === "serie" || v.tipo === "anime"){
 
-  const existing = acc.find(x => x.titulo === v.titulo);
+    const existing = acc.find(x => x.titulo === v.titulo);
 
-  if(!existing){
-    acc.push(v);
-  }else{
+    if(!existing){
+      acc.push(v);
+    }else{
 
-    const currentProg = data[v._progressId] || {};
-    const existingProg = data[existing._progressId] || {};
+      const currentProg = data[v._progressId] || {};
+      const existingProg = data[existing._progressId] || {};
 
-    if((currentProg.updated || 0) > (existingProg.updated || 0)){
-      const index = acc.indexOf(existing);
-      acc[index] = v;
+      if((currentProg.updated || 0) > (existingProg.updated || 0)){
+        const index = acc.indexOf(existing);
+        acc[index] = v;
+      }
+
     }
 
-  } // ← ESTA LLAVE TE FALTABA
+  } else {
+    // PELÍCULAS / CINE
+    acc.push(v);
+  }
 
-}else{
-  // peliculas y cine pasan normal
-  acc.push(v);
-}
-
-return acc;
+  return acc;
 
 }, [])
 
