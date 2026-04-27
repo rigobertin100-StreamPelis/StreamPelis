@@ -557,14 +557,6 @@ function showEpisodeIndicator(){
 
 }
 
-document.getElementById("player").style.display="flex";
-
-document.getElementById("playerNav").style.display=
-currentSeries ? "flex" : "none";
-
-playerController.play(v);
-}
-
 window.closeVideo=function(){
 
 playerController.cleanup();
@@ -913,9 +905,12 @@ await signInWithEmailAndPassword(auth,email,pass);
 }
 
 catch(e){
-console.log(e.code);
-document.getElementById("loginError").innerText = e.code;
-document.getElementById("loginError").style.display="block";
+  console.error(e);
+
+  document.getElementById("loginError").innerText =
+  e.message;
+
+  document.getElementById("loginError").style.display="block";
 }
 
 };
