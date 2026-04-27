@@ -444,9 +444,11 @@ lastSave=now;
 play(v){
 this.cleanup();
 
-this.currentId=v.titulo;
+this.currentId = currentSeries
+  ? `${currentSeries.titulo}-S${currentSeason}-E${currentEpisode}`
+  : v.titulo;
 
-const progress=getProgress()[v.titulo];
+const progress = getProgress()[this.currentId];
 
 if(v.url.includes(".m3u8") && Hls.isSupported()){
 
@@ -633,9 +635,13 @@ function buildUI(){
 document.getElementById("app").innerHTML=`
 <div class="row"><h2>🆕 Agregadas recientemente</h2><div class="carousel" id="recentRow"></div></div>
 <div class="row"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
+
+<!-- NUEVA FILA -->
+<div class="row"><h2>🍿 Del Cine a tu Casa</h2><div class="carousel" id="cineRow"></div></div>
+
 <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
 <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
-<div class="row"><h2>🌸 Anime</h2><div class="carousel" id="animeRow"></div></div>
+<div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
 `;
 
 renderAll();
@@ -646,6 +652,9 @@ function renderAll(){
 renderRow(allVideos.filter(v=>v.tipo==="pelicula"),"peliculasRow");
 renderRow(allVideos.filter(v=>v.tipo==="serie"),"seriesRow");
 renderRow(allVideos.filter(v=>v.tipo==="anime"),"animeRow");
+
+// NUEVO FILTRO
+renderRow(allVideos.filter(v=>v.tipo==="cine"),"cineRow");
 
 renderRecent();
 renderContinue();
@@ -689,36 +698,86 @@ renderRow(allVideos.slice(-10),"recentRow");
 
 function renderContinue(){
 
-const data=getProgress();
+const data = getProgress();
 
-const list=Object.keys(data)
-.map(t=>allVideos.find(v=>v.titulo===t))
-.filter(Boolean)
-.sort((a,b)=>data[b.titulo].updated-data[a.titulo].updated);
+const list = Object.keys(data)
+.map(id => {
 
-const row=document.getElementById("continueRow");
-row.innerHTML="";
+// SERIES / ANIME
+if(id.includes("-S")){
+const [title, s, e] = id.split("-");
+const serie = allVideos.find(v => v.titulo === title);
+if(!serie) return null;
 
-list.forEach(v=>{
-
-const prog=data[v.titulo];
-
-if(!prog.duration || prog.time>=prog.duration*.95) return;
-
-const remain=Math.ceil((prog.duration-prog.time)/60);
-
-let info=`Quedan ${remain} min`;
-
-if(v.tipo==="serie" || v.tipo==="anime"){
-info=`T${(prog.season||0)+1}:E${(prog.episode||0)+1} • ${remain} min restantes`;
+return {
+  ...serie,
+  _progressId: id,
+  _season: parseInt(s.replace("S","")),
+  _episode: parseInt(e.replace("E",""))
+};
 }
 
-const percent=Math.max(8,(prog.time/prog.duration)*100);
+// PELÍCULA / CINE
+return allVideos.find(v => v.titulo === id);
 
-const card=document.createElement("div");
-card.className="card continue-card";
+})
+.filter(Boolean)
+.reduce((acc, v) => {
 
-card.innerHTML=`
+// si es serie/anime → agrupar por titulo
+if(v.tipo==="serie" || v.tipo==="anime"){
+
+  const existing = acc.find(x => x.titulo === v.titulo);
+
+  if(!existing){
+    acc.push(v);
+  }else{
+
+    const currentProg = data[v._progressId] || {};
+    const existingProg = data[existing._progressId] || {};
+
+    if((currentProg.updated || 0) > (existingProg.updated || 0)){
+      const index = acc.indexOf(existing);
+      acc[index] = v;
+    }
+
+  } // ← ESTA LLAVE TE FALTABA
+
+}else{
+  // peliculas y cine pasan normal
+  acc.push(v);
+}
+
+return acc;
+
+}, [])
+
+.sort((a,b)=>data[b._progressId || b.titulo].updated - data[a._progressId || a.titulo].updated)
+.slice(0,5);
+
+const row = document.getElementById("continueRow");
+row.innerHTML = "";
+
+list.forEach(v => {
+
+const prog = data[v._progressId || v.titulo];
+
+if(!prog?.duration || prog.time >= prog.duration * .95) return;
+
+const remain = Math.ceil((prog.duration - prog.time) / 60);
+
+let info = `Quedan ${remain} min`;
+
+if(v.tipo==="serie" || v.tipo==="anime"){
+info = `T${(v._season ?? prog.season ?? 0)+1}:E${(v._episode ?? prog.episode ?? 0)+1} • ${remain} min restantes`;
+}
+
+const percent = Math.max(8,(prog.time / prog.duration) * 100);
+
+const card = document.createElement("div");
+card.className = "card continue-card";
+
+card.innerHTML = `
 <img src="${v.img}">
 <div class="preview-fake" style="background-image:url(${v.img})"></div>
 
@@ -729,24 +788,24 @@ card.innerHTML=`
 </div>
 `;
 
-card.onclick=()=>{
+card.onclick = () => {
 
-if(v.tipo==="pelicula"){
+if(v.tipo==="pelicula" || v.tipo==="cine"){
 
-currentSeries=null;
+currentSeries = null;
 openVideo(v);
 
 }else{
 
-currentSeries=v;
-currentSeason=prog.season||0;
-currentEpisode=prog.episode||0;
+currentSeries = v;
+currentSeason = v._season ?? prog.season ?? 0;
+currentEpisode = v._episode ?? prog.episode ?? 0;
 
 fetch(v.temporadasUrl)
 .then(r=>r.json())
 .then(data=>{
 
-currentSeries.temporadas=data;
+currentSeries.temporadas = data;
 
 openVideo(
 data[currentSeason].episodios[currentEpisode]
@@ -761,6 +820,7 @@ data[currentSeason].episodios[currentEpisode]
 row.appendChild(card);
 
 });
+
 }
 
 document.getElementById("search").addEventListener("input",(e)=>{
