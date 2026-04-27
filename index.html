@@ -311,6 +311,25 @@ background:#0a84ff;
     background:#005fcc;
 }
 
+.episode-indicator{
+  position:absolute;
+  top:60px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,.7);
+  padding:10px 18px;
+  border-radius:14px;
+  font-size:16px;
+  opacity:0;
+  transition:opacity .4s ease;
+  z-index:30;
+  pointer-events:none;
+}
+
+.episode-indicator.show{
+  opacity:1;
+}
+
 </style>
 </head>
 
@@ -345,11 +364,10 @@ background:#0a84ff;
 <div class="player-nav" id="playerNav">
 <button onclick="prevEpisode()">⏮</button>
 <button onclick="nextEpisode()">⏭</button>
-
-<!-- ➕ CAST -->
 <button id="castBtn" onclick="castVideo()">📺 Cast</button>
-
 </div>
+
+<div id="episodeIndicator" class="episode-indicator"></div>
 
 <video id="video" controls controlsList="nodownload"></video>
 
@@ -480,17 +498,21 @@ const playerController = {
       this.hls.attachMedia(this.video);
 
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if(progress?.time) this.video.currentTime = progress.time;
-        this.video.play();
+      if(progress?.time) this.video.currentTime = progress.time;
+      this.video.play();
+
+      showEpisodeIndicator();
       });
 
     } else {
 
       this.video.src = v.url;
 
-      this.video.onloadedmetadata = () => {
-        if(progress?.time) this.video.currentTime = progress.time;
-        this.video.play();
+     this.video.onloadedmetadata = () => {
+     if(progress?.time) this.video.currentTime = progress.time;
+     this.video.play();
+
+     showEpisodeIndicator();
       };
 
     }
@@ -510,6 +532,30 @@ const playerController = {
 };
   
 function openVideo(v){
+
+  document.getElementById("player").style.display="flex";
+
+  document.getElementById("playerNav").style.display=
+  currentSeries ? "flex" : "none";
+
+  playerController.play(v);
+
+}
+
+function showEpisodeIndicator(){
+
+  if(!currentSeries) return;
+
+  const el = document.getElementById("episodeIndicator");
+
+  el.innerText = `T${currentSeason+1} • E${currentEpisode+1}`;
+  el.classList.add("show");
+
+  setTimeout(()=>{
+    el.classList.remove("show");
+  },3000);
+
+}
 
 document.getElementById("player").style.display="flex";
 
