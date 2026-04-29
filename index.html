@@ -134,6 +134,11 @@ let currentSeason = 0;
 let currentEpisode = 0;
 let sessionInterval = null;
 
+// --- UTILIDADES ---
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
+
 async function registerSession(user) {
     try {
         const ref = doc(db, "users", user.uid);
@@ -325,16 +330,37 @@ function buildUI(){
 }
 
 function renderAll(){
-    const render = (tipo, id) => renderRow(allVideos.filter(v=>v.tipo===tipo), id);
-    render("pelicula","peliculasRow"); 
-    render("serie","seriesRow"); 
-    render("anime","animeRow"); 
-    render("cine","cineRow");
-    renderRow(allVideos.slice(-10).reverse(),"recentRow");
+    // 1. Agregadas recientemente: Las últimas 10 agregadas sin importar tipo
+    const recent = [...allVideos].reverse().slice(0, 10);
+    renderRow(recent, "recentRow", false);
+
+    // 2. Continuar viendo: Los últimos 5 títulos
     renderContinue();
+
+    // 3. Categorías: 10 nuevas + resto aleatorio
+    const categorias = [
+        { tipo: "cine", id: "cineRow" },
+        { tipo: "pelicula", id: "peliculasRow" },
+        { tipo: "serie", id: "seriesRow" },
+        { tipo: "anime", id: "animeRow" }
+    ];
+
+    categorias.forEach(cat => {
+        const filtrados = allVideos.filter(v => v.tipo === cat.tipo);
+        
+        // Las últimas 10 de esa categoría
+        const ultimos10 = [...filtrados].reverse().slice(0, 10);
+        
+        // El resto se mezcla aleatoriamente para descubrimiento
+        const resto = filtrados.filter(v => !ultimos10.includes(v));
+        const mezclados = shuffle(resto);
+        
+        const listaFinal = [...ultimos10, ...mezclados];
+        renderRow(listaFinal, cat.id, true);
+    });
 }
 
-// MEJORA: Función para crear cards con Lazy Loading
+// FUNCIÓN PARA CREAR CARDS
 function createCard(v) {
     const card = document.createElement("div");
     card.className = "card"; 
@@ -349,18 +375,20 @@ function createCard(v) {
     return card;
 }
 
-// MEJORA: Renderizado eficiente con paginación de DOM
-function renderRow(list, id) {
+// RENDERIZADO DE FILAS
+function renderRow(list, id, saveFull = true) {
     const row = document.getElementById(id);
     if (!row) return;
     row.innerHTML = "";
     
-    // Mostramos solo los primeros 40 para que la carga sea instantánea
+    // Mostramos solo los primeros 40 para optimizar el DOM
     const initialItems = list.slice(0, 40); 
     initialItems.forEach(v => row.appendChild(createCard(v)));
     
-    // Guardamos la lista completa para que el buscador la use
-    row.dataset.fullList = JSON.stringify(list);
+    // Guardamos la lista completa para el buscador global
+    if (saveFull) {
+        row.dataset.fullList = JSON.stringify(list);
+    }
 }
 
 function renderContinue(){
@@ -377,7 +405,7 @@ function renderContinue(){
     })
     .filter(v => v && v._prog.time < v._prog.duration * 0.95)
     .sort((a,b) => b._prog.updated - a._prog.updated)
-    .slice(0,6)
+    .slice(0,5) // Limitado a los últimos 5 según pedido
     .forEach(v => {
         const p = v._prog;
         const remain = Math.ceil((p.duration - p.time) / 60);
@@ -396,10 +424,10 @@ function renderContinue(){
     });
 }
 
-// MEJORA: Buscador optimizado para buscar en toda la lista (incluso lo no renderizado)
+// BUSCADOR OPTIMIZADO (Busca en todo el catálogo guardado en dataset)
 document.getElementById("search").addEventListener("input", (e) => {
     const txt = e.target.value.toLowerCase();
-    const rows = ["peliculasRow", "seriesRow", "animeRow", "cineRow", "recentRow"];
+    const rows = ["peliculasRow", "seriesRow", "animeRow", "cineRow"];
 
     rows.forEach(rowId => {
         const row = document.getElementById(rowId);
@@ -412,7 +440,6 @@ document.getElementById("search").addEventListener("input", (e) => {
         } else {
             const filtered = fullList.filter(v => v.titulo.toLowerCase().includes(txt));
             row.innerHTML = "";
-            // Limitamos los resultados visibles en búsqueda para mantener la fluidez
             filtered.slice(0, 30).forEach(v => row.appendChild(createCard(v)));
         }
     });
@@ -437,7 +464,7 @@ onAuthStateChanged(auth, async (user)=>{
                 allVideos=data; 
                 buildUI(); 
             })
-            .catch(err => console.error("Error cargando el catálogo del Worker:", err));
+            .catch(err => console.error("Error cargando el catálogo:", err));
     }else{
         document.getElementById("loginModal").style.display="flex";
         if(sessionInterval) clearInterval(sessionInterval);
