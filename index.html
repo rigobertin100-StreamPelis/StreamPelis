@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PlusUltra iOS Pro</title>
 
-    <!-- CONFIGURACIÓN PWA & iOS -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,189 +13,70 @@
     <meta name="theme-color" content="#1c1c1e">
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://www.gstatic.com/cv/js/cast_sender.js"></script>
-    <script>
-    window.castAvailable = false;
-    window['__onGCastApiAvailable'] = function(isAvailable) {
-      if (isAvailable && window.cast && window.chrome) {
-        window.castAvailable = true;
-        const btn = document.getElementById("castBtn");
-        if (btn) btn.style.display = "inline-block";
-      }
-    };
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js')
-        .then(() => console.log("PlusUltra PWA Ready"))
-        .catch((err) => console.log("SW Error", err));
-    }
-    </script>
-
+    
     <style>
+        /* Estilos base anteriores se mantienen */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
-            background: #111;
-            color: white;
-            padding-top: 90px;
-            overflow-x: hidden;
-        }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #111; color: white; padding-top: 90px; overflow-x: hidden; }
 
         /* --- LOADER --- */
-        #mainLoader {
-            position: fixed;
-            inset: 0;
-            background: #1c1c1e;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000000;
-            transition: opacity 0.5s ease;
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.1);
-            border-top-color: #0a84ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+        #mainLoader { position: fixed; inset: 0; background: #1c1c1e; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000000; transition: opacity 0.5s ease; }
+        .spinner { width: 50px; height: 50px; border: 5px solid rgba(255, 255, 255, 0.1); border-top-color: #0a84ff; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* --- HEADER --- */
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 25px;
-            z-index: 9999;
-            background: rgba(28, 28, 30, .7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, .05);
-        }
-
+        .header { position: fixed; top: 0; left: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 15px 25px; z-index: 9999; background: rgba(28, 28, 30, .7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, .05); }
         .logo { font-size: 28px; font-weight: 800; color: #0a84ff; letter-spacing: -1px; }
         .header-right { display: flex; align-items: center; gap: 12px; }
-
-        .search {
-            padding: 10px 15px;
-            border-radius: 12px;
-            border: none;
-            background: rgba(255, 255, 255, .1);
-            color: white;
-            outline: none;
-            width: 150px;
-            transition: width 0.3s ease;
-        }
+        .search { padding: 10px 15px; border-radius: 12px; border: none; background: rgba(255, 255, 255, .1); color: white; outline: none; width: 150px; transition: width 0.3s ease; }
         .search:focus { width: 220px; background: rgba(255, 255, 255, .15); }
+        .logout { padding: 10px 15px; border: none; border-radius: 12px; background: #ff3b30; color: white; font-weight: bold; }
 
-        .logout {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 12px;
-            background: #ff3b30;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        /* --- CONTENIDO --- */
+        /* --- CARDS & CAROUSEL --- */
         .row { margin-top: 30px; padding-left: 20px; }
         .row h2 { font-size: 20px; margin-bottom: 15px; color: #fff; }
-        
-        /* MEJORA DE FLUIDEZ EN SCROLL */
-        .carousel {
-            display: flex;
-            gap: 15px;
-            overflow-x: auto;
-            padding-bottom: 20px;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch; 
-            scroll-snap-type: x proximity;
-        }
+        .carousel { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
         .carousel::-webkit-scrollbar { display: none; }
+        .card { width: 180px; flex-shrink: 0; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform 0.2s ease-out; position: relative; scroll-snap-align: start; will-change: transform; }
+        .card:active { transform: scale(0.95); }
+        .card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s ease-in; }
 
-        .card {
-            width: 180px;
-            flex-shrink: 0;
-            aspect-ratio: 2/3;
-            background: #2c2c2e;
-            border-radius: 14px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.2s ease-out;
-            position: relative;
-            scroll-snap-align: start;
-            will-change: transform;
-        }
-        .card:active { transform: scale(0.95); } /* Efecto de presión iOS */
+        /* --- REPRODUCTOR AVANZADO --- */
+        .player { position: fixed; inset: 0; display: none; background: #000; z-index: 100000; }
+        .video-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; }
+
+        /* Capas de gestos */
+        .gesture-area { position: absolute; top: 0; width: 30%; height: 80%; z-index: 10; }
+        .left-area { left: 0; }
+        .right-area { right: 0; }
         
-        .card img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            opacity: 0; 
-            transition: opacity 0.4s ease-in; 
-        }
+        .feedback-toast { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); color: white; padding: 15px 25px; border-radius: 50px; font-size: 20px; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 20; }
 
-        /* --- MODALES Y REPRODUCTOR --- */
-        .player, .series-modal { 
-            position: fixed; 
-            inset: 0; 
-            display: none; 
-            background: #000; 
-            z-index: 100000; 
-        }
-        .player-inner, .series-inner {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-        }
-        video { width: 100%; height: 100%; border-radius: 15px; }
-        .close { font-size: 30px; color: white; cursor: pointer; align-self: flex-end; padding: 10px; }
+        .close-video { position: absolute; top: 40px; right: 25px; z-index: 100; font-size: 35px; color: white; text-shadow: 0 0 10px rgba(0,0,0,0.5); cursor: pointer; }
 
-        /* Login */
+        /* Modales */
+        .series-modal { position: fixed; inset: 0; display: none; background: #000; z-index: 100000; padding: 20px; overflow-y: auto; }
+        .episode-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .episode-list button { padding: 12px 18px; border-radius: 12px; border: none; background: #2c2c2e; color: white; font-weight: 600; }
+        
         #loginModal { position: fixed; inset: 0; background: #000; display: flex; justify-content: center; align-items: center; z-index: 1000001; }
         #loginBox { background: #1c1c1e; padding: 30px; border-radius: 25px; display: flex; flex-direction: column; gap: 15px; width: 320px; }
         #loginBox input { padding: 12px; border-radius: 10px; border: none; background: #2c2c2e; color: white; }
         #loginBox button { padding: 12px; border-radius: 10px; border: none; background: #0a84ff; color: white; font-weight: bold; }
 
-        /* Progress */
         .continue-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.2); }
         .continue-progress { height: 100%; background: #0a84ff; }
-
-        .episode-list { display: flex; flex-wrap: wrap; gap: 10px; overflow-y: auto; margin-top: 20px; }
-        .episode-list button { padding: 10px 15px; border-radius: 10px; border: none; background: #0a84ff; color: white; font-weight: bold; }
     </style>
 </head>
-
 <body>
 
 <div id="mainLoader">
     <div class="spinner"></div>
-    <div id="loaderStatus" style="margin-top:15px">Iniciando...</div>
+    <div id="loaderStatus" style="margin-top:15px">Cargando PlusUltra...</div>
 </div>
 
-<div id="loginModal" style="display:none">
-    <div id="loginBox">
-        <h2 style="margin:0; text-align:center">PlusUltra</h2>
-        <input id="loginUser" type="email" placeholder="Correo">
-        <input id="loginPass" type="password" placeholder="Contraseña">
-        <button id="loginBtn">Entrar</button>
-        <p id="loginError" style="color:#ff3b30; font-size:13px; text-align:center; display:none"></p>
-    </div>
-</div>
-
+<!-- HEADER -->
 <div class="header">
     <div class="logo">PlusUltra</div>
     <div class="header-right">
@@ -212,26 +92,40 @@
 
 <div id="app"></div>
 
+<!-- REPRODUCTOR -->
 <div class="player" id="player">
-    <div class="player-inner">
-        <span class="close" onclick="closeVideo()">✕</span>
-        <video id="video" controls></video>
+    <span class="close-video" onclick="closeVideo()">✕</span>
+    <div class="video-container">
+        <div class="gesture-area left-area" id="leftGesture"></div>
+        <div class="gesture-area right-area" id="rightGesture"></div>
+        <div id="feedbackToast" class="feedback-toast"></div>
+        <video id="video" playsinline controls></video>
     </div>
 </div>
 
+<!-- MODAL SERIES -->
 <div class="series-modal" id="seriesModal">
-    <div class="series-inner">
-        <span class="close" onclick="closeSeriesModal()">✕</span>
-        <h2 id="seriesTitle" style="margin-top:0"></h2>
-        <div id="seasonSelect" style="display:flex; gap:10px"></div>
-        <div class="episode-list" id="episodeList"></div>
+    <span class="close-video" onclick="closeSeriesModal()">✕</span>
+    <h1 id="seriesTitle" style="margin-top:60px"></h1>
+    <div id="seasonSelect" style="display:flex; gap:10px; margin-bottom: 20px;"></div>
+    <div class="episode-list" id="episodeList"></div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginModal" style="display:none">
+    <div id="loginBox">
+        <h2 style="margin:0; text-align:center">Bienvenido</h2>
+        <input id="loginUser" type="email" placeholder="Correo">
+        <input id="loginPass" type="password" placeholder="Contraseña">
+        <button id="loginBtn">Entrar</button>
+        <p id="loginError" style="color:#ff3b30; font-size:13px; text-align:center; display:none"></p>
     </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
@@ -242,16 +136,17 @@ const firebaseConfig = {
     appId: "1:104287406146:web:d9fad446e22629559dc5db"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
 
 let allVideos = [];
 let currentSeries = null;
+let currentUser = null;
 let sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
 localStorage.setItem("sessionId", sessionId);
 
-// --- LAZY LOADING OBSERVER ---
+// --- LAZY LOADING ---
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if(entry.isIntersecting) {
@@ -263,18 +158,28 @@ const observer = new IntersectionObserver((entries) => {
             }
         }
     });
-}, { rootMargin: "400px" }); // Cargamos un poco antes para mayor fluidez
+}, { rootMargin: "400px" });
 
-// --- REPRODUCTOR ---
+// --- REPRODUCTOR PRO ---
 const player = {
     el: document.getElementById("video"),
     hls: null,
-    play(v) {
+    currentV: null,
+    async play(v) {
         this.stop();
-        const progress = JSON.parse(localStorage.getItem("progress") || "{}")[v.titulo];
+        this.currentV = v;
         
+        // 1. Intentar obtener progreso de Firestore primero, luego LocalStorage
+        let progress = null;
+        if(currentUser) {
+            const progRef = doc(db, "users", currentUser.uid, "progress", v.titulo.replace(/\//g, '_'));
+            const snap = await getDoc(progRef);
+            if(snap.exists()) progress = snap.data();
+        }
+        if(!progress) progress = JSON.parse(localStorage.getItem("progress") || "{}")[v.titulo];
+
         if(v.url.includes(".m3u8")) {
-            this.hls = new Hls({ capLevelToPlayerSize: true, debug: false });
+            this.hls = new Hls();
             this.hls.loadSource(v.url);
             this.hls.attachMedia(this.el);
             this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -289,11 +194,25 @@ const player = {
             };
         }
         
+        // Guardado cada 10 segundos para no saturar Firebase
         this.el.ontimeupdate = () => {
+            const currentTime = this.el.currentTime;
+            const duration = this.el.duration;
+            
+            // LocalStorage para velocidad inmediata
             const data = JSON.parse(localStorage.getItem("progress") || "{}");
-            data[v.titulo] = { time: this.el.currentTime, duration: this.el.duration, img: v.img };
+            data[v.titulo] = { time: currentTime, duration: duration, img: v.img };
             localStorage.setItem("progress", JSON.stringify(data));
+
+            // Firestore (Sincronización en la nube cada 15 segundos aprox)
+            if(currentUser && Math.floor(currentTime) % 15 === 0) {
+                this.saveToCloud(v, currentTime, duration);
+            }
         };
+    },
+    async saveToCloud(v, time, duration) {
+        const progRef = doc(db, "users", currentUser.uid, "progress", v.titulo.replace(/\//g, '_'));
+        await setDoc(progRef, { time, duration, img: v.img, lastUpdated: Date.now() }, { merge: true });
     },
     stop() {
         if(this.hls) { this.hls.destroy(); this.hls = null; }
@@ -303,49 +222,55 @@ const player = {
     }
 };
 
-// --- RENDERIZADO OPTIMIZADO (FASE 3) ---
+// --- GESTOS DE DOBLE TOQUE (TIPO YOUTUBE) ---
+function setupGestures() {
+    const toast = document.getElementById("feedbackToast");
+    
+    const handleGesture = (seconds, text) => {
+        const video = document.getElementById("video");
+        video.currentTime += seconds;
+        toast.innerText = text;
+        toast.style.opacity = 1;
+        setTimeout(() => toast.style.opacity = 0, 600);
+    };
+
+    document.getElementById("leftGesture").onclick = (e) => {
+        if (e.detail === 2) handleGesture(-10, "⏪ -10s");
+    };
+    document.getElementById("rightGesture").onclick = (e) => {
+        if (e.detail === 2) handleGesture(10, "⏩ +10s");
+    };
+}
+setupGestures();
+
+// --- RENDERIZADO ---
 function renderRow(list, containerId) {
     const container = document.getElementById(containerId);
     if(!container) return;
     container.innerHTML = "";
-
-    // Detección de conexión para Pre-fetching
-    const isSlowConn = navigator.connection && (navigator.connection.saveData || navigator.connection.effectiveType.includes('2g'));
+    const isSlow = navigator.connection && (navigator.connection.saveData);
 
     list.forEach((v, index) => {
         const card = document.createElement("div");
         card.className = "card";
-        
-        // Pre-fetch para las primeras 5 imágenes si la conexión es buena
-        const shouldPreload = index < 5 && !isSlowConn;
-
-        card.innerHTML = `
-            <img ${shouldPreload ? `src="${v.img}" style="opacity:1"` : `data-src="${v.img}" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="`} 
-            loading="${shouldPreload ? 'eager' : 'lazy'}">
-        `;
-
+        const preload = index < 5 && !isSlow;
+        card.innerHTML = `<img ${preload ? `src="${v.img}" style="opacity:1"` : `data-src="${v.img}" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="`}>`;
         card.onclick = () => v.tipo === "serie" || v.tipo === "anime" ? openSeries(v) : openVideo(v);
         container.appendChild(card);
-        
-        if (!shouldPreload) {
-            observer.observe(card.querySelector("img"));
-        }
+        if(!preload) observer.observe(card.querySelector("img"));
     });
 }
 
 function renderContinue() {
     const data = JSON.parse(localStorage.getItem("progress") || "{}");
     const row = document.getElementById("continueRow");
-    if(!row) return;
+    if(!row || Object.keys(data).length === 0) return;
     row.innerHTML = "";
     Object.keys(data).reverse().slice(0, 10).forEach(title => {
         const item = data[title];
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
-            <img src="${item.img}" style="opacity:1">
-            <div class="continue-overlay"><div class="continue-progress" style="width:${(item.time/item.duration)*100}%"></div></div>
-        `;
+        card.innerHTML = `<img src="${item.img}" style="opacity:1"><div class="continue-overlay"><div class="continue-progress" style="width:${(item.time/item.duration)*100}%"></div></div>`;
         card.onclick = () => {
             const v = allVideos.find(x => x.titulo === title);
             if(v) openVideo(v);
@@ -354,35 +279,38 @@ function renderContinue() {
     });
 }
 
-// --- ACCIONES ---
+// --- ACCIONES WINDOW ---
 window.openVideo = (v) => {
     document.getElementById("player").style.display = "block";
     player.play(v);
 };
-
 window.closeVideo = () => {
     player.stop();
     document.getElementById("player").style.display = "none";
+    renderContinue();
 };
-
-window.openSeries = (series) => {
-    currentSeries = series;
+window.openSeries = (s) => {
+    currentSeries = s;
     document.getElementById("seriesModal").style.display = "block";
-    document.getElementById("seriesTitle").innerText = series.titulo;
-    fetch(series.temporadasUrl).then(r => r.json()).then(temps => {
+    document.getElementById("seriesTitle").innerText = s.titulo;
+    fetch(s.temporadasUrl).then(r => r.json()).then(temps => {
         currentSeries.temps = temps;
         const select = document.getElementById("seasonSelect");
         select.innerHTML = "";
         temps.forEach((t, i) => {
             const btn = document.createElement("button");
             btn.innerText = `T${t.numero}`;
-            btn.onclick = () => renderEpisodes(i);
+            btn.style.background = i === 0 ? "#0a84ff" : "#2c2c2e";
+            btn.onclick = (e) => {
+                document.querySelectorAll("#seasonSelect button").forEach(b => b.style.background = "#2c2c2e");
+                e.target.style.background = "#0a84ff";
+                renderEpisodes(i);
+            }
             select.appendChild(btn);
         });
         renderEpisodes(0);
     });
 };
-
 function renderEpisodes(idx) {
     const list = document.getElementById("episodeList");
     list.innerHTML = "";
@@ -393,28 +321,15 @@ function renderEpisodes(idx) {
         list.appendChild(btn);
     });
 }
-
 window.closeSeriesModal = () => document.getElementById("seriesModal").style.display = "none";
 
-// --- BUSCADOR ---
-document.getElementById("searchField").oninput = (e) => {
-    const q = e.target.value.toLowerCase();
-    const results = document.getElementById("searchResults");
-    const main = document.getElementById("app");
-    if(q.length > 2) {
-        main.style.display = "none";
-        results.style.display = "block";
-        renderRow(allVideos.filter(v => v.titulo.toLowerCase().includes(q)), "searchRow");
-    } else {
-        main.style.display = "block";
-        results.style.display = "none";
-    }
-};
-
-// --- AUTH ---
+// --- AUTH & DATA ---
 onAuthStateChanged(auth, async (user) => {
     if(user) {
+        currentUser = user;
         document.getElementById("loginModal").style.display = "none";
+        
+        // Tu lógica de sesión intacta
         const userRef = doc(db, "users", user.uid);
         await setDoc(userRef, { lastSeen: Date.now(), sessionId }, { merge: true });
         
@@ -429,7 +344,7 @@ onAuthStateChanged(auth, async (user) => {
                     <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
                 `;
                 renderContinue();
-                renderRow([...allVideos].reverse().slice(0, 12), "recentRow");
+                renderRow([...allVideos].reverse().slice(0, 15), "recentRow");
                 renderRow(allVideos.filter(v => v.tipo === "cine"), "cineRow");
                 renderRow(allVideos.filter(v => v.tipo === "serie"), "seriesRow");
                 document.getElementById("mainLoader").style.display = "none";
@@ -443,13 +358,28 @@ onAuthStateChanged(auth, async (user) => {
 document.getElementById("loginBtn").onclick = () => {
     const u = document.getElementById("loginUser").value;
     const p = document.getElementById("loginPass").value;
-    signInWithEmailAndPassword(auth, u, p).catch(e => {
+    signInWithEmailAndPassword(auth, u, p).catch(() => {
         document.getElementById("loginError").innerText = "Error de acceso";
         document.getElementById("loginError").style.display = "block";
     });
 };
 
 window.logout = () => signOut(auth).then(() => location.reload());
+
+// Buscador
+document.getElementById("searchField").oninput = (e) => {
+    const q = e.target.value.toLowerCase();
+    const res = document.getElementById("searchResults");
+    const app = document.getElementById("app");
+    if(q.length > 2) {
+        app.style.display = "none";
+        res.style.display = "block";
+        renderRow(allVideos.filter(v => v.titulo.toLowerCase().includes(q)), "searchRow");
+    } else {
+        app.style.display = "block";
+        res.style.display = "none";
+    }
+};
 </script>
 </body>
 </html>
