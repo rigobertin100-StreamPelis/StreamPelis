@@ -8,7 +8,6 @@
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="PlusUltra">
     <link rel="apple-touch-icon" href="https://i.ibb.co/3S7vX2P/logo-512.png">
     <meta name="theme-color" content="#1c1c1e">
 
@@ -20,42 +19,40 @@
 
         /* LOADER */
         #mainLoader { position: fixed; inset: 0; background: #1c1c1e; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000000; }
-        .spinner { width: 45px; height: 45px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: #0a84ff; border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: #0a84ff; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* HEADER */
         .header { position: fixed; top: 0; left: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; z-index: 9999; background: rgba(28, 28, 30, .8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, .05); }
         .logo { font-size: 26px; font-weight: 800; color: #0a84ff; letter-spacing: -1px; }
-        .search { padding: 10px 15px; border-radius: 12px; border: none; background: rgba(255, 255, 255, .1); color: white; width: 140px; transition: width 0.3s; }
-        .search:focus { width: 200px; outline: none; background: rgba(255, 255, 255, .15); }
+        .search { padding: 10px 15px; border-radius: 12px; border: none; background: rgba(255, 255, 255, .1); color: white; width: 140px; }
         .logout { padding: 10px 15px; border: none; border-radius: 12px; background: #ff3b30; color: white; font-weight: bold; margin-left: 10px; }
 
-        /* CAROUSEL */
+        /* FILAS Y CARROUSEL */
         .row { margin-top: 25px; padding-left: 20px; }
         .row h2 { font-size: 19px; margin-bottom: 12px; font-weight: 700; color: #efeff4; }
         .carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 15px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
         .carousel::-webkit-scrollbar { display: none; }
         
-        .card { width: 165px; flex-shrink: 0; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 14px; overflow: hidden; position: relative; scroll-snap-align: start; transition: transform 0.2s; }
-        .card:active { transform: scale(0.96); }
+        .card { width: 160px; flex-shrink: 0; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 14px; overflow: hidden; position: relative; scroll-snap-align: start; }
         .card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s ease; }
 
-        /* PLAYER & GESTURES */
+        /* REPRODUCTOR Y GESTOS */
         .player { position: fixed; inset: 0; display: none; background: #000; z-index: 100000; }
         .video-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; }
         video { width: 100%; height: 100%; }
         .gesture-area { position: absolute; top: 0; width: 35%; height: 85%; z-index: 10; }
         .left-area { left: 0; }
         .right-area { right: 0; }
-        .feedback-toast { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 12px 24px; border-radius: 30px; font-weight: bold; pointer-events: none; opacity: 0; z-index: 20; }
-        .close-btn { position: absolute; top: 35px; right: 20px; z-index: 100; font-size: 32px; color: white; cursor: pointer; }
+        .feedback-toast { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 30px; font-weight: bold; pointer-events: none; opacity: 0; z-index: 20; }
+        .close-btn { position: absolute; top: 35px; right: 20px; z-index: 100; font-size: 30px; color: white; cursor: pointer; }
 
-        /* PROGRESS BAR */
+        /* BARRAS DE PROGRESO */
         .continue-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.2); }
         .continue-fill { height: 100%; background: #0a84ff; }
-        .ep-label { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
+        .ep-info { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 3px 7px; border-radius: 5px; font-size: 10px; font-weight: bold; }
 
-        /* MODALS */
+        /* MODALES */
         .modal-full { position: fixed; inset: 0; display: none; background: #1c1c1e; z-index: 99999; padding: 20px; overflow-y: auto; }
         .episode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 20px; }
         .episode-grid button { padding: 12px; border-radius: 10px; border: none; background: #2c2c2e; color: white; font-weight: 600; }
@@ -70,12 +67,11 @@
 
 <div id="mainLoader">
     <div class="spinner"></div>
-    <div id="loaderStatus" style="margin-top:15px">Recuperando catálogo...</div>
 </div>
 
 <div class="header">
     <div class="logo">PlusUltra</div>
-    <div class="header-right" style="display:flex; align-items:center;">
+    <div style="display:flex; align-items:center;">
         <input id="searchField" class="search" placeholder="Buscar...">
         <button class="logout" onclick="logout()">Salir</button>
     </div>
@@ -83,7 +79,6 @@
 
 <div id="app"></div>
 
-<!-- PLAYER -->
 <div class="player" id="player">
     <span class="close-btn" onclick="closeVideo()">✕</span>
     <div class="video-container">
@@ -94,11 +89,10 @@
     </div>
 </div>
 
-<!-- SERIES MODAL -->
 <div class="modal-full" id="seriesModal">
     <span class="close-btn" onclick="closeSeriesModal()">✕</span>
     <h2 id="seriesTitle" style="margin-top:50px;"></h2>
-    <div id="seasonSelect" style="display:flex; gap:10px; overflow-x:auto;"></div>
+    <div id="seasonSelect" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;"></div>
     <div class="episode-grid" id="episodeList"></div>
 </div>
 
@@ -139,11 +133,9 @@ const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if(entry.isIntersecting) {
             const img = entry.target;
-            if(img.dataset.src) {
-                img.src = img.dataset.src;
-                img.onload = () => img.style.opacity = 1;
-                observer.unobserve(img);
-            }
+            img.src = img.dataset.src;
+            img.onload = () => img.style.opacity = 1;
+            observer.unobserve(img);
         }
     });
 }, { rootMargin: "400px" });
@@ -158,7 +150,6 @@ const videoPlayer = {
             const snap = await getDoc(doc(db, "users", currentUser.uid, "progress", v.titulo.replace(/\//g, '_')));
             if(snap.exists()) progress = snap.data();
         }
-        if(!progress) progress = JSON.parse(localStorage.getItem("progress") || "{}")[v.titulo];
 
         if(v.url.includes(".m3u8")) {
             this.hls = new Hls(); this.hls.loadSource(v.url); this.hls.attachMedia(this.el);
@@ -170,10 +161,10 @@ const videoPlayer = {
 
         this.el.ontimeupdate = () => {
             const t = this.el.currentTime, d = this.el.duration;
-            const data = JSON.parse(localStorage.getItem("progress") || "{}");
-            data[v.titulo] = { time: t, duration: d, img: v.img, epInfo: v.epInfo || "" };
-            localStorage.setItem("progress", JSON.stringify(data));
-            if(currentUser && Math.floor(t) % 20 === 0) {
+            if(currentUser && Math.floor(t) % 15 === 0) {
+                const data = JSON.parse(localStorage.getItem("progress") || "{}");
+                data[v.titulo] = { time: t, duration: d, img: v.img, epInfo: v.epInfo || "" };
+                localStorage.setItem("progress", JSON.stringify(data));
                 setDoc(doc(db, "users", currentUser.uid, "progress", v.titulo.replace(/\//g, '_')), 
                 { time: t, duration: d, img: v.img, epInfo: v.epInfo || "", last: Date.now() }, { merge: true });
             }
@@ -187,24 +178,12 @@ const toast = document.getElementById("feedbackToast");
 document.getElementById("leftGesture").onclick = (e) => { if(e.detail === 2) { videoPlayer.el.currentTime -= 10; toast.innerText = "⏪ -10s"; toast.style.opacity = 1; setTimeout(()=>toast.style.opacity=0,600); } };
 document.getElementById("rightGesture").onclick = (e) => { if(e.detail === 2) { videoPlayer.el.currentTime += 10; toast.innerText = "⏩ +10s"; toast.style.opacity = 1; setTimeout(()=>toast.style.opacity=0,600); } };
 
-// RENDER ENGINE (10 NOVEDADES + RANDOM)
-function renderHybridRow(tag, containerId) {
+// RENDERIZADO ESTRICTO
+function renderRow(list, containerId) {
     const container = document.getElementById(containerId);
     if(!container) return;
-    
-    // Filtrar por tipo
-    const pool = allVideos.filter(v => v.tipo?.toLowerCase().includes(tag.toLowerCase()));
-    if(pool.length === 0) return;
-
-    // 10 Últimas
-    const novedades = [...pool].reverse().slice(0, 10);
-    // Resto aleatorio
-    const resto = pool.filter(v => !novedades.includes(v)).sort(() => 0.5 - Math.random());
-    
-    const finalSelection = [...novedades, ...resto];
-    
     container.innerHTML = "";
-    finalSelection.forEach((v, i) => {
+    list.forEach(v => {
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `<img data-src="${v.img}" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">`;
@@ -214,22 +193,25 @@ function renderHybridRow(tag, containerId) {
     });
 }
 
+function renderHybrid(tag, containerId) {
+    const pool = allVideos.filter(v => v.tipo?.toLowerCase() === tag.toLowerCase());
+    if(pool.length === 0) return;
+    const novedades = [...pool].reverse().slice(0, 10);
+    const resto = pool.filter(v => !novedades.includes(v)).sort(() => 0.5 - Math.random());
+    renderRow([...novedades, ...resto], containerId);
+}
+
 function renderContinue() {
     const data = JSON.parse(localStorage.getItem("progress") || "{}");
     const row = document.getElementById("continueRow");
     if(!row || Object.keys(data).length === 0) return;
     document.getElementById("continueSection").style.display = "block";
     row.innerHTML = "";
-    // Solo los últimos 5
     Object.keys(data).reverse().slice(0, 5).forEach(title => {
         const item = data[title];
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `
-            <img src="${item.img}" style="opacity:1">
-            ${item.epInfo ? `<div class="ep-label">${item.epInfo}</div>` : ''}
-            <div class="continue-bar"><div class="continue-fill" style="width:${(item.time/item.duration)*100}%"></div></div>
-        `;
+        card.innerHTML = `<img src="${item.img}" style="opacity:1">${item.epInfo ? `<div class="ep-info">${item.epInfo}</div>`:''}<div class="continue-bar"><div class="continue-fill" style="width:${(item.time/item.duration)*100}%"></div></div>`;
         card.onclick = () => { const v = allVideos.find(x => x.titulo === title); if(v) openVideo(v); };
         row.appendChild(card);
     });
@@ -246,7 +228,7 @@ window.openSeries = (s) => {
         const nav = document.getElementById("seasonSelect"); nav.innerHTML = "";
         temps.forEach((t, i) => {
             const b = document.createElement("button"); b.innerText = `T${t.numero}`;
-            b.onclick = () => { renderEpisodes(i); }; nav.appendChild(b);
+            b.onclick = () => renderEpisodes(i); nav.appendChild(b);
         });
         renderEpisodes(0);
     });
@@ -256,8 +238,7 @@ function renderEpisodes(idx) {
     const list = document.getElementById("episodeList"); list.innerHTML = "";
     currentSeries.temps[idx].episodios.forEach(ep => {
         const b = document.createElement("button"); b.innerText = ep.titulo;
-        // Agregamos info de temporada para "Continuar viendo"
-        ep.epInfo = `T${currentSeries.temps[idx].numero} - E${ep.titulo.match(/\d+/)}`;
+        ep.epInfo = `T${currentSeries.temps[idx].numero} - ${ep.titulo}`;
         b.onclick = () => openVideo(ep); list.appendChild(b);
     });
 }
@@ -283,21 +264,14 @@ onAuthStateChanged(auth, async (user) => {
                     <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
                 `;
                 
-                // 1. Recientes (10 sin importar tipo)
-                const rec = [...allVideos].reverse().slice(0, 10);
-                const recentCont = document.getElementById("recentRow");
-                rec.forEach(v => {
-                    const card = document.createElement("div"); card.className = "card";
-                    card.innerHTML = `<img src="${v.img}" style="opacity:1">`;
-                    card.onclick = () => (v.tipo?.toLowerCase().includes("serie") || v.tipo?.toLowerCase().includes("anime")) ? openSeries(v) : openVideo(v);
-                    recentCont.appendChild(card);
-                });
+                // 1. Recientes (Estricto 10 últimas)
+                renderRow([...allVideos].reverse().slice(0, 10), "recentRow");
 
-                // 2. Híbridas
-                renderHybridRow("cine", "cineRow");
-                renderHybridRow("pelicula", "peliculasRow");
-                renderHybridRow("serie", "seriesRow");
-                renderHybridRow("anime", "animeRow");
+                // 2. Categorías Híbridas (10 Nuevas + Random)
+                renderHybrid("cine", "cineRow");
+                renderHybrid("pelicula", "peliculasRow");
+                renderHybrid("serie", "seriesRow");
+                renderHybrid("anime", "animeRow");
                 
                 renderContinue();
                 document.getElementById("mainLoader").style.display = "none";
