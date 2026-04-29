@@ -3,15 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PlusUltra Pro</title>
+    <title>PlusUltra iOS Pro</title>
 
+    <!-- PWA & iOS CORE -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PlusUltra">
     <link rel="apple-touch-icon" href="https://i.ibb.co/3S7vX2P/logo-512.png">
     <meta name="theme-color" content="#1c1c1e">
 
+    <!-- LIBRERÍAS -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://www.gstatic.com/cv/js/cast_sender.js"></script>
+    
+    <script>
+    // Registro de Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("PlusUltra PWA Ready"))
+            .catch((err) => console.log("SW Error", err));
+    }
+
+    // Google Cast Status
+    window.castAvailable = false;
+    window['__onGCastApiAvailable'] = function(isAvailable) {
+        if (isAvailable && window.cast && window.chrome) {
+            window.castAvailable = true;
+            console.log("Cast Ready");
+        }
+    };
+    </script>
 
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -19,7 +41,7 @@
 
         /* LOADER */
         #mainLoader { position: fixed; inset: 0; background: #1c1c1e; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000000; }
-        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: #0a84ff; border-radius: 50%; animation: spin 1s linear infinite; }
+        .spinner { width: 45px; height: 45px; border: 4px solid rgba(255, 255, 255, 0.1); border-top-color: #0a84ff; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* HEADER */
@@ -28,35 +50,36 @@
         .search { padding: 10px 15px; border-radius: 12px; border: none; background: rgba(255, 255, 255, .1); color: white; width: 140px; }
         .logout { padding: 10px 15px; border: none; border-radius: 12px; background: #ff3b30; color: white; font-weight: bold; margin-left: 10px; }
 
-        /* FILAS Y CARROUSEL */
+        /* CAROUSEL */
         .row { margin-top: 25px; padding-left: 20px; }
         .row h2 { font-size: 19px; margin-bottom: 12px; font-weight: 700; color: #efeff4; }
         .carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 15px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
         .carousel::-webkit-scrollbar { display: none; }
         
-        .card { width: 160px; flex-shrink: 0; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 14px; overflow: hidden; position: relative; scroll-snap-align: start; }
+        .card { width: 165px; flex-shrink: 0; aspect-ratio: 2/3; background: #2c2c2e; border-radius: 14px; overflow: hidden; position: relative; scroll-snap-align: start; }
         .card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s ease; }
 
-        /* REPRODUCTOR Y GESTOS */
+        /* PLAYER & GESTURES */
         .player { position: fixed; inset: 0; display: none; background: #000; z-index: 100000; }
         .video-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; }
         video { width: 100%; height: 100%; }
         .gesture-area { position: absolute; top: 0; width: 35%; height: 85%; z-index: 10; }
         .left-area { left: 0; }
         .right-area { right: 0; }
-        .feedback-toast { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 12px 24px; border-radius: 30px; font-weight: bold; pointer-events: none; opacity: 0; z-index: 20; }
-        .close-btn { position: absolute; top: 35px; right: 20px; z-index: 100; font-size: 30px; color: white; cursor: pointer; }
+        .feedback-toast { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 12px 24px; border-radius: 30px; font-weight: bold; pointer-events: none; opacity: 0; z-index: 20; }
+        .close-btn { position: absolute; top: 35px; right: 20px; z-index: 100; font-size: 32px; color: white; cursor: pointer; }
 
-        /* BARRAS DE PROGRESO */
+        /* PROGRESS BARS */
         .continue-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.2); }
         .continue-fill { height: 100%; background: #0a84ff; }
-        .ep-info { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 3px 7px; border-radius: 5px; font-size: 10px; font-weight: bold; }
+        .ep-label { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
 
-        /* MODALES */
+        /* MODALS */
         .modal-full { position: fixed; inset: 0; display: none; background: #1c1c1e; z-index: 99999; padding: 20px; overflow-y: auto; }
         .episode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 20px; }
         .episode-grid button { padding: 12px; border-radius: 10px; border: none; background: #2c2c2e; color: white; font-weight: 600; }
 
+        /* LOGIN */
         #loginModal { position: fixed; inset: 0; background: #000; display: flex; justify-content: center; align-items: center; z-index: 1000001; }
         .login-box { background: #1c1c1e; padding: 30px; border-radius: 24px; width: 310px; display: flex; flex-direction: column; gap: 15px; }
         .login-box input { padding: 12px; border-radius: 12px; border: none; background: #2c2c2e; color: white; font-size: 16px; }
@@ -79,6 +102,7 @@
 
 <div id="app"></div>
 
+<!-- REPRODUCTOR CON GESTOS -->
 <div class="player" id="player">
     <span class="close-btn" onclick="closeVideo()">✕</span>
     <div class="video-container">
@@ -89,20 +113,21 @@
     </div>
 </div>
 
+<!-- MODAL SERIES -->
 <div class="modal-full" id="seriesModal">
     <span class="close-btn" onclick="closeSeriesModal()">✕</span>
     <h2 id="seriesTitle" style="margin-top:50px;"></h2>
-    <div id="seasonSelect" style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px;"></div>
+    <div id="seasonSelect" style="display:flex; gap:10px; overflow-x:auto;"></div>
     <div class="episode-grid" id="episodeList"></div>
 </div>
 
 <div id="loginModal" style="display:none">
     <div class="login-box">
         <h2 style="margin:0; text-align:center">PlusUltra</h2>
-        <input id="loginUser" type="email" placeholder="Usuario">
+        <input id="loginUser" type="email" placeholder="Correo">
         <input id="loginPass" type="password" placeholder="Contraseña">
         <button id="loginBtn">Entrar</button>
-        <p id="loginError" style="color:#ff453a; font-size:13px; text-align:center; display:none"></p>
+        <p id="loginError" style="color:#ff3b30; font-size:13px; text-align:center; display:none"></p>
     </div>
 </div>
 
@@ -129,17 +154,21 @@ let currentUser = null;
 let currentSeries = null;
 let sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
 
+// Lazy Load Observer
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if(entry.isIntersecting) {
             const img = entry.target;
-            img.src = img.dataset.src;
-            img.onload = () => img.style.opacity = 1;
-            observer.unobserve(img);
+            if(img.dataset.src) {
+                img.src = img.dataset.src;
+                img.onload = () => img.style.opacity = 1;
+                observer.unobserve(img);
+            }
         }
     });
 }, { rootMargin: "400px" });
 
+// MOTOR DE VIDEO CON SYNC NUBE
 const videoPlayer = {
     el: document.getElementById("video"),
     hls: null,
@@ -162,9 +191,10 @@ const videoPlayer = {
         this.el.ontimeupdate = () => {
             const t = this.el.currentTime, d = this.el.duration;
             if(currentUser && Math.floor(t) % 15 === 0) {
-                const data = JSON.parse(localStorage.getItem("progress") || "{}");
-                data[v.titulo] = { time: t, duration: d, img: v.img, epInfo: v.epInfo || "" };
-                localStorage.setItem("progress", JSON.stringify(data));
+                const localData = JSON.parse(localStorage.getItem("progress") || "{}");
+                localData[v.titulo] = { time: t, duration: d, img: v.img, epInfo: v.epInfo || "" };
+                localStorage.setItem("progress", JSON.stringify(localData));
+                
                 setDoc(doc(db, "users", currentUser.uid, "progress", v.titulo.replace(/\//g, '_')), 
                 { time: t, duration: d, img: v.img, epInfo: v.epInfo || "", last: Date.now() }, { merge: true });
             }
@@ -173,17 +203,29 @@ const videoPlayer = {
     stop() { if(this.hls) { this.hls.destroy(); this.hls = null; } this.el.pause(); this.el.load(); }
 };
 
-// GESTOS
+// GESTOS TÁCTILES
 const toast = document.getElementById("feedbackToast");
-document.getElementById("leftGesture").onclick = (e) => { if(e.detail === 2) { videoPlayer.el.currentTime -= 10; toast.innerText = "⏪ -10s"; toast.style.opacity = 1; setTimeout(()=>toast.style.opacity=0,600); } };
-document.getElementById("rightGesture").onclick = (e) => { if(e.detail === 2) { videoPlayer.el.currentTime += 10; toast.innerText = "⏩ +10s"; toast.style.opacity = 1; setTimeout(()=>toast.style.opacity=0,600); } };
+document.getElementById("leftGesture").onclick = (e) => { 
+    if(e.detail === 2) { videoPlayer.el.currentTime -= 10; toast.innerText = "⏪ -10s"; toast.style.opacity = 1; setTimeout(()=>toast.style.opacity=0,600); } 
+};
+document.getElementById("rightGesture").onclick = (e) => { 
+    if(e.detail === 2) { videoPlayer.el.currentTime += 10; toast.innerText = "⏩ +10s"; toast.style.opacity = 1; setTimeout(()=>toast.style.opacity=0,600); } 
+};
 
-// RENDERIZADO ESTRICTO
-function renderRow(list, containerId) {
+// RENDERIZADO HÍBRIDO (10 Novedades + Random)
+function renderHybrid(tag, containerId) {
     const container = document.getElementById(containerId);
     if(!container) return;
+    
+    const pool = allVideos.filter(v => v.tipo?.toLowerCase() === tag.toLowerCase());
+    if(pool.length === 0) return;
+
+    const novedades = [...pool].reverse().slice(0, 10);
+    const resto = pool.filter(v => !novedades.includes(v)).sort(() => 0.5 - Math.random());
+    const seleccionFinal = [...novedades, ...resto];
+
     container.innerHTML = "";
-    list.forEach(v => {
+    seleccionFinal.forEach(v => {
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `<img data-src="${v.img}" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">`;
@@ -191,14 +233,6 @@ function renderRow(list, containerId) {
         container.appendChild(card);
         observer.observe(card.querySelector("img"));
     });
-}
-
-function renderHybrid(tag, containerId) {
-    const pool = allVideos.filter(v => v.tipo?.toLowerCase() === tag.toLowerCase());
-    if(pool.length === 0) return;
-    const novedades = [...pool].reverse().slice(0, 10);
-    const resto = pool.filter(v => !novedades.includes(v)).sort(() => 0.5 - Math.random());
-    renderRow([...novedades, ...resto], containerId);
 }
 
 function renderContinue() {
@@ -211,12 +245,17 @@ function renderContinue() {
         const item = data[title];
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `<img src="${item.img}" style="opacity:1">${item.epInfo ? `<div class="ep-info">${item.epInfo}</div>`:''}<div class="continue-bar"><div class="continue-fill" style="width:${(item.time/item.duration)*100}%"></div></div>`;
+        card.innerHTML = `
+            <img src="${item.img}" style="opacity:1">
+            ${item.epInfo ? `<div class="ep-label">${item.epInfo}</div>` : ''}
+            <div class="continue-bar"><div class="continue-fill" style="width:${(item.time/item.duration)*100}%"></div></div>
+        `;
         card.onclick = () => { const v = allVideos.find(x => x.titulo === title); if(v) openVideo(v); };
         row.appendChild(card);
     });
 }
 
+// ACCIONES GLOBALES
 window.openVideo = (v) => { document.getElementById("player").style.display = "block"; videoPlayer.play(v); };
 window.closeVideo = () => { videoPlayer.stop(); document.getElementById("player").style.display = "none"; renderContinue(); };
 
@@ -245,6 +284,26 @@ function renderEpisodes(idx) {
 
 window.closeSeriesModal = () => document.getElementById("seriesModal").style.display = "none";
 
+// BUSCADOR
+document.getElementById("searchField").oninput = (e) => {
+    const q = e.target.value.toLowerCase();
+    const appCont = document.getElementById("app");
+    if(q.length > 2) {
+        const results = allVideos.filter(v => v.titulo.toLowerCase().includes(q));
+        appCont.innerHTML = `<div class="row"><h2>Resultados de "${q}"</h2><div class="carousel" id="searchRow"></div></div>`;
+        const cont = document.getElementById("searchRow");
+        results.forEach(v => {
+            const card = document.createElement("div"); card.className = "card";
+            card.innerHTML = `<img src="${v.img}" style="opacity:1">`;
+            card.onclick = () => (v.tipo?.toLowerCase().includes("serie") || v.tipo?.toLowerCase().includes("anime")) ? openSeries(v) : openVideo(v);
+            cont.appendChild(card);
+        });
+    } else {
+        location.reload(); // Recarga simple para restaurar categorías
+    }
+};
+
+// AUTH Y CARGA INICIAL
 onAuthStateChanged(auth, async (user) => {
     if(user) {
         currentUser = user;
@@ -264,10 +323,17 @@ onAuthStateChanged(auth, async (user) => {
                     <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
                 `;
                 
-                // 1. Recientes (Estricto 10 últimas)
-                renderRow([...allVideos].reverse().slice(0, 10), "recentRow");
+                // 1. Recientes estricto
+                const rec = [...allVideos].reverse().slice(0, 10);
+                const recRow = document.getElementById("recentRow");
+                rec.forEach(v => {
+                    const card = document.createElement("div"); card.className = "card";
+                    card.innerHTML = `<img src="${v.img}" style="opacity:1">`;
+                    card.onclick = () => (v.tipo?.toLowerCase().includes("serie") || v.tipo?.toLowerCase().includes("anime")) ? openSeries(v) : openVideo(v);
+                    recRow.appendChild(card);
+                });
 
-                // 2. Categorías Híbridas (10 Nuevas + Random)
+                // 2. Híbridas
                 renderHybrid("cine", "cineRow");
                 renderHybrid("pelicula", "peliculasRow");
                 renderHybrid("serie", "seriesRow");
