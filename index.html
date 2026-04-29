@@ -19,14 +19,68 @@
     </script>
 
     <style>
-        /* Estilos originales preservados */
+        /* RESET Y MEJORAS DE CAJA */
+        * { box-sizing: border-box; } /* Evita que el padding sume al ancho total */
+
         body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);color:white;padding-top:90px;}
-        .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:9999;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);}
+        
+        /* HEADER CORREGIDO */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px; /* Padding más equilibrado */
+            z-index: 9999;
+            background: rgba(28, 28, 30, .35);
+            backdrop-filter: blur(25px);
+            transition: .3s;
+            border-bottom: 1px solid rgba(255, 255, 255, .1);
+        }
+
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
-        .logo{font-size:34px;font-weight:700;color:#0a84ff;}
-        .header-right{display:flex;align-items:center;gap:12px;}
-        .search{padding:10px 18px;border-radius:24px;border:none;width:260px;font-size:16px;background:rgba(255,255,255,.1);color:white;outline:none;}
-        .logout{white-space:nowrap;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer;font-weight:bold;}
+        .logo{font-size:30px; font-weight:700; color:#0a84ff; flex-shrink: 0;} /* No permite que el logo se aplaste */
+
+        /* CONTENEDOR DERECHO FLEXIBLE */
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-grow: 1; /* Toma el espacio disponible */
+            justify-content: flex-end; /* Empuja el contenido a la derecha */
+            max-width: 70%; /* Evita que pise al logo en pantallas muy pequeñas */
+        }
+
+        /* BUSCADOR ELÁSTICO */
+        .search {
+            padding: 10px 18px;
+            border-radius: 24px;
+            border: none;
+            width: 100%;
+            max-width: 260px; /* Ancho máximo original */
+            min-width: 100px; /* Se encoge si no hay espacio */
+            font-size: 16px;
+            background: rgba(255, 255, 255, .1);
+            color: white;
+            outline: none;
+        }
+
+        .logout {
+            white-space: nowrap;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 12px;
+            background: #ff3b30;
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            flex-shrink: 0; /* El botón de salir NUNCA se encoge ni desaparece */
+        }
+
+        /* RESTO DE ESTILOS PRESERVADOS */
         .row{margin-top:50px;padding-left:20px;padding-bottom:10px;}
         .row h2{font-size:22px;margin-bottom:14px;}
         .carousel{display:flex;gap:18px;overflow-x:auto;padding-bottom:18px;}
@@ -330,37 +384,25 @@ function buildUI(){
 }
 
 function renderAll(){
-    // 1. Agregadas recientemente: Las últimas 10 agregadas sin importar tipo
     const recent = [...allVideos].reverse().slice(0, 10);
     renderRow(recent, "recentRow", false);
-
-    // 2. Continuar viendo: Los últimos 5 títulos
     renderContinue();
-
-    // 3. Categorías: 10 nuevas + resto aleatorio
     const categorias = [
         { tipo: "cine", id: "cineRow" },
         { tipo: "pelicula", id: "peliculasRow" },
         { tipo: "serie", id: "seriesRow" },
         { tipo: "anime", id: "animeRow" }
     ];
-
     categorias.forEach(cat => {
         const filtrados = allVideos.filter(v => v.tipo === cat.tipo);
-        
-        // Las últimas 10 de esa categoría
         const ultimos10 = [...filtrados].reverse().slice(0, 10);
-        
-        // El resto se mezcla aleatoriamente para descubrimiento
         const resto = filtrados.filter(v => !ultimos10.includes(v));
         const mezclados = shuffle(resto);
-        
         const listaFinal = [...ultimos10, ...mezclados];
         renderRow(listaFinal, cat.id, true);
     });
 }
 
-// FUNCIÓN PARA CREAR CARDS
 function createCard(v) {
     const card = document.createElement("div");
     card.className = "card"; 
@@ -375,17 +417,12 @@ function createCard(v) {
     return card;
 }
 
-// RENDERIZADO DE FILAS
 function renderRow(list, id, saveFull = true) {
     const row = document.getElementById(id);
     if (!row) return;
     row.innerHTML = "";
-    
-    // Mostramos solo los primeros 40 para optimizar el DOM
     const initialItems = list.slice(0, 40); 
     initialItems.forEach(v => row.appendChild(createCard(v)));
-    
-    // Guardamos la lista completa para el buscador global
     if (saveFull) {
         row.dataset.fullList = JSON.stringify(list);
     }
@@ -395,7 +432,6 @@ function renderContinue(){
     const data = getProgress();
     const row = document.getElementById("continueRow");
     row.innerHTML = "";
-    
     Object.keys(data)
     .map(id => {
         const isSerie = id.includes("-S");
@@ -405,7 +441,7 @@ function renderContinue(){
     })
     .filter(v => v && v._prog.time < v._prog.duration * 0.95)
     .sort((a,b) => b._prog.updated - a._prog.updated)
-    .slice(0,5) // Limitado a los últimos 5 según pedido
+    .slice(0,5)
     .forEach(v => {
         const p = v._prog;
         const remain = Math.ceil((p.duration - p.time) / 60);
@@ -424,17 +460,13 @@ function renderContinue(){
     });
 }
 
-// BUSCADOR OPTIMIZADO (Busca en todo el catálogo guardado en dataset)
 document.getElementById("search").addEventListener("input", (e) => {
     const txt = e.target.value.toLowerCase();
     const rows = ["peliculasRow", "seriesRow", "animeRow", "cineRow"];
-
     rows.forEach(rowId => {
         const row = document.getElementById(rowId);
         if (!row || !row.dataset.fullList) return;
-        
         const fullList = JSON.parse(row.dataset.fullList);
-        
         if (txt === "") {
             renderRow(fullList, rowId);
         } else {
@@ -473,13 +505,11 @@ onAuthStateChanged(auth, async (user)=>{
 
 window.logout=async function(){ await signOut(auth); };
 
-// CHROMECAST
 let castContext = null;
 window.castVideo = function () {
     if (!window.castAvailable) { alert("Chromecast no disponible"); return; }
     castContext = cast.framework.CastContext.getInstance();
     castContext.setOptions({ receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID, autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED });
-    
     castContext.requestSession().then(() => {
         const session = castContext.getCurrentSession();
         const mediaInfo = new chrome.cast.media.MediaInfo(document.getElementById("video").src, "video/mp4");
