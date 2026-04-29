@@ -300,17 +300,47 @@ onAuthStateChanged(auth, async (user) => {
             .then(r => r.json())
             .then(data => {
                 allVideos = data;
+                
+                // Reiniciamos el contenedor principal para evitar duplicados o filas fantasma
                 document.getElementById("app").innerHTML = `
                     <div id="continueSection" class="row" style="display:none"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
                     <div class="row"><h2>🆕 Agregados Recientemente</h2><div class="carousel" id="recentRow"></div></div>
                     <div class="row"><h2>🍿 Películas y Cine</h2><div class="carousel" id="cineRow"></div></div>
                     <div class="row"><h2>📺 Series y Animes</h2><div class="carousel" id="seriesRow"></div></div>
                 `;
-                renderContinue();
-                renderRow([...allVideos].reverse().slice(0, 15), "recentRow");
-                renderRow(allVideos.filter(v => v.tipo?.toLowerCase().includes("cine") || v.tipo?.toLowerCase().includes("pelicula")), "cineRow");
-                renderRow(allVideos.filter(v => v.tipo?.toLowerCase().includes("serie") || v.tipo?.toLowerCase().includes("anime")), "seriesRow");
+
+                // --- 1. RECIENTES (Los últimos 10 del JSON) ---
+                const recientes = [...allVideos].reverse().slice(0, 10);
+                renderRow(recientes, "recentRow");
+
+                // --- 2. CINE / PELÍCULAS (Híbrido: Nuevas + Aleatorias) ---
+                const todoCine = allVideos.filter(v => {
+                    const t = v.tipo?.toLowerCase() || "";
+                    return t.includes("cine") || t.includes("peli") || t.includes("movie");
+                });
+                const cineHibrido = [...todoCine.slice(-10).reverse(), ...todoCine.sort(() => 0.5 - Math.random()).slice(0, 10)];
+                // Eliminamos duplicados si hay pocos títulos
+                const cineFinal = [...new Set(cineHibrido)];
+                renderRow(cineFinal, "cineRow");
+
+                // --- 3. SERIES / ANIMES (Híbrido) ---
+                const todaSerie = allVideos.filter(v => {
+                    const t = v.tipo?.toLowerCase() || "";
+                    return t.includes("serie") || t.includes("anime") || t.includes("show");
+                });
+                const serieHibrida = [...todaSerie.slice(-10).reverse(), ...todaSerie.sort(() => 0.5 - Math.random()).slice(0, 10)];
+                const serieFinal = [...new Set(serieHibrida)];
+                renderRow(serieFinal, "seriesRow");
+
+                // --- 4. CONTINUAR VIENDO (Limitado a 5) ---
+                // Intentamos cargar desde Cloud y Local
+                renderContinue(); 
+
                 document.getElementById("mainLoader").style.display = "none";
+            })
+            .catch(err => {
+                console.error("Error cargando R2:", err);
+                document.getElementById("loaderStatus").innerText = "Error de conexión con el catálogo.";
             });
     } else {
         document.getElementById("loginModal").style.display = "flex";
