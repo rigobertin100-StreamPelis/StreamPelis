@@ -112,7 +112,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Configuración de Firebase preservada
 const firebaseConfig = {
     apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
     authDomain: "midata-40f73.firebaseapp.com",
@@ -135,7 +134,6 @@ let currentSeason = 0;
 let currentEpisode = 0;
 let sessionInterval = null;
 
-// Lógica de sesiones Firebase preservada
 async function registerSession(user) {
     try {
         const ref = doc(db, "users", user.uid);
@@ -171,7 +169,6 @@ function startSessionWatcher(user) {
     }, 10000);
 }
 
-// LÓGICA DE UI Y REPRODUCTOR
 window.addEventListener("scroll",()=>{
     document.querySelector(".header").classList.toggle("scrolled",window.scrollY>20);
 });
@@ -329,23 +326,41 @@ function buildUI(){
 
 function renderAll(){
     const render = (tipo, id) => renderRow(allVideos.filter(v=>v.tipo===tipo), id);
-    render("pelicula","peliculasRow"); render("serie","seriesRow"); 
-    render("anime","animeRow"); render("cine","cineRow");
+    render("pelicula","peliculasRow"); 
+    render("serie","seriesRow"); 
+    render("anime","animeRow"); 
+    render("cine","cineRow");
     renderRow(allVideos.slice(-10).reverse(),"recentRow");
     renderContinue();
 }
 
-function renderRow(list,id){
-    const row=document.getElementById(id);
-    if(!row) return;
-    row.innerHTML="";
-    list.forEach(v=>{
-        const card=document.createElement("div");
-        card.className="card"; card.dataset.title=v.titulo.toLowerCase();
-        card.innerHTML=`<img src="${v.img}"><div class="preview-fake" style="background-image:url(${v.img})"></div>`;
-        card.onclick=()=>{ (v.tipo==="serie" || v.tipo==="anime") ? openSeriesModal(v) : (currentSeries=null, openVideo(v)); };
-        row.appendChild(card);
-    });
+// MEJORA: Función para crear cards con Lazy Loading
+function createCard(v) {
+    const card = document.createElement("div");
+    card.className = "card"; 
+    card.dataset.title = v.titulo.toLowerCase();
+    card.innerHTML = `
+        <img src="${v.img}" loading="lazy" alt="${v.titulo}">
+        <div class="preview-fake" style="background-image:url(${v.img})"></div>
+    `;
+    card.onclick = () => { 
+        (v.tipo === "serie" || v.tipo === "anime") ? openSeriesModal(v) : (currentSeries = null, openVideo(v)); 
+    };
+    return card;
+}
+
+// MEJORA: Renderizado eficiente con paginación de DOM
+function renderRow(list, id) {
+    const row = document.getElementById(id);
+    if (!row) return;
+    row.innerHTML = "";
+    
+    // Mostramos solo los primeros 40 para que la carga sea instantánea
+    const initialItems = list.slice(0, 40); 
+    initialItems.forEach(v => row.appendChild(createCard(v)));
+    
+    // Guardamos la lista completa para que el buscador la use
+    row.dataset.fullList = JSON.stringify(list);
 }
 
 function renderContinue(){
@@ -369,7 +384,7 @@ function renderContinue(){
         const info = (v.tipo==="serie" || v.tipo==="anime") ? `T${(p.season||0)+1}:E${(p.episode||0)+1} • ${remain} min` : `Quedan ${remain} min`;
         const card = document.createElement("div");
         card.className = "card continue-card";
-        card.innerHTML = `<img src="${v.img}"><div class="continue-overlay"><button class="continue-btn">▶ Continuar</button><div class="continue-info">${info}</div><div class="continue-line" style="width:${(p.time/p.duration)*100}%"></div></div>`;
+        card.innerHTML = `<img src="${v.img}" loading="lazy"><div class="continue-overlay"><button class="continue-btn">▶ Continuar</button><div class="continue-info">${info}</div><div class="continue-line" style="width:${(p.time/p.duration)*100}%"></div></div>`;
         card.onclick = () => {
             if(v.tipo==="pelicula" || v.tipo==="cine") { currentSeries=null; openVideo(v); }
             else {
@@ -381,9 +396,26 @@ function renderContinue(){
     });
 }
 
-document.getElementById("search").addEventListener("input",(e)=>{
-    const txt=e.target.value.toLowerCase();
-    document.querySelectorAll(".card").forEach(c=> c.style.display= c.dataset.title.includes(txt) ? "block" : "none");
+// MEJORA: Buscador optimizado para buscar en toda la lista (incluso lo no renderizado)
+document.getElementById("search").addEventListener("input", (e) => {
+    const txt = e.target.value.toLowerCase();
+    const rows = ["peliculasRow", "seriesRow", "animeRow", "cineRow", "recentRow"];
+
+    rows.forEach(rowId => {
+        const row = document.getElementById(rowId);
+        if (!row || !row.dataset.fullList) return;
+        
+        const fullList = JSON.parse(row.dataset.fullList);
+        
+        if (txt === "") {
+            renderRow(fullList, rowId);
+        } else {
+            const filtered = fullList.filter(v => v.titulo.toLowerCase().includes(txt));
+            row.innerHTML = "";
+            // Limitamos los resultados visibles en búsqueda para mantener la fluidez
+            filtered.slice(0, 30).forEach(v => row.appendChild(createCard(v)));
+        }
+    });
 });
 
 document.getElementById("loginBtn").onclick=async()=>{
@@ -399,7 +431,6 @@ onAuthStateChanged(auth, async (user)=>{
         await registerSession(user);
         startSessionWatcher(user);
         playerController.init();
-        // CAMBIO AQUÍ: Llamamos a tu Worker en lugar de al archivo local
         fetch("https://small-king-30c8.rigobertin100.workers.dev")
             .then(r=>r.json())
             .then(data=>{ 
