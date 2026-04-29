@@ -25,7 +25,6 @@
       }
     };
 
-    // REGISTRO DEL SERVICE WORKER
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js')
         .then(() => console.log("PlusUltra PWA Ready"))
@@ -36,15 +35,38 @@
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        body{
-            margin:0;
-            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
             background: linear-gradient(to bottom, #1c1c1e, #111);
-            color:white;
-            padding-top:90px;
+            color: white;
+            padding-top: 90px;
             overflow-x: hidden;
         }
-        
+
+        /* --- LOADER DE CARGA --- */
+        #mainLoader {
+            position: fixed;
+            inset: 0;
+            background: #1c1c1e;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000000;
+            transition: opacity 0.5s ease;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #0a84ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         .header {
             position: fixed;
             top: 0;
@@ -62,23 +84,16 @@
             border-bottom: 1px solid rgba(255, 255, 255, .05);
         }
 
-        /* Optimización para TVs y Pantallas Grandes */
         @media (min-width: 1200px) {
             .logo { font-size: 42px !important; }
             .row h2 { font-size: 32px !important; }
             .card { width: 320px !important; }
         }
 
-        .header.scrolled{background:rgba(20, 20, 20, .95); padding: 10px 25px;}
-        .logo{font-size:30px; font-weight:800; color:#0a84ff; flex-shrink: 0; letter-spacing: -1px;}
+        .header.scrolled { background: rgba(20, 20, 20, .95); padding: 10px 25px; }
+        .logo { font-size: 30px; font-weight: 800; color: #0a84ff; flex-shrink: 0; letter-spacing: -1px; }
 
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-grow: 1;
-            justify-content: flex-end;
-        }
+        .header-right { display: flex; align-items: center; gap: 15px; flex-grow: 1; justify-content: flex-end; }
 
         .search {
             padding: 12px 20px;
@@ -107,73 +122,75 @@
             flex-shrink: 0;
             transition: .2s;
         }
-        .logout:active { transform: scale(0.95); opacity: 0.8; }
 
-        .row{margin-top:40px;padding-left:25px;padding-bottom:10px;}
-        .row h2{font-size:24px; font-weight: 700; margin-bottom:18px; color: rgba(255,255,255,0.9);}
+        .row { margin-top: 40px; padding-left: 25px; padding-bottom: 10px; }
+        .row h2 { font-size: 24px; font-weight: 700; margin-bottom: 18px; color: rgba(255,255,255,0.9); }
         
-        .carousel{
-            display:flex;
-            gap:20px;
-            overflow-x:auto;
-            padding-bottom:25px;
+        .carousel {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 25px;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
         }
-        .carousel::-webkit-scrollbar{display: none;} /* Scroll invisible estilo Apple */
+        .carousel::-webkit-scrollbar { display: none; }
 
-        .card{
-            width:260px;
-            flex-shrink:0;
-            aspect-ratio:2/3;
-            position:relative;
-            border-radius:18px;
-            overflow:hidden;
-            cursor:pointer;
+        .card {
+            width: 260px;
+            flex-shrink: 0;
+            aspect-ratio: 2/3;
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            cursor: pointer;
             transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1);
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
-        .card:hover{transform:scale(1.05); z-index: 10;}
-        .card img{width:100%;height:100%;object-fit:cover; pointer-events: none;}
+        .card:hover { transform: scale(1.05); z-index: 10; }
+        .card img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Estilos de Player y Modales preservados (se omiten por brevedad pero deben estar en tu archivo) */
-        .player,.series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:999999; animation: fadeIn 0.3s ease;}
+        .player, .series-modal { position: fixed; inset: 0; display: none; justify-content: center; align-items: center; z-index: 999999; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* Resto de tus clases CSS originales... */
-        .player{background:rgba(0,0,0,.98);}
-        .series-modal{background:rgba(15,15,15,.98); backdrop-filter: blur(20px);}
-        .player-inner,.series-inner{width:95vw;height:90vh;background:#1c1c1e;border-radius:30px;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;padding:20px; border: 1px solid rgba(255,255,255,0.1);}
-        video{width:100%;height:100%;border-radius:20px; background: #000;}
-        .close{position:absolute;top:20px;right:30px;font-size:35px;cursor:pointer;color:white;z-index:20; opacity: 0.6;}
-        .close:hover{opacity: 1;}
-        .player-nav{position:absolute;top:20px;left:30px;z-index:20;display:flex;gap:15px;}
-        .player-nav button, .episode-list button, .continue-btn{padding:12px 20px;border:none;border-radius:14px;background:#0a84ff;color:#fff;cursor:pointer;font-weight:bold; transition: .2s;}
-        .episode-list{width:100%;display:flex;flex-wrap:wrap;gap:12px;margin-top:25px;overflow-y:auto;}
+        .player { background: rgba(0,0,0,.98); }
+        .series-modal { background: rgba(15,15,15,.98); backdrop-filter: blur(20px); }
+        .player-inner, .series-inner { width: 95vw; height: 90vh; background: #1c1c1e; border-radius: 30px; overflow: hidden; position: relative; display: flex; flex-direction: column; align-items: center; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        video { width: 100%; height: 100%; border-radius: 20px; background: #000; }
+        .close { position: absolute; top: 20px; right: 30px; font-size: 35px; cursor: pointer; color: white; z-index: 20; opacity: 0.6; }
         
-        #loginModal{position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:999999;}
-        #loginBox{background:#1c1c1e;padding:40px;border-radius:30px;display:flex;flex-direction:column;gap:20px;width:350px;align-items:center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);}
-        #loginBox input{padding:15px;border-radius:14px;border:none;width:100%;font-size:16px; background: #2c2c2e; color: white;}
-        #loginBox button{padding:15px;border:none;border-radius:14px;background:#0a84ff;color:#fff;cursor:pointer;font-weight:bold;width:100%; font-size: 16px;}
+        #loginModal { position: fixed; inset: 0; background: #000; display: flex; justify-content: center; align-items: center; z-index: 999999; }
+        #loginBox { background: #1c1c1e; padding: 40px; border-radius: 30px; display: flex; flex-direction: column; gap: 20px; width: 350px; align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        #loginBox input { padding: 15px; border-radius: 14px; border: none; width: 100%; font-size: 16px; background: #2c2c2e; color: white; }
+        #loginBox button { padding: 15px; border: none; border-radius: 14px; background: #0a84ff; color: #fff; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; }
+        #loginError { color: #ff3b30; display: none; font-size: 14px; text-align: center; }
+
+        .continue-card .continue-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); display: flex; flex-direction: column; gap: 8px; }
+        .continue-line { height: 4px; border-radius: 999px; background: rgba(255,255,255,0.2); overflow: hidden; }
+        .continue-progress { height: 100%; background: #0a84ff; border-radius: 999px; }
         
-        .continue-card .continue-overlay{position:absolute;left:0;right:0;bottom:0;padding:20px;background:linear-gradient(to top,rgba(0,0,0,0.9),transparent);display:flex;flex-direction:column;gap:8px;}
-        .continue-line{height:4px;border-radius:999px;background:rgba(255,255,255,0.2); overflow: hidden;}
-        .continue-progress{height:100%; background:#0a84ff; border-radius: 999px;}
-        
-        .season-option {padding:10px 16px;background:rgba(255,255,255,.05);border-radius:12px;cursor:pointer;white-space:nowrap; transition: .2s;}
-        .season-option.active {background:#0a84ff; transform: scale(1.05);}
+        .season-option { padding: 10px 16px; background: rgba(255,255,255,.05); border-radius: 12px; cursor: pointer; white-space: nowrap; transition: .2s; }
+        .season-option.active { background: #0a84ff; transform: scale(1.05); }
+        .episode-list { width: 100%; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 25px; overflow-y: auto; }
+        .episode-list button { padding: 12px 20px; border: none; border-radius: 14px; background: #0a84ff; color: #fff; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 
 <body>
 
+<!-- PANTALLA DE CARGA INICIAL -->
+<div id="mainLoader">
+    <div class="spinner"></div>
+    <div id="loaderStatus">Cargando catálogo...</div>
+</div>
+
 <div id="loginModal">
     <div id="loginBox">
-        <h2>Iniciar Sesión</h2>
+        <h2>PlusUltra</h2>
         <input id="loginUser" type="email" placeholder="Correo">
         <input id="loginPass" type="password" placeholder="Contraseña">
         <button id="loginBtn">Ingresar</button>
-        <p id="loginError">Usuario o contraseña incorrectos</p>
+        <p id="loginError"></p>
     </div>
 </div>
 
@@ -195,7 +212,6 @@
             <button onclick="nextEpisode()">⏭</button>
             <button id="castBtn" onclick="castVideo()" style="display:none;">📺 Cast</button>
         </div>
-        <div id="episodeIndicator" class="episode-indicator"></div>
         <video id="video" controls controlsList="nodownload"></video>
     </div>
 </div>
@@ -204,7 +220,7 @@
     <div class="series-inner">
         <span class="close" onclick="closeSeriesModal()">✖</span>
         <h2 id="seriesTitle"></h2>
-        <div id="seasonSelect" class="season-select"></div>
+        <div id="seasonSelect" class="season-select" style="display:flex; gap:10px; margin-bottom:15px;"></div>
         <div class="episode-list" id="episodeList"></div>
     </div>
 </div>
@@ -237,9 +253,7 @@ let currentEpisode = 0;
 let sessionInterval = null;
 
 // --- UTILIDADES ---
-function shuffle(array) {
-    return array.sort(() => Math.random() - 0.5);
-}
+function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
 async function registerSession(user) {
     try {
@@ -249,7 +263,6 @@ async function registerSession(user) {
         const now = Date.now();
         sessions = sessions.filter(s => s.id !== sessionId);
         sessions.push({ id: sessionId, lastSeen: now });
-        sessions.sort((a, b) => a.lastSeen - b.lastSeen);
         if (sessions.length > 2) sessions = sessions.slice(-2);
         await setDoc(ref, { sessions }, { merge: true });
     } catch (e) { console.error("Error de sesión:", e); }
@@ -273,16 +286,11 @@ function startSessionWatcher(user) {
             await signOut(auth);
             location.reload();
         }
-    }, 10000);
+    }, 15000);
 }
-
-window.addEventListener("scroll",()=>{
-    document.querySelector(".header").classList.toggle("scrolled",window.scrollY>20);
-});
 
 const STORAGE_KEY="continueWatching";
 function getProgress(){ return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}"); }
-
 function saveProgress(id,time,duration){
     const data=getProgress();
     data[id]={ time, duration, updated:Date.now(), season:currentSeries ? currentSeason : null, episode:currentSeries ? currentEpisode : null };
@@ -293,20 +301,11 @@ const playerController = {
     video:null, hls:null, currentId:null,
     init(){
         this.video = document.getElementById("video");
-        let lastSave = 0;
         this.video.addEventListener("timeupdate", () => {
-            const now = Date.now();
-            if(this.currentId && now - lastSave > 5000){
-                saveProgress(this.currentId, this.video.currentTime, this.video.duration);
-                lastSave = now;
-            }
+            if(this.currentId) saveProgress(this.currentId, this.video.currentTime, this.video.duration);
         });
         this.video.addEventListener("ended", () => {
-            if(currentSeries){
-                const season = currentSeries.temporadas[currentSeason];
-                if(currentEpisode < season.episodios.length - 1 || currentSeason < currentSeries.temporadas.length - 1) nextEpisode();
-                else closeVideo();
-            } else closeVideo();
+            if(currentSeries) nextEpisode(); else closeVideo();
         });
     },
     play(v){
@@ -321,14 +320,12 @@ const playerController = {
             this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 if(progress?.time) this.video.currentTime = progress.time;
                 this.video.play();
-                showEpisodeIndicator();
             });
         } else {
             this.video.src = v.url;
             this.video.onloadedmetadata = () => {
                 if(progress?.time) this.video.currentTime = progress.time;
                 this.video.play();
-                showEpisodeIndicator();
             };
         }
     },
@@ -337,22 +334,14 @@ const playerController = {
         this.video.pause();
         this.video.removeAttribute("src");
         this.video.load();
-        this.currentId = null;
     }
 };
 
 window.openVideo = function(v){
+    document.getElementById("seriesModal").style.display="none";
     document.getElementById("player").style.display="flex";
     document.getElementById("playerNav").style.display= currentSeries ? "flex" : "none";
     playerController.play(v);
-}
-
-function showEpisodeIndicator(){
-    if(!currentSeries) return;
-    const el = document.getElementById("episodeIndicator");
-    el.innerText = `T${currentSeason+1} • E${currentEpisode+1}`;
-    el.classList.add("show");
-    setTimeout(()=>el.classList.remove("show"),3000);
 }
 
 window.closeVideo=function(){
@@ -365,15 +354,16 @@ window.openSeriesModal = function(series){
     currentSeries=series;
     document.getElementById("seriesModal").style.display="flex";
     document.getElementById("seriesTitle").innerText=series.titulo;
+    const seasonBox = document.getElementById("seasonSelect");
+    seasonBox.innerHTML = "Cargando temporadas...";
 
     fetch(series.temporadasUrl).then(r=>r.json()).then(data=>{
         currentSeries.temporadas=data;
-        const seasonBox = document.getElementById("seasonSelect");
         seasonBox.innerHTML = "";
         data.forEach((t, i) => {
             const btn = document.createElement("div");
             btn.className = "season-option " + (i === currentSeason ? "active" : "");
-            btn.innerText = "Temporada " + t.numero;
+            btn.innerText = "T" + t.numero;
             btn.onclick = () => {
                 currentSeason = i;
                 document.querySelectorAll(".season-option").forEach(b => b.classList.remove("active"));
@@ -386,38 +376,35 @@ window.openSeriesModal = function(series){
     });
 }
 
-window.closeSeriesModal=function(reset=true){
-    document.getElementById("seriesModal").style.display="none";
-    if(reset){ currentSeries=null; currentSeason=0; currentEpisode=0; }
-};
-
 function renderEpisodes(index){
     const list=document.getElementById("episodeList");
     list.innerHTML="";
     currentSeries.temporadas[index].episodios.forEach((ep,i)=>{
         const btn=document.createElement("button");
         btn.innerText=ep.titulo;
-        btn.onclick=()=>{ currentEpisode=i; closeSeriesModal(false); openVideo(ep); };
+        btn.onclick=()=>{ currentEpisode=i; openVideo(ep); };
         list.appendChild(btn);
     });
 }
 
 window.nextEpisode=function(){
-    if(!currentSeries) return;
     const season=currentSeries.temporadas[currentSeason];
     if(currentEpisode < season.episodios.length-1){
-        currentEpisode++;
-        openVideo(season.episodios[currentEpisode]);
+        currentEpisode++; openVideo(season.episodios[currentEpisode]);
     } else if(currentSeason < currentSeries.temporadas.length-1){
-        currentSeason++; currentEpisode=0;
-        openVideo(currentSeries.temporadas[currentSeason].episodios[0]);
+        currentSeason++; currentEpisode=0; openVideo(currentSeries.temporadas[currentSeason].episodios[0]);
     }
 };
 
 window.prevEpisode=function(){
-    if(!currentSeries || currentEpisode <= 0) return;
-    currentEpisode--;
-    openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
+    if(currentEpisode > 0){
+        currentEpisode--; openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
+    }
+};
+
+window.closeSeriesModal=function(){
+    document.getElementById("seriesModal").style.display="none";
+    currentSeries=null; currentSeason=0; currentEpisode=0;
 };
 
 function buildUI(){
@@ -428,109 +415,50 @@ function buildUI(){
     <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
     <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
     <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>`;
-    renderAll();
-}
-
-function renderAll(){
-    const recent = [...allVideos].reverse().slice(0, 10);
-    renderRow(recent, "recentRow", false);
+    
+    const cats = [{t:"cine",id:"cineRow"},{t:"pelicula",id:"peliculasRow"},{t:"serie",id:"seriesRow"},{t:"anime",id:"animeRow"}];
+    renderRow([...allVideos].reverse().slice(0,12), "recentRow");
     renderContinue();
-    const categorias = [
-        { tipo: "cine", id: "cineRow" },
-        { tipo: "pelicula", id: "peliculasRow" },
-        { tipo: "serie", id: "seriesRow" },
-        { tipo: "anime", id: "animeRow" }
-    ];
-    categorias.forEach(cat => {
-        const filtrados = allVideos.filter(v => v.tipo === cat.tipo);
-        const ultimos10 = [...filtrados].reverse().slice(0, 10);
-        const resto = filtrados.filter(v => !ultimos10.includes(v));
-        const mezclados = shuffle(resto);
-        const listaFinal = [...ultimos10, ...mezclados];
-        renderRow(listaFinal, cat.id, true);
+    cats.forEach(c => {
+        const list = allVideos.filter(v => v.tipo === c.t);
+        renderRow(shuffle(list), c.id);
     });
+
+    // OCULTAR LOADER CUANDO LA UI ESTÁ LISTA
+    const loader = document.getElementById("mainLoader");
+    loader.style.opacity = "0";
+    setTimeout(() => loader.style.display = "none", 500);
 }
 
-function createCard(v) {
-    const card = document.createElement("div");
-    card.className = "card"; 
-    card.dataset.title = v.titulo.toLowerCase();
-    card.innerHTML = `
-        <img src="${v.img}" loading="lazy" alt="${v.titulo}">
-        <div class="preview-fake" style="background-image:url(${v.img})"></div>
-    `;
-    card.onclick = () => { 
-        (v.tipo === "serie" || v.tipo === "anime") ? openSeriesModal(v) : (currentSeries = null, openVideo(v)); 
-    };
-    return card;
-}
-
-function renderRow(list, id, saveFull = true) {
+function renderRow(list, id) {
     const row = document.getElementById(id);
     if (!row) return;
     row.innerHTML = "";
-    const initialItems = list.slice(0, 40); 
-    initialItems.forEach(v => row.appendChild(createCard(v)));
-    if (saveFull) {
-        row.dataset.fullList = JSON.stringify(list);
-    }
+    list.forEach(v => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `<img src="${v.img}" loading="lazy">`;
+        card.onclick = () => v.tipo === "serie" || v.tipo === "anime" ? openSeriesModal(v) : openVideo(v);
+        row.appendChild(card);
+    });
 }
 
 function renderContinue(){
     const data = getProgress();
     const row = document.getElementById("continueRow");
-    row.innerHTML = "";
-    Object.keys(data)
-    .map(id => {
-        const isSerie = id.includes("-S");
-        const title = isSerie ? id.split("-S")[0] : id;
-        const base = allVideos.find(v => v.titulo === title);
-        return base ? { ...base, _progressId: id, _prog: data[id] } : null;
-    })
-    .filter(v => v && v._prog.time < v._prog.duration * 0.95)
-    .sort((a,b) => b._prog.updated - a._prog.updated)
-    .slice(0,5)
-    .forEach(v => {
-        const p = v._prog;
-        const remain = Math.ceil((p.duration - p.time) / 60);
-        const info = (v.tipo==="serie" || v.tipo==="anime") ? `T${(p.season||0)+1}:E${(p.episode||0)+1} • ${remain} min` : `Quedan ${remain} min`;
-        const card = document.createElement("div");
-        card.className = "card continue-card";
-        card.innerHTML = `<img src="${v.img}" loading="lazy"><div class="continue-overlay"><button class="continue-btn">▶ Continuar</button><div class="continue-info">${info}</div><div class="continue-line" style="width:${(p.time/p.duration)*100}%"></div></div>`;
-        card.onclick = () => {
-            if(v.tipo==="pelicula" || v.tipo==="cine") { currentSeries=null; openVideo(v); }
-            else {
-                currentSeries = v; currentSeason = p.season || 0; currentEpisode = p.episode || 0;
-                fetch(v.temporadasUrl).then(r=>r.json()).then(d=>{ currentSeries.temporadas=d; openVideo(d[currentSeason].episodios[currentEpisode]); });
-            }
-        };
-        row.appendChild(card);
-    });
-}
-
-document.getElementById("search").addEventListener("input", (e) => {
-    const txt = e.target.value.toLowerCase();
-    const rows = ["peliculasRow", "seriesRow", "animeRow", "cineRow"];
-    rows.forEach(rowId => {
-        const row = document.getElementById(rowId);
-        if (!row || !row.dataset.fullList) return;
-        const fullList = JSON.parse(row.dataset.fullList);
-        if (txt === "") {
-            renderRow(fullList, rowId);
-        } else {
-            const filtered = fullList.filter(v => v.titulo.toLowerCase().includes(txt));
-            row.innerHTML = "";
-            filtered.slice(0, 30).forEach(v => row.appendChild(createCard(v)));
+    if(!row) return;
+    Object.keys(data).forEach(id => {
+        const title = id.includes("-S") ? id.split("-S")[0] : id;
+        const v = allVideos.find(x => x.titulo === title);
+        if(v) {
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `<img src="${v.img}"><div class="continue-overlay"><div class="continue-line"><div class="continue-progress" style="width:${(data[id].time/data[id].duration)*100}%"></div></div></div>`;
+            card.onclick = () => openVideo(v);
+            row.appendChild(card);
         }
     });
-});
-
-document.getElementById("loginBtn").onclick=async()=>{
-    const email=document.getElementById("loginUser").value.trim();
-    const pass=document.getElementById("loginPass").value.trim();
-    try{ await signInWithEmailAndPassword(auth,email,pass); } 
-    catch(e){ document.getElementById("loginError").innerText = "Error: Credenciales inválidas"; document.getElementById("loginError").style.display="block"; }
-};
+}
 
 onAuthStateChanged(auth, async (user)=>{
     if(user){
@@ -538,32 +466,39 @@ onAuthStateChanged(auth, async (user)=>{
         await registerSession(user);
         startSessionWatcher(user);
         playerController.init();
+        
+        // --- FETCH CON LOADER Y CATCH SEGURO ---
         fetch("https://small-king-30c8.rigobertin100.workers.dev")
-            .then(r=>r.json())
-            .then(data=>{ 
-                allVideos=data; 
-                buildUI(); 
+            .then(r => {
+                if(!r.ok) throw new Error("Error en servidor");
+                return r.json();
             })
-            .catch(err => console.error("Error cargando el catálogo:", err));
-    }else{
+            .then(data => {
+                allVideos = data;
+                buildUI();
+            })
+            .catch(err => {
+                document.getElementById("loaderStatus").innerText = "Error cargando el catálogo. Reintenta más tarde.";
+                console.error(err);
+            });
+    } else {
         document.getElementById("loginModal").style.display="flex";
-        if(sessionInterval) clearInterval(sessionInterval);
+        document.getElementById("mainLoader").style.display="none";
     }
 });
 
-window.logout=async function(){ await signOut(auth); };
-
-let castContext = null;
-window.castVideo = function () {
-    if (!window.castAvailable) { alert("Chromecast no disponible"); return; }
-    castContext = cast.framework.CastContext.getInstance();
-    castContext.setOptions({ receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID, autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED });
-    castContext.requestSession().then(() => {
-        const session = castContext.getCurrentSession();
-        const mediaInfo = new chrome.cast.media.MediaInfo(document.getElementById("video").src, "video/mp4");
-        session.loadMedia(new chrome.cast.media.LoadRequest(mediaInfo));
-    }).catch(err => console.log(err));
+document.getElementById("loginBtn").onclick=async()=>{
+    const email=document.getElementById("loginUser").value;
+    const pass=document.getElementById("loginPass").value;
+    try { await signInWithEmailAndPassword(auth,email,pass); }
+    catch(e) { 
+        const err = document.getElementById("loginError");
+        err.innerText = "Credenciales incorrectas";
+        err.style.display = "block";
+    }
 };
+
+window.logout = () => signOut(auth);
 </script>
 </body>
 </html>
