@@ -112,12 +112,15 @@
         .row { margin-top: 30px; padding-left: 20px; }
         .row h2 { font-size: 20px; margin-bottom: 15px; color: #fff; }
         
+        /* MEJORA DE FLUIDEZ EN SCROLL */
         .carousel {
             display: flex;
             gap: 15px;
             overflow-x: auto;
             padding-bottom: 20px;
             scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch; 
+            scroll-snap-type: x proximity;
         }
         .carousel::-webkit-scrollbar { display: none; }
 
@@ -129,16 +132,19 @@
             border-radius: 14px;
             overflow: hidden;
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: transform 0.2s ease-out;
             position: relative;
+            scroll-snap-align: start;
+            will-change: transform;
         }
-        .card:hover { transform: scale(1.05); }
+        .card:active { transform: scale(0.95); } /* Efecto de presión iOS */
+        
         .card img { 
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
             opacity: 0; 
-            transition: opacity 0.5s ease; 
+            transition: opacity 0.4s ease-in; 
         }
 
         /* --- MODALES Y REPRODUCTOR --- */
@@ -242,21 +248,22 @@ const db = getFirestore(app);
 
 let allVideos = [];
 let currentSeries = null;
-let currentSeason = 0;
 let sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
 localStorage.setItem("sessionId", sessionId);
 
-// --- LAZY LOADING ---
+// --- LAZY LOADING OBSERVER ---
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if(entry.isIntersecting) {
             const img = entry.target;
-            img.src = img.dataset.src;
-            img.onload = () => img.style.opacity = 1;
-            observer.unobserve(img);
+            if(img.dataset.src) {
+                img.src = img.dataset.src;
+                img.onload = () => img.style.opacity = 1;
+                observer.unobserve(img);
+            }
         }
     });
-}, { rootMargin: "200px" });
+}, { rootMargin: "400px" }); // Cargamos un poco antes para mayor fluidez
 
 // --- REPRODUCTOR ---
 const player = {
@@ -267,7 +274,7 @@ const player = {
         const progress = JSON.parse(localStorage.getItem("progress") || "{}")[v.titulo];
         
         if(v.url.includes(".m3u8")) {
-            this.hls = new Hls();
+            this.hls = new Hls({ capLevelToPlayerSize: true, debug: false });
             this.hls.loadSource(v.url);
             this.hls.attachMedia(this.el);
             this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -296,18 +303,33 @@ const player = {
     }
 };
 
-// --- RENDERIZADO ---
+// --- RENDERIZADO OPTIMIZADO (FASE 3) ---
 function renderRow(list, containerId) {
     const container = document.getElementById(containerId);
     if(!container) return;
     container.innerHTML = "";
-    list.forEach(v => {
+
+    // Detección de conexión para Pre-fetching
+    const isSlowConn = navigator.connection && (navigator.connection.saveData || navigator.connection.effectiveType.includes('2g'));
+
+    list.forEach((v, index) => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `<img data-src="${v.img}" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=">`;
+        
+        // Pre-fetch para las primeras 5 imágenes si la conexión es buena
+        const shouldPreload = index < 5 && !isSlowConn;
+
+        card.innerHTML = `
+            <img ${shouldPreload ? `src="${v.img}" style="opacity:1"` : `data-src="${v.img}" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="`} 
+            loading="${shouldPreload ? 'eager' : 'lazy'}">
+        `;
+
         card.onclick = () => v.tipo === "serie" || v.tipo === "anime" ? openSeries(v) : openVideo(v);
         container.appendChild(card);
-        observer.observe(card.querySelector("img"));
+        
+        if (!shouldPreload) {
+            observer.observe(card.querySelector("img"));
+        }
     });
 }
 
@@ -320,7 +342,10 @@ function renderContinue() {
         const item = data[title];
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `<img src="${item.img}" style="opacity:1"><div class="continue-overlay"><div class="continue-progress" style="width:${(item.time/item.duration)*100}%"></div></div>`;
+        card.innerHTML = `
+            <img src="${item.img}" style="opacity:1">
+            <div class="continue-overlay"><div class="continue-progress" style="width:${(item.time/item.duration)*100}%"></div></div>
+        `;
         card.onclick = () => {
             const v = allVideos.find(x => x.titulo === title);
             if(v) openVideo(v);
@@ -390,7 +415,6 @@ document.getElementById("searchField").oninput = (e) => {
 onAuthStateChanged(auth, async (user) => {
     if(user) {
         document.getElementById("loginModal").style.display = "none";
-        // Registrar sesión en Firestore (Igual que antes)
         const userRef = doc(db, "users", user.uid);
         await setDoc(userRef, { lastSeen: Date.now(), sessionId }, { merge: true });
         
