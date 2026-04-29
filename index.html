@@ -73,7 +73,7 @@ outline:none;
 }
 
 .search{
-  width:260px; /* más chico para que quepa */
+  width:260px; 
 }
 
 .logout{
@@ -300,18 +300,6 @@ border-radius:999px;
 background:#0a84ff;
 }
 
-.season-select {
-    margin-top:10px;
-    padding:10px 14px;
-    border-radius:12px;
-    background:rgba(255,255,255,.1);
-    color:white;
-    font-size:16px;
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-}
-
 .season-option {
     padding:8px 12px;
     background:#0a84ff;
@@ -406,6 +394,14 @@ onAuthStateChanged,
 signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+// 🔥 1. AGREGA FIRESTORE
+import {
+getFirestore,
+doc,
+getDoc,
+setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 const firebaseConfig = {
 apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
 authDomain: "midata-40f73.firebaseapp.com",
@@ -417,11 +413,68 @@ appId: "1:104287406146:web:d9fad446e22629559dc5db"
 
 const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
+const db = getFirestore(appFirebase);
+
+// 🔐 2. SESSION ID (GLOBAL)
+let sessionId = localStorage.getItem("sessionId");
+if (!sessionId) {
+  sessionId = crypto.randomUUID();
+  localStorage.setItem("sessionId", sessionId);
+}
 
 let allVideos = [];
 let currentSeries = null;
 let currentSeason = 0;
 let currentEpisode = 0;
+
+// ⚡ 3. REGISTRAR SESIÓN
+async function registerSession(user) {
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
+
+  let sessions = snap.exists() ? snap.data().sessions || [] : [];
+  const now = Date.now();
+
+  // eliminar duplicado
+  sessions = sessions.filter(s => s.id !== sessionId);
+
+  // agregar nueva sesión
+  sessions.push({ id: sessionId, lastSeen: now });
+
+  // ordenar por tiempo (viejo -> nuevo)
+  sessions.sort((a, b) => a.lastSeen - b.lastSeen);
+
+  // 💣 dejar solo 2
+  if (sessions.length > 2) {
+    sessions = sessions.slice(-2);
+  }
+
+  await setDoc(ref, { sessions }, { merge: true });
+}
+
+// 💣 4. VALIDAR SI SIGUE ACTIVO
+async function validateSession(user) {
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) return false;
+
+  const sessions = snap.data().sessions || [];
+  return sessions.some(s => s.id === sessionId);
+}
+
+// 🔥 5. EXPULSIÓN AUTOMÁTICA
+function startSessionWatcher(user) {
+  setInterval(async () => {
+    const valid = await validateSession(user);
+
+    if (!valid) {
+      alert("Tu cuenta se abrió en otro dispositivo");
+      await signOut(auth);
+      location.reload();
+    }
+  }, 5000);
+}
 
 window.addEventListener("scroll",()=>{
 document.querySelector(".header")
@@ -455,12 +508,10 @@ const playerController = {
 
   init(){
     this.video = document.getElementById("video");
-
     let lastSave = 0;
 
     this.video.addEventListener("timeupdate", () => {
       const now = Date.now();
-
       if(this.currentId && now - lastSave > 5000){
         saveProgress(
           this.currentId,
@@ -471,13 +522,9 @@ const playerController = {
       }
     });
 
-    // AUTO NEXT / AUTO CLOSE
     this.video.addEventListener("ended", () => {
-
       if(currentSeries){
-
         const season = currentSeries.temporadas[currentSeason];
-
         const isLastEpisode = currentEpisode === season.episodios.length - 1;
         const isLastSeason = currentSeason === currentSeries.temporadas.length - 1;
 
@@ -486,18 +533,14 @@ const playerController = {
         } else {
           nextEpisode();
         }
-
       } else {
         closeVideo();
       }
-
     });
-
   },
 
   play(v){
     this.cleanup();
-
     this.currentId = currentSeries
       ? `${currentSeries.titulo}-S${currentSeason}-E${currentEpisode}`
       : v.titulo;
@@ -505,29 +548,21 @@ const playerController = {
     const progress = getProgress()[this.currentId];
 
     if(v.url.includes(".m3u8") && Hls.isSupported()){
-
       this.hls = new Hls();
       this.hls.loadSource(v.url);
       this.hls.attachMedia(this.video);
-
       this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-      if(progress?.time) this.video.currentTime = progress.time;
-      this.video.play();
-
-      showEpisodeIndicator();
+        if(progress?.time) this.video.currentTime = progress.time;
+        this.video.play();
+        showEpisodeIndicator();
       });
-
     } else {
-
       this.video.src = v.url;
-
-     this.video.onloadedmetadata = () => {
-     if(progress?.time) this.video.currentTime = progress.time;
-     this.video.play();
-
-     showEpisodeIndicator();
+      this.video.onloadedmetadata = () => {
+        if(progress?.time) this.video.currentTime = progress.time;
+        this.video.play();
+        showEpisodeIndicator();
       };
-
     }
   },
 
@@ -536,7 +571,6 @@ const playerController = {
       this.hls.destroy();
       this.hls = null;
     }
-
     this.video.pause();
     this.video.removeAttribute("src");
     this.video.load();
@@ -545,469 +579,295 @@ const playerController = {
 };
   
 function openVideo(v){
-
   document.getElementById("player").style.display="flex";
-
-  document.getElementById("playerNav").style.display=
-  currentSeries ? "flex" : "none";
-
+  document.getElementById("playerNav").style.display= currentSeries ? "flex" : "none";
   playerController.play(v);
-
 }
 
 function showEpisodeIndicator(){
-
   if(!currentSeries) return;
-
   const el = document.getElementById("episodeIndicator");
-
   el.innerText = `T${currentSeason+1} • E${currentEpisode+1}`;
   el.classList.add("show");
-
   setTimeout(()=>{
     el.classList.remove("show");
   },3000);
-
 }
 
 window.closeVideo=function(){
-
-playerController.cleanup();
-document.getElementById("player").style.display="none";
-
-if(currentSeries && currentSeries.temporadas){
-
-document.getElementById("seriesModal").style.display="flex";
-document.getElementById("seasonSelect").value=currentSeason;
-renderEpisodes(currentSeason);
-
-}
+  playerController.cleanup();
+  document.getElementById("player").style.display="none";
+  if(currentSeries && currentSeries.temporadas){
+    document.getElementById("seriesModal").style.display="flex";
+    renderEpisodes(currentSeason);
+  }
 };
 
 function openSeriesModal(series){
+  currentSeries=series;
+  document.getElementById("seriesModal").style.display="flex";
+  document.getElementById("seriesTitle").innerText=series.titulo;
 
-currentSeries=series;
+  fetch(series.temporadasUrl)
+  .then(r=>r.json())
+  .then(data=>{
+    currentSeries.temporadas=data;
+    const seasonBox = document.getElementById("seasonSelect");
+    seasonBox.innerHTML = "";
 
-document.getElementById("seriesModal").style.display="flex";
-document.getElementById("seriesTitle").innerText=series.titulo;
+    data.forEach((t, i) => {
+        const btn = document.createElement("div");
+        btn.className = "season-option";
+        btn.innerText = "Temporada " + t.numero;
+        if (i === currentSeason) btn.classList.add("active");
 
-fetch(series.temporadasUrl)
-.then(r=>r.json())
-.then(data=>{
-
-currentSeries.temporadas=data;
-
-const seasonBox = document.getElementById("seasonSelect");
-seasonBox.innerHTML = "";
-
-data.forEach((t, i) => {
-
-    const btn = document.createElement("div");
-    btn.className = "season-option";
-    btn.innerText = "Temporada " + t.numero;
-
-    if (i === currentSeason) {
-        btn.classList.add("active");
-    }
-
-    btn.onclick = () => {
-
-        currentSeason = i;
-
-        document.querySelectorAll(".season-option")
-            .forEach(b => b.classList.remove("active"));
-
-        btn.classList.add("active");
-
-        renderEpisodes(currentSeason);
-    };
-
-    seasonBox.appendChild(btn);
-});
-
-renderEpisodes(currentSeason);
-
-});
+        btn.onclick = () => {
+            currentSeason = i;
+            document.querySelectorAll(".season-option").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            renderEpisodes(currentSeason);
+        };
+        seasonBox.appendChild(btn);
+    });
+    renderEpisodes(currentSeason);
+  });
 }
 
 window.closeSeriesModal=function(reset=true){
-
-document.getElementById("seriesModal").style.display="none";
-
-if(reset){
-currentSeries=null;
-currentSeason=0;
-currentEpisode=0;
-}
+  document.getElementById("seriesModal").style.display="none";
+  if(reset){
+    currentSeries=null;
+    currentSeason=0;
+    currentEpisode=0;
+  }
 };
 
 function renderEpisodes(index){
+  const list=document.getElementById("episodeList");
+  list.innerHTML="";
+  const season=currentSeries.temporadas[index];
 
-const list=document.getElementById("episodeList");
-list.innerHTML="";
-
-const season=currentSeries.temporadas[index];
-
-season.episodios.forEach((ep,i)=>{
-
-const btn=document.createElement("button");
-btn.innerText=ep.titulo;
-
-btn.onclick=()=>{
-currentEpisode=i;
-closeSeriesModal(false);
-openVideo(ep);
-};
-
-list.appendChild(btn);
-
-});
+  season.episodios.forEach((ep,i)=>{
+    const btn=document.createElement("button");
+    btn.innerText=ep.titulo;
+    btn.onclick=()=>{
+      currentEpisode=i;
+      closeSeriesModal(false);
+      openVideo(ep);
+    };
+    list.appendChild(btn);
+  });
 }
 
 window.nextEpisode=function(){
-
-if(!currentSeries) return;
-
-const season=currentSeries.temporadas[currentSeason];
-
-if(currentEpisode < season.episodios.length-1){
-
-currentEpisode++;
-openVideo(season.episodios[currentEpisode]);
-return;
-
-}
-
-if(currentSeason < currentSeries.temporadas.length-1){
-
-currentSeason++;
-currentEpisode=0;
-
-document.getElementById("seasonSelect").value=currentSeason;
-
-openVideo(
-currentSeries.temporadas[currentSeason].episodios[0]
-);
-
-}
+  if(!currentSeries) return;
+  const season=currentSeries.temporadas[currentSeason];
+  if(currentEpisode < season.episodios.length-1){
+    currentEpisode++;
+    openVideo(season.episodios[currentEpisode]);
+    return;
+  }
+  if(currentSeason < currentSeries.temporadas.length-1){
+    currentSeason++;
+    currentEpisode=0;
+    openVideo(currentSeries.temporadas[currentSeason].episodios[0]);
+  }
 };
 
 window.prevEpisode=function(){
-
-if(!currentSeries) return;
-
-const season=currentSeries.temporadas[currentSeason];
-
-if(currentEpisode>0){
-currentEpisode--;
-openVideo(season.episodios[currentEpisode]);
-}
+  if(!currentSeries) return;
+  if(currentEpisode>0){
+    currentEpisode--;
+    openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
+  }
 };
 
 function buildUI(){
-
-document.getElementById("app").innerHTML=`
-<div class="row"><h2>🆕 Agregadas recientemente</h2><div class="carousel" id="recentRow"></div></div>
-<div class="row"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
-
-<!-- NUEVA FILA -->
-<div class="row"><h2>🍿 Del Cine a tu Casa</h2><div class="carousel" id="cineRow"></div></div>
-
-<div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
-<div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
-<div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
-`;
-
-renderAll();
+  document.getElementById("app").innerHTML=`
+  <div class="row"><h2>🆕 Agregadas recientemente</h2><div class="carousel" id="recentRow"></div></div>
+  <div class="row"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
+  <div class="row"><h2>🍿 Del Cine a tu Casa</h2><div class="carousel" id="cineRow"></div></div>
+  <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
+  <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
+  <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
+  `;
+  renderAll();
 }
 
 function renderAll(){
-
-renderRow(allVideos.filter(v=>v.tipo==="pelicula"),"peliculasRow");
-renderRow(allVideos.filter(v=>v.tipo==="serie"),"seriesRow");
-renderRow(allVideos.filter(v=>v.tipo==="anime"),"animeRow");
-
-// NUEVO FILTRO
-renderRow(allVideos.filter(v=>v.tipo==="cine"),"cineRow");
-
-renderRecent();
-renderContinue();
+  renderRow(allVideos.filter(v=>v.tipo==="pelicula"),"peliculasRow");
+  renderRow(allVideos.filter(v=>v.tipo==="serie"),"seriesRow");
+  renderRow(allVideos.filter(v=>v.tipo==="anime"),"animeRow");
+  renderRow(allVideos.filter(v=>v.tipo==="cine"),"cineRow");
+  renderRecent();
+  renderContinue();
 }
 
 function renderRow(list,id){
-
-const row=document.getElementById(id);
-row.innerHTML="";
-
-list.forEach(v=>{
-
-const card=document.createElement("div");
-card.className="card";
-card.dataset.title=v.titulo.toLowerCase();
-
-card.innerHTML=`
-<img src="${v.img}">
-<div class="preview-fake" style="background-image:url(${v.img})"></div>
-`;
-
-card.onclick=()=>{
-
-if(v.tipo==="serie" || v.tipo==="anime"){
-openSeriesModal(v);
-}else{
-currentSeries=null;
-openVideo(v);
-}
-
-};
-
-row.appendChild(card);
-
-});
+  const row=document.getElementById(id);
+  row.innerHTML="";
+  list.forEach(v=>{
+    const card=document.createElement("div");
+    card.className="card";
+    card.dataset.title=v.titulo.toLowerCase();
+    card.innerHTML=`<img src="${v.img}"><div class="preview-fake" style="background-image:url(${v.img})"></div>`;
+    card.onclick=()=>{
+      if(v.tipo==="serie" || v.tipo==="anime") openSeriesModal(v);
+      else { currentSeries=null; openVideo(v); }
+    };
+    row.appendChild(card);
+  });
 }
 
 function renderRecent(){
-renderRow(allVideos.slice(-10),"recentRow");
+  renderRow(allVideos.slice(-10).reverse(),"recentRow");
 }
 
 function renderContinue(){
-
-const data = getProgress();
-
-const list = Object.keys(data)
-.map(id => {
-
-// SERIES / ANIME
-if(id.includes("-S")){
-const [title, s, e] = id.split("-");
-const serie = allVideos.find(v => v.titulo === title);
-if(!serie) return null;
-
-return {
-  ...serie,
-  _progressId: id,
-  _season: parseInt(s.replace("S","")),
-  _episode: parseInt(e.replace("E",""))
-};
-}
-
-// PELÍCULA / CINE
-return allVideos.find(v => v.titulo === id);
-
-})
-.filter(Boolean)
-.reduce((acc, v) => {
-
-  // SERIES / ANIME
-  if(v.tipo === "serie" || v.tipo === "anime"){
-
-    const existing = acc.find(x => x.titulo === v.titulo);
-
-    if(!existing){
-      acc.push(v);
-    }else{
-
-      const currentProg = data[v._progressId] || {};
-      const existingProg = data[existing._progressId] || {};
-
-      if((currentProg.updated || 0) > (existingProg.updated || 0)){
-        const index = acc.indexOf(existing);
-        acc[index] = v;
-      }
-
+  const data = getProgress();
+  const list = Object.keys(data).map(id => {
+    if(id.includes("-S")){
+      const [title] = id.split("-S");
+      const serie = allVideos.find(v => v.titulo === title);
+      if(!serie) return null;
+      const prog = data[id];
+      return { ...serie, _progressId: id, _season: prog.season, _episode: prog.episode };
     }
+    return allVideos.find(v => v.titulo === id);
+  })
+  .filter(Boolean)
+  .reduce((acc, v) => {
+    if(v.tipo === "serie" || v.tipo === "anime"){
+      const existing = acc.find(x => x.titulo === v.titulo);
+      if(!existing) acc.push(v);
+      else {
+        const currentProg = data[v._progressId] || {};
+        const existingProg = data[existing._progressId] || {};
+        if((currentProg.updated || 0) > (existingProg.updated || 0)){
+          acc[acc.indexOf(existing)] = v;
+        }
+      }
+    } else acc.push(v);
+    return acc;
+  }, [])
+  .sort((a,b)=>data[b._progressId || b.titulo].updated - data[a._progressId || a.titulo].updated)
+  .slice(0,5);
 
-  } else {
-    // PELÍCULAS / CINE
-    acc.push(v);
-  }
+  const row = document.getElementById("continueRow");
+  row.innerHTML = "";
 
-  return acc;
-
-}, [])
-
-.sort((a,b)=>data[b._progressId || b.titulo].updated - data[a._progressId || a.titulo].updated)
-.slice(0,5);
-
-const row = document.getElementById("continueRow");
-row.innerHTML = "";
-
-list.forEach(v => {
-
-const prog = data[v._progressId || v.titulo];
-
-if(!prog?.duration || prog.time >= prog.duration * .95) return;
-
-const remain = Math.ceil((prog.duration - prog.time) / 60);
-
-let info = `Quedan ${remain} min`;
-
-if(v.tipo==="serie" || v.tipo==="anime"){
-info = `T${(v._season ?? prog.season ?? 0)+1}:E${(v._episode ?? prog.episode ?? 0)+1} • ${remain} min restantes`;
-}
-
-const percent = Math.max(8,(prog.time / prog.duration) * 100);
-
-const card = document.createElement("div");
-card.className = "card continue-card";
-
-card.innerHTML = `
-<img src="${v.img}">
-<div class="preview-fake" style="background-image:url(${v.img})"></div>
-
-<div class="continue-overlay">
-<button class="continue-btn">▶ Continuar</button>
-<div class="continue-info">${info}</div>
-<div class="continue-line" style="width:${percent}%"></div>
-</div>
-`;
-
-card.onclick = () => {
-
-if(v.tipo==="pelicula" || v.tipo==="cine"){
-
-currentSeries = null;
-openVideo(v);
-
-}else{
-
-currentSeries = v;
-currentSeason = v._season ?? prog.season ?? 0;
-currentEpisode = v._episode ?? prog.episode ?? 0;
-
-fetch(v.temporadasUrl)
-.then(r=>r.json())
-.then(data=>{
-
-currentSeries.temporadas = data;
-
-openVideo(
-data[currentSeason].episodios[currentEpisode]
-);
-
-});
-
-}
-
-};
-
-row.appendChild(card);
-
-});
-
+  list.forEach(v => {
+    const prog = data[v._progressId || v.titulo];
+    if(!prog?.duration || prog.time >= prog.duration * .95) return;
+    const remain = Math.ceil((prog.duration - prog.time) / 60);
+    let info = `Quedan ${remain} min`;
+    if(v.tipo==="serie" || v.tipo==="anime"){
+      info = `T${(prog.season ?? 0)+1}:E${(prog.episode ?? 0)+1} • ${remain} min`;
+    }
+    const percent = Math.max(8,(prog.time / prog.duration) * 100);
+    const card = document.createElement("div");
+    card.className = "card continue-card";
+    card.innerHTML = `
+      <img src="${v.img}">
+      <div class="preview-fake" style="background-image:url(${v.img})"></div>
+      <div class="continue-overlay">
+        <button class="continue-btn">▶ Continuar</button>
+        <div class="continue-info">${info}</div>
+        <div class="continue-line" style="width:${percent}%"></div>
+      </div>
+    `;
+    card.onclick = () => {
+      if(v.tipo==="pelicula" || v.tipo==="cine"){
+        currentSeries = null;
+        openVideo(v);
+      }else{
+        currentSeries = v;
+        currentSeason = prog.season ?? 0;
+        currentEpisode = prog.episode ?? 0;
+        fetch(v.temporadasUrl).then(r=>r.json()).then(data=>{
+          currentSeries.temporadas = data;
+          openVideo(data[currentSeason].episodios[currentEpisode]);
+        });
+      }
+    };
+    row.appendChild(card);
+  });
 }
 
 document.getElementById("search").addEventListener("input",(e)=>{
-
-const txt=e.target.value.toLowerCase();
-
-document.querySelectorAll(".card").forEach(c=>{
-c.style.display=
-c.dataset.title.includes(txt) ? "block" : "none";
-});
-
+  const txt=e.target.value.toLowerCase();
+  document.querySelectorAll(".card").forEach(c=>{
+    c.style.display= c.dataset.title.includes(txt) ? "block" : "none";
+  });
 });
 
 document.getElementById("loginBtn").onclick=async()=>{
-
-const email=document.getElementById("loginUser").value.trim();
-const pass=document.getElementById("loginPass").value.trim();
-
-try{
-await signInWithEmailAndPassword(auth,email,pass);
-}
-
-catch(e){
-  console.error(e);
-
-  document.getElementById("loginError").innerText =
-  e.message;
-
-  document.getElementById("loginError").style.display="block";
-}
-
+  const email=document.getElementById("loginUser").value.trim();
+  const pass=document.getElementById("loginPass").value.trim();
+  try{
+    await signInWithEmailAndPassword(auth,email,pass);
+  } catch(e){
+    document.getElementById("loginError").innerText = e.message;
+    document.getElementById("loginError").style.display="block";
+  }
 };
 
-onAuthStateChanged(auth,(user)=>{
+// ⚡ 6. MODIFICA TU LOGIN
+onAuthStateChanged(auth, async (user)=>{
+  if(user){
+    document.getElementById("loginModal").style.display="none";
 
-if(user){
+    await registerSession(user);
+    startSessionWatcher(user);
 
-document.getElementById("loginModal").style.display="none";
-
-playerController.init();
-
-fetch("videos.json")
-.then(r=>r.json())
-.then(data=>{
-allVideos=data;
-buildUI();
-});
-
-}else{
-
-document.getElementById("loginModal").style.display="flex";
-
-}
-
+    playerController.init();
+    fetch("videos.json")
+    .then(r=>r.json())
+    .then(data=>{
+      allVideos=data;
+      buildUI();
+    });
+  }else{
+    document.getElementById("loginModal").style.display="flex";
+  }
 });
 
 window.logout=async function(){
-await signOut(auth);
+  await signOut(auth);
 };
 
 // ============================
-// 📺 CAST (SAFE - NO BREAK)
+// 📺 CAST
 // ============================
-
 let castReady = false;
 let castContext = null;
 
 window.__onGCastApiAvailable = function(isAvailable) {
   if (!isAvailable) return;
-
   try {
     castContext = cast.framework.CastContext.getInstance();
-
     castContext.setOptions({
       receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
       autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
     });
-
     castReady = true;
-    console.log("Cast listo");
-
-  } catch (e) {
-    console.log("Cast error:", e);
-  }
+  } catch (e) { console.log("Cast error:", e); }
 };
 
 window.castVideo = function () {
-  if (!castReady || !castContext) {
-    alert("Chromecast no disponible");
-    return;
-  }
-
+  if (!castReady || !castContext) { alert("Chromecast no disponible"); return; }
   const video = document.getElementById("video");
   const url = video.src;
-
   if (!url) return;
 
   castContext.requestSession().then(() => {
-
     const session = castContext.getCurrentSession();
-
     const mediaInfo = new chrome.cast.media.MediaInfo(url, "video/mp4");
-
     const request = new chrome.cast.media.LoadRequest(mediaInfo);
-
-    session.loadMedia(request)
-      .then(() => console.log("📺 En TV"))
-      .catch(err => console.log(err));
-
+    session.loadMedia(request);
   }).catch(err => console.log(err));
 };
 
-// opcional: ocultar botón si no hay cast
 setTimeout(() => {
   if (!castReady) {
     const btn = document.getElementById("castBtn");
