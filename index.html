@@ -315,8 +315,8 @@ window.closeSeriesModal = () => {
     currentSeries = null;
 };
 
-// --- LOGICA DEL BANNER ---
-function setupHeroBanner() {
+// --- LOGICA DEL BANNER ACTUALIZADA (HÍBRIDA) ---
+async function setupHeroBanner() {
     const cinePelis = allVideos.filter(v => v.tipo === "cine");
     if (cinePelis.length === 0) return;
 
@@ -328,19 +328,46 @@ function setupHeroBanner() {
 
     banner.style.display = "block";
     title.innerText = ultimaPeli.titulo;
+    
     playBtn.onclick = () => {
         currentSeries = null;
         window.openVideo(ultimaPeli);
     };
 
-    // YouTube Search Link para el trailer
-    const searchQuery = encodeURIComponent(ultimaPeli.titulo + " trailer oficial español");
+    // 1. Intentamos obtener el ID manual desde el archivo .txt en tu R2
+    // Reemplazamos la extensión .jpg de la imagen por .txt
+    const txtUrl = ultimaPeli.img.replace(".jpg", ".txt");
+    let manualVideoId = null;
+
+    try {
+        const response = await fetch(txtUrl);
+        if (response.ok) {
+            const text = await response.text();
+            manualVideoId = text.trim(); // Limpiamos espacios
+        }
+    } catch (e) {
+        console.log("No se encontró .txt o hubo error de red, usando búsqueda.");
+    }
+
+    let finalSrc = "";
+
+    if (manualVideoId && manualVideoId.length < 15) {
+        // OPCIÓN A: Tenemos un ID real (ej: dl3w10VVQj8)
+        // Agregamos playlist=${manualVideoId} para que el loop de YouTube funcione
+        finalSrc = `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0&showinfo=0&iv_load_policy=3`;
+    } else {
+        // OPCIÓN B: No hay ID manual, usamos la búsqueda automática por título
+        const searchQuery = encodeURIComponent(ultimaPeli.titulo + " trailer oficial español");
+        finalSrc = `https://www.youtube.com/embed?listType=search&list=${searchQuery}&autoplay=1&mute=1&controls=0&loop=1&rel=0&showinfo=0&iv_load_policy=3`;
+    }
+
+    // Inyectamos el reproductor con la URL final decidida
     document.getElementById("youtubePlayer").innerHTML = `
         <iframe width="100%" height="100%" 
-        src="https://www.youtube.com/embed?listType=search&list=${searchQuery}&autoplay=1&mute=1&controls=0&loop=1&rel=0&showinfo=0&iv_load_policy=3" 
+        src="${finalSrc}" 
         frameborder="0" allow="autoplay; encrypted-media"></iframe>`;
 }
-
+    
 function buildUI(){
     document.getElementById("app").innerHTML = `
         <div class="row"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
