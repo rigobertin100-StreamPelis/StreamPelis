@@ -148,14 +148,12 @@ const videoPlayer = {
         this.stop();
         let savedTime = 0;
         
-        // El worker ahora devuelve v.title y v.video
         if(currentUser) {
             const snap = await getDoc(doc(db, "users", currentUser.uid, "progress", v.title.replace(/\s+/g, '_')));
             if(snap.exists()) savedTime = snap.data().time;
         }
 
-        // v.video es la URL que entrega el worker
-        if(v.video.includes(".m3u8")) {
+        if(v.video && v.video.includes(".m3u8")) {
             if(Hls.isSupported()) {
                 this.hls = new Hls();
                 this.hls.loadSource(v.video);
@@ -171,7 +169,7 @@ const videoPlayer = {
                     this.el.play();
                 });
             }
-        } else {
+        } else if (v.video) {
             this.el.src = v.video;
             this.el.onloadedmetadata = () => {
                 this.el.currentTime = savedTime;
@@ -222,11 +220,12 @@ function renderCategory(tag, containerId) {
     const container = document.getElementById(containerId);
     if(!container) return;
     
-    // Filtramos usando v.category que viene del worker
     let list = allVideos.filter(v => v.category === tag);
     list = [...list].reverse(); 
     
     list.forEach(v => {
+        if(!v.img || !v.video) return; // 🔒 protección extra
+
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `<img loading="lazy" src="${v.img}">`;
@@ -238,11 +237,22 @@ function renderCategory(tag, containerId) {
 onAuthStateChanged(auth, (user) => {
     if(user) {
         currentUser = user;
-        // NUEVA URL DEL WORKER CORREGIDA
+
         fetch("https://snowy-tree-dd6c.rigobertin100.workers.dev")
-            .then(r => r.json())
+            .then(async r => {
+                if(!r.ok) throw new Error("HTTP " + r.status);
+                return r.json();
+            })
             .then(data => {
+                console.log("CATALOGO:", data); // 🔥 DEBUG CLAVE
+
+                if(!Array.isArray(data) || data.length === 0){
+                    document.getElementById("mainLoader").innerHTML = "<p>No hay contenido en el bucket.</p>";
+                    return;
+                }
+
                 allVideos = data;
+
                 document.getElementById("app").innerHTML = `
                     <div class="row"><h2>🆕 Novedades</h2><div class="carousel" id="row-recent"></div></div>
                     <div class="row"><h2>🍿 Cine en Casa</h2><div class="carousel" id="row-cine"></div></div>
@@ -251,10 +261,12 @@ onAuthStateChanged(auth, (user) => {
                     <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="row-anime"></div></div>
                 `;
                 
-                // Novedades
                 const recentList = [...allVideos].reverse().slice(0, 10);
                 const recentContainer = document.getElementById("row-recent");
+
                 recentList.forEach(v => {
+                    if(!v.img || !v.video) return;
+
                     const card = document.createElement("div");
                     card.className = "card";
                     card.innerHTML = `<img loading="lazy" src="${v.img}">`;
@@ -262,17 +274,18 @@ onAuthStateChanged(auth, (user) => {
                     recentContainer.appendChild(card);
                 });
                 
-                // Categorías usando los tags que el worker genera
                 renderCategory("cine", "row-cine");
                 renderCategory("pelicula", "row-movies");
                 renderCategory("serie", "row-series");
                 renderCategory("anime", "row-anime");
 
                 document.getElementById("mainLoader").style.display = "none";
-            }).catch(err => {
+            })
+            .catch(err => {
                 console.error("Error cargando catálogo:", err);
                 document.getElementById("mainLoader").innerHTML = "<p>Error de conexión con el servidor.</p>";
             });
+
     } else {
         location.href = "login.html"; 
     }
