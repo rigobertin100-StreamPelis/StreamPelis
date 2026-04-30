@@ -2,187 +2,164 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>PlusUltra Universal</title>
-
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/3S7vX2P/logo-512.png">
-    <meta name="theme-color" content="#1c1c1e">
-
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://www.gstatic.com/cv/js/cast_sender.js"></script>
-    
     <style>
-        :root { --primary: #0a84ff; --bg: #111; --card-bg: #1c1c1e; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: white; padding-top: 75px; overflow-x: hidden; user-select: none; }
-
-        .header { position: fixed; top: 0; left: 0; width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 10px 4%; z-index: 9999; background: rgba(28, 28, 30, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
-        .logo { font-size: 24px; font-weight: 900; color: var(--primary); letter-spacing: -1px; cursor: pointer; }
+        :root { --bg: #000; --card-bg: #1c1c1e; --primary: #0a84ff; }
+        body { margin: 0; background: var(--bg); color: white; font-family: -apple-system, system-ui, sans-serif; overflow-x: hidden; }
         
-        .nav-tools { display: flex; gap: 10px; align-items: center; }
-        .search { padding: 8px 15px; border-radius: 20px; border: none; background: rgba(255, 255, 255, 0.1); color: white; width: 200px; }
-        .logout { padding: 8px 15px; border: none; border-radius: 20px; background: #ff3b30; color: white; font-weight: bold; cursor: pointer; }
+        /* Header Estilo iOS */
+        .header { position: fixed; top: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: rgba(0,0,0,0.7); backdrop-filter: blur(20px); z-index: 1000; border-bottom: 0.5px solid #333; }
+        .logo { font-size: 22px; font-weight: 800; color: var(--primary); }
+        .search-bar { background: #2c2c2e; border: none; border-radius: 10px; padding: 8px 15px; color: white; width: 250px; }
+        .btn-exit { background: #ff3b30; border: none; border-radius: 8px; color: white; padding: 6px 15px; font-weight: 600; cursor: pointer; }
 
-        .row { margin-bottom: 30px; padding: 0 4%; }
-        .row h2 { font-size: 20px; margin-bottom: 15px; color: #f2f2f7; }
-        .carousel { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; scroll-behavior: smooth; }
+        /* Contenedor Principal */
+        #app { padding: 80px 20px 20px; }
+        .row { margin-bottom: 30px; }
+        .row h2 { font-size: 20px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .carousel { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scroll-behavior: smooth; }
         .carousel::-webkit-scrollbar { display: none; }
-        
-        .card { width: 160px; flex-shrink: 0; aspect-ratio: 2/3; background: var(--card-bg); border-radius: 12px; overflow: hidden; position: relative; transition: transform 0.3s; cursor: pointer; }
-        .card:hover { transform: scale(1.05); }
-        .card img { width: 100%; height: 100%; object-fit: cover; }
-        .card-fallback { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 10px; text-align: center; font-size: 12px; background: linear-gradient(45deg, #1c1c1e, #2c2c2e); color: rgba(255,255,255,0.6); }
 
-        .player { position: fixed; inset: 0; display: none; background: #000; z-index: 100000; }
-        video { width: 100%; height: 100%; }
+        /* Cards PlusUltra */
+        .card { width: 150px; flex-shrink: 0; border-radius: 12px; overflow: hidden; background: var(--card-bg); transition: transform 0.3s; cursor: pointer; position: relative; aspect-ratio: 2/3; }
+        .card:active { transform: scale(0.95); }
+        .card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .card-title { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); font-size: 11px; font-weight: 500; text-align: center; }
         
-        #mainLoader { position: fixed; inset: 0; background: #000; display: flex; justify-content: center; align-items: center; z-index: 1000000; }
-        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Fallback si no hay imagen de R2 */
+        .no-img { display: flex; align-items: center; justify-content: center; text-align: center; padding: 10px; background: #2c2c2e; height: 100%; color: #8e8e93; font-size: 12px; }
+
+        /* Player */
+        .player-overlay { position: fixed; inset: 0; background: #000; z-index: 2000; display: none; }
+        video { width: 100%; height: 100%; }
+        .close-player { position: absolute; top: 20px; right: 20px; font-size: 24px; color: white; z-index: 2100; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="mainLoader"><div class="spinner"></div></div>
+    <header class="header">
+        <div class="logo">PlusUltra</div>
+        <input type="text" id="searchInput" class="search-bar" placeholder="Buscar película o serie...">
+        <button class="btn-exit" onclick="logout()">Salir</button>
+    </header>
 
-<header class="header">
-    <div class="logo" onclick="location.reload()">PlusUltra</div>
-    <div class="nav-tools">
-        <input id="searchField" class="search" placeholder="Buscar...">
-        <button class="logout" onclick="logout()">Salir</button>
+    <div id="app">
+        <!-- Las filas se generan dinámicamente aquí para no perder categorías -->
     </div>
-</header>
 
-<main id="app"></main>
-
-<div class="player" id="player">
-    <span style="position:absolute; top:20px; right:20px; z-index:101; font-size:30px; cursor:pointer;" onclick="closeVideo()">✕</span>
-    <video id="video" controls playsinline></video>
-</div>
+    <div id="playerOverlay" class="player-overlay">
+        <span class="close-player" onclick="closeVideo()">✕</span>
+        <video id="mainVideo" controls></video>
+    </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
-    authDomain: "midata-40f73.firebaseapp.com",
-    projectId: "midata-40f73",
-    storageBucket: "midata-40f73.firebasestorage.app",
-    appId: "1:104287406146:web:d9fad446e22629559dc5db"
-};
+    const firebaseConfig = {
+        apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
+        authDomain: "midata-40f73.firebaseapp.com",
+        projectId: "midata-40f73",
+        storageBucket: "midata-40f73.firebasestorage.app",
+        appId: "1:104287406146:web:d9fad446e22629559dc5db"
+    };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    let allMedia = [];
 
-let allVideos = [];
-let currentUser = null;
+    // Categorías que tenías originalmente
+    const categories = [
+        { id: 'novedades', title: '🆕 Novedades', filter: (data) => data.slice(-15).reverse() },
+        { id: 'peliculas', title: '🍿 Películas', filter: (data) => data.filter(i => i.tipo?.toLowerCase().includes('peli')) },
+        { id: 'series', title: '📺 Series', filter: (data) => data.filter(i => i.tipo?.toLowerCase().includes('serie')) },
+        { id: 'anime', title: '🍥 Anime', filter: (data) => data.filter(i => i.tipo?.toLowerCase().includes('anime')) }
+    ];
 
-// RENDERIZADO DE CARDS (Sin dependencias externas que fallen)
-function createCard(v) {
-    const card = document.createElement("div");
-    card.className = "card";
-    
-    // Si la imagen falla o no existe, mostramos el título con estilo
-    const imgHtml = v.img 
-        ? `<img src="${v.img}" loading="lazy" onerror="this.style.display='none'">`
-        : '';
-    
-    card.innerHTML = `
-        <div class="card-fallback">${v.titulo}</div>
-        ${imgHtml}
-    `;
-    
-    card.onclick = () => openVideo(v);
-    return card;
-}
+    function createCard(item) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        // Blindaje contra ERR_CONNECTION_CLOSED
+        const imgTag = item.img 
+            ? `<img src="${item.img}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=no-img>${item.titulo}</div>'">`
+            : `<div class="no-img">${item.titulo}</div>`;
 
-function renderCategory(tag, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const list = allVideos.filter(v => {
-        const tipo = (v.tipo || "").toLowerCase();
-        return tipo.includes(tag.toLowerCase());
-    }).reverse();
-
-    if (list.length > 0) {
-        list.forEach(v => container.appendChild(createCard(v)));
-    } else {
-        container.parentElement.style.display = "none";
+        card.innerHTML = `
+            ${imgTag}
+            <div class="card-title">${item.titulo}</div>
+        `;
+        
+        card.onclick = () => openVideo(item.url);
+        return card;
     }
-}
 
-// CONTROL DE VIDEO
-const videoPlayer = {
-    el: document.getElementById("video"),
-    hls: null,
-    async play(v) {
-        this.stop();
-        if(v.url.includes(".m3u8")) {
-            if(Hls.isSupported()) {
-                this.hls = new Hls();
-                this.hls.loadSource(v.url);
-                this.hls.attachMedia(this.el);
-                this.hls.on(Hls.Events.MANIFEST_PARSED, () => this.el.play());
+    function renderApp(data) {
+        const container = document.getElementById('app');
+        container.innerHTML = '';
+
+        categories.forEach(cat => {
+            const filtered = cat.filter(data);
+            if (filtered.length > 0) {
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.innerHTML = `<h2>${cat.title}</h2><div class="carousel" id="${cat.id}"></div>`;
+                container.appendChild(row);
+                
+                const carousel = row.querySelector('.carousel');
+                filtered.forEach(item => carousel.appendChild(createCard(item)));
+            }
+        });
+    }
+
+    // Buscador en tiempo real
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = allMedia.filter(m => m.titulo.toLowerCase().includes(term));
+        renderApp(filtered);
+    });
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            fetch("https://morning-glade-ac23.rigobertin100.workers.dev")
+                .then(r => r.json())
+                .then(data => {
+                    allMedia = data;
+                    renderApp(data);
+                });
+        } else {
+            location.href = 'login.html';
+        }
+    });
+
+    window.openVideo = (url) => {
+        const overlay = document.getElementById('playerOverlay');
+        const video = document.getElementById('mainVideo');
+        overlay.style.display = 'block';
+
+        if (url.includes('.m3u8')) {
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
             }
         } else {
-            this.el.src = v.url;
-            this.el.play();
+            video.src = url;
+            video.play();
         }
-    },
-    stop() {
-        if(this.hls) { this.hls.destroy(); this.hls = null; }
-        this.el.pause(); this.el.src = "";
-    }
-};
+    };
 
-onAuthStateChanged(auth, (user) => {
-    if(user) {
-        currentUser = user;
-        fetch("https://morning-glade-ac23.rigobertin100.workers.dev")
-            .then(r => r.json())
-            .then(data => {
-                allVideos = data;
-                const appContainer = document.getElementById("app");
-                appContainer.innerHTML = `
-                    <div class="row"><h2>🆕 Novedades</h2><div class="carousel" id="row-recent"></div></div>
-                    <div class="row"><h2>🍿 Cine</h2><div class="carousel" id="row-cine"></div></div>
-                    <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="row-movies"></div></div>
-                    <div class="row"><h2>📺 Series</h2><div class="carousel" id="row-series"></div></div>
-                `;
+    window.closeVideo = () => {
+        const video = document.getElementById('mainVideo');
+        video.pause();
+        video.src = "";
+        document.getElementById('playerOverlay').style.display = 'none';
+    };
 
-                // Llenar filas
-                allVideos.slice(-10).reverse().forEach(v => document.getElementById("row-recent").appendChild(createCard(v)));
-                renderCategory("cine", "row-cine");
-                renderCategory("pelicula", "row-movies");
-                renderCategory("serie", "row-series");
-
-                document.getElementById("mainLoader").style.display = "none";
-            })
-            .catch(() => {
-                document.getElementById("mainLoader").innerHTML = "<p>Error de conexión</p>";
-            });
-    } else {
-        location.href = "login.html";
-    }
-});
-
-window.openVideo = (v) => {
-    document.getElementById("player").style.display = "block";
-    videoPlayer.play(v);
-};
-window.closeVideo = () => {
-    videoPlayer.stop();
-    document.getElementById("player").style.display = "none";
-};
-window.logout = () => signOut(auth).then(() => location.reload());
+    window.logout = () => signOut(auth).then(() => location.reload());
 </script>
 </body>
 </html>
