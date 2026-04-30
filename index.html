@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PlusUltra Universal</title>
+    <title>PlusUltra</title>
     <style>
         :root { --primary: #0a84ff; --bg: #000; --card-bg: #1c1c1e; }
         body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: white; padding-top: 70px; overflow-x: hidden; }
@@ -13,30 +13,28 @@
         .logout { padding: 8px 18px; background: #ff3b30; border: none; border-radius: 20px; color: white; font-weight: bold; cursor: pointer; }
 
         .row { margin-bottom: 35px; padding: 0 5%; }
-        .row h2 { font-size: 20px; margin-bottom: 15px; color: #fff; }
+        .row h2 { font-size: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
         
-        .carousel { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .carousel { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
         .carousel::-webkit-scrollbar { display: none; }
         
-        .card { width: 165px; flex-shrink: 0; aspect-ratio: 2/3; background: var(--card-bg); border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s ease; box-shadow: 0 8px 15px rgba(0,0,0,0.5); position: relative; }
-        .card:hover { transform: scale(1.05); }
-        .card img { width: 100%; height: 100%; object-fit: cover; background: #222; display: block; }
+        .card { width: 165px; flex-shrink: 0; aspect-ratio: 2/3; background: var(--card-bg); border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; position: relative; border: 1px solid #333; }
+        .card:hover { transform: scale(1.05); border-color: var(--primary); }
+        .card img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Título sobre la imagen cuando no hay carátula */
+        .card-title { position: absolute; bottom: 0; width: 100%; padding: 10px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); font-size: 12px; text-align: center; box-sizing: border-box; }
 
         #player { position: fixed; inset: 0; background: #000; display: none; z-index: 9999; }
         video { width: 100%; height: 100%; }
         .close-btn { position: absolute; top: 20px; right: 25px; font-size: 40px; color: white; cursor: pointer; z-index: 10000; }
         
-        #loader { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5000; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        #loader { position: fixed; inset: 0; background: #000; display: flex; justify-content: center; align-items: center; z-index: 5000; }
     </style>
 </head>
 <body>
 
-<div id="loader">
-    <div class="spinner"></div>
-    <p>Sincronizando catálogo...</p>
-</div>
+<div id="loader">Cargando PlusUltra...</div>
 
 <header class="header">
     <div class="logo">PlusUltra</div>
@@ -47,7 +45,7 @@
 
 <div id="player">
     <span class="close-btn" onclick="closeVideo()">×</span>
-    <video id="video" controls playsinline></video>
+    <video id="video" controls></video>
 </div>
 
 <script type="module">
@@ -65,92 +63,65 @@
     const auth = getAuth(app);
     const WORKER_URL = "https://morning-glade-ac23.rigobertin100.workers.dev";
 
-    let allVideos = [];
+    // Imagen por defecto elegante si no hay en el R2
+    const DEFAULT_IMG = "https://images.unsplash.com/photo-1594909122845-11baa439b7bf?q=80&w=300&h=450&auto=format&fit=crop";
 
     async function loadContent() {
         try {
-            const res = await fetch(WORKER_URL, { cache: 'no-store' });
-            if (!res.ok) throw new Error("Worker offline");
-            
-            allVideos = await res.json();
-            renderAll();
-            
+            const res = await fetch(WORKER_URL);
+            const data = await res.json();
+            renderAll(data);
             document.getElementById('loader').style.display = 'none';
         } catch (e) {
-            console.error("Error:", e);
-            document.getElementById('loader').innerHTML = `<p style="color:red">Error de conexión</p>`;
+            console.error(e);
         }
     }
 
-    function renderAll() {
+    function renderAll(videos) {
         const appEl = document.getElementById('app');
         
-        // Función de filtrado flexible
-        const filterBy = (term) => allVideos.filter(v => v.tipo && v.tipo.toLowerCase().includes(term));
-
-        const categories = [
-            { title: "🆕 Novedades", data: allVideos.slice(0, 10) },
-            { title: "🎬 Películas", data: filterBy('pelicula') },
-            { title: "📺 Series", data: filterBy('serie') },
-            { title: "🍥 Anime", data: filterBy('anime') },
-            { title: "🍿 Cine", data: filterBy('cine') }
+        // Categorías basadas en tu JSON
+        const sections = [
+            { title: "🆕 Novedades", items: videos.slice(0, 6) },
+            { title: "🎬 Películas y Series", items: videos }
         ];
 
-        appEl.innerHTML = categories.map(cat => {
-            if (cat.data.length === 0) return '';
-            return `
-                <div class="row">
-                    <h2>${cat.title}</h2>
-                    <div class="carousel">
-                        ${cat.data.map(v => {
-                            // Limpieza de datos por seguridad
-                            const videoUrl = v.video || '';
-                            const imgUrl = v.imagen || '';
-                            const vData = btoa(JSON.stringify(v)); // Codificamos para evitar errores de comillas
-
-                            return `
-                                <div class="card" onclick="openVideo('${vData}')">
-                                    <img src="${imgUrl}" 
-                                         loading="lazy"
-                                         onerror="this.src='https://placehold.co/200x300/1c1c1e/white?text=Error+Carga'">
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
+        appEl.innerHTML = sections.map(sec => `
+            <div class="row">
+                <h2>${sec.title}</h2>
+                <div class="carousel">
+                    ${sec.items.map(v => `
+                        <div class="card" onclick='openVideo("${v.video}")'>
+                            <img src="${v.imagen || DEFAULT_IMG}" onerror="this.src='${DEFAULT_IMG}'">
+                            <div class="card-title">${v.titulo}</div>
+                        </div>
+                    `).join('')}
                 </div>
-            `;
-        }).join('');
+            </div>
+        `).join('');
     }
 
-    window.openVideo = (encodedData) => {
-        try {
-            const v = JSON.parse(atob(encodedData));
-            const player = document.getElementById('player');
-            const video = document.getElementById('video');
-            
-            if (!v.video) return alert("URL de video no encontrada");
-            
-            player.style.display = 'block';
-            video.src = v.video;
-            video.play();
-            document.body.style.overflow = 'hidden';
-        } catch (e) { console.error("Error al abrir video:", e); }
+    window.openVideo = (url) => {
+        const p = document.getElementById('player');
+        const v = document.getElementById('video');
+        p.style.display = 'block';
+        v.src = url;
+        v.play();
     };
 
     window.closeVideo = () => {
-        const video = document.getElementById('video');
-        video.pause();
-        video.src = "";
-        document.getElementById('player').style.display = 'none';
-        document.body.style.overflow = 'auto';
+        const p = document.getElementById('player');
+        const v = document.getElementById('video');
+        v.pause();
+        p.style.display = 'none';
     };
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, user => {
         if (user) loadContent();
         else window.location.href = "login.html";
     });
 
-    window.logout = () => signOut(auth).then(() => location.reload());
+    window.logout = () => signOut(auth);
 </script>
 </body>
 </html>
