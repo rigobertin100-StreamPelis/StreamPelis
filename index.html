@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PlusUltra iOS Pro</title>
+    <title>PlusUltra Pro</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://www.gstatic.com/cv/js/cast_sender.js"></script>
@@ -27,7 +30,6 @@
         .search{padding:10px 18px;border-radius:24px;border:none;width:260px;font-size:16px;background:rgba(255,255,255,.1);color:white;outline:none;}
         .logout{white-space:nowrap;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer;font-weight:bold;}
         
-        /* --- ESTILOS DEL BANNER --- */
         .hero-banner {position: relative; width: 100%; height: 70vh; background: #000; overflow: hidden; margin-top: -90px; display: none;}
         .hero-video-bg {position: absolute; top: 50%; left: 50%; width: 100vw; height: 56.25vw; transform: translate(-50%, -50%); pointer-events: none;}
         .hero-overlay {position: absolute; inset: 0; background: linear-gradient(to right, rgba(28,28,30,0.9) 10%, transparent 70%), linear-gradient(to top, #1c1c1e 5%, transparent 50%); display: flex; flex-direction: column; justify-content: center; padding: 0 50px; z-index: 2;}
@@ -248,7 +250,7 @@ window.closeVideo = () => {
     if (currentSeries) {
         document.getElementById("seriesModal").style.display = "flex";
     }
-    renderContinue();
+    renderContinue(5);
 };
 
 window.openSeriesModal = (series) => {
@@ -315,12 +317,11 @@ window.closeSeriesModal = () => {
     currentSeries = null;
 };
 
-// --- LOGICA DEL BANNER ACTUALIZADA (HÍBRIDA) ---
+// --- LOGICA DEL BANNER HÍBRIDA ---
 async function setupHeroBanner() {
     const cinePelis = allVideos.filter(v => v.tipo === "cine");
     if (cinePelis.length === 0) return;
 
-    // Tomamos la última película de Cine para el banner
     const ultimaPeli = cinePelis[cinePelis.length - 1];
     const banner = document.getElementById("heroBanner");
     const title = document.getElementById("heroTitle");
@@ -334,8 +335,6 @@ async function setupHeroBanner() {
         window.openVideo(ultimaPeli);
     };
 
-    // 1. Intentamos obtener el ID manual desde el archivo .txt en tu R2
-    // Reemplazamos la extensión .jpg de la imagen por .txt
     const txtUrl = ultimaPeli.img.replace(".jpg", ".txt");
     let manualVideoId = null;
 
@@ -343,31 +342,24 @@ async function setupHeroBanner() {
         const response = await fetch(txtUrl);
         if (response.ok) {
             const text = await response.text();
-            manualVideoId = text.trim(); // Limpiamos espacios
+            manualVideoId = text.trim();
         }
     } catch (e) {
-        console.log("No se encontró .txt o hubo error de red, usando búsqueda.");
+        console.log("No se encontró .txt, usando búsqueda.");
     }
 
     let finalSrc = "";
-
     if (manualVideoId && manualVideoId.length < 15) {
-        // OPCIÓN A: Tenemos un ID real (ej: dl3w10VVQj8)
-        // Agregamos playlist=${manualVideoId} para que el loop de YouTube funcione
         finalSrc = `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0&showinfo=0&iv_load_policy=3`;
     } else {
-        // OPCIÓN B: No hay ID manual, usamos la búsqueda automática por título
         const searchQuery = encodeURIComponent(ultimaPeli.titulo + " trailer oficial español");
         finalSrc = `https://www.youtube.com/embed?listType=search&list=${searchQuery}&autoplay=1&mute=1&controls=0&loop=1&rel=0&showinfo=0&iv_load_policy=3`;
     }
 
-    // Inyectamos el reproductor con la URL final decidida
-    document.getElementById("youtubePlayer").innerHTML = `
-        <iframe width="100%" height="100%" 
-        src="${finalSrc}" 
-        frameborder="0" allow="autoplay; encrypted-media"></iframe>`;
+    document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="autoplay; encrypted-media"></iframe>`;
 }
-    
+
+// --- UI Y RENDERIZADO CON LÍMITES ---
 function buildUI(){
     document.getElementById("app").innerHTML = `
         <div class="row"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
@@ -378,38 +370,42 @@ function buildUI(){
         <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
     `;
     renderAll();
-    setupHeroBanner(); // Activamos el banner
+    setupHeroBanner();
 }
 
 function renderAll(){
-    const render = (tipo, id) => {
+    const render = (tipo, id, limite) => {
         const container = document.getElementById(id);
         if(!container) return;
         const filtered = allVideos.filter(v => v.tipo === tipo);
-        filtered.forEach(v => container.appendChild(createCard(v)));
+        const displayList = filtered.slice(-limite).reverse();
+        displayList.forEach(v => container.appendChild(createCard(v)));
     };
-    render("pelicula", "peliculasRow");
-    render("serie", "seriesRow");
-    render("cine", "cineRow");
-    render("anime", "animeRow");
+
+    render("pelicula", "peliculasRow", 30);
+    render("serie", "seriesRow", 15);
+    render("cine", "cineRow", 10);
+    render("anime", "animeRow", 15);
     
-    const recent = [...allVideos].reverse().slice(0,10);
-    recent.forEach(v => document.getElementById("recentRow").appendChild(createCard(v)));
+    const recentRow = document.getElementById("recentRow");
+    if(recentRow) {
+        const recent = [...allVideos].slice(-30).reverse();
+        recent.forEach(v => recentRow.appendChild(createCard(v)));
+    }
     
-    renderContinue();
+    renderContinue(5);
 }
 
 function createCard(v){
     const card = document.createElement("div");
     card.className = "card";
     card.dataset.title = v.titulo.toLowerCase();
-    // Añadimos loading="lazy" y un decodificación asíncrona para mayor fluidez
     card.innerHTML = `<img src="${v.img}" loading="lazy" decoding="async">`;
     card.onclick = () => (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v);
     return card;
 }
 
-function renderContinue() {
+function renderContinue(limite = 5) {
     const data = getProgress();
     const row = document.getElementById("continueRow");
     const container = document.getElementById("contHeader");
@@ -434,7 +430,7 @@ function renderContinue() {
         }
     }
 
-    const finalDisplay = uniqueList.slice(0, 8);
+    const finalDisplay = uniqueList.slice(0, limite);
     if (finalDisplay.length === 0) {
         container.style.display = "none";
     } else {
@@ -443,29 +439,25 @@ function renderContinue() {
             const p = v._prog;
             const pct = (p.time / p.duration) * 100;
             const minsFaltantes = Math.ceil((p.duration - p.time) / 60);
-            
             let infoTexto = (v.tipo === "serie" || v.tipo === "anime") 
-                ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1} • Faltan ${minsFaltantes} min`
+                ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1} • ${minsFaltantes} min`
                 : `Faltan ${minsFaltantes} min`;
 
-// Dentro de la función renderContinue, localiza donde se crea la card:
-const card = document.createElement("div");
-card.className = "card";
-card.innerHTML = `
-    <img src="${v.img}" loading="lazy" decoding="async">
-    <div class="continue-overlay">
-        <div class="continue-info">${infoTexto}</div>
-        <div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div>
-    </div>
-`;
-            
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+                <img src="${v.img}" loading="lazy" decoding="async">
+                <div class="continue-overlay">
+                    <div class="continue-info">${infoTexto}</div>
+                    <div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div>
+                </div>
+            `;
             card.onclick = () => {
                 if (v.tipo === "serie" || v.tipo === "anime") {
                     currentSeries = v;
                     currentSeason = p.season || 0;
                     currentEpisode = p.episode || 0;
-                    const episodio = v.temporadas[currentSeason].episodios[currentEpisode];
-                    window.openVideo(episodio);
+                    window.openVideo(v.temporadas[currentSeason].episodios[currentEpisode]);
                 } else {
                     currentSeries = null;
                     window.openVideo(v);
@@ -475,7 +467,7 @@ card.innerHTML = `
         });
     }
 }
-    
+
 // --- BÚSQUEDA ---
 document.getElementById("search").oninput = (e) => {
     const val = e.target.value.toLowerCase();
@@ -498,7 +490,6 @@ onAuthStateChanged(auth, async (user) => {
         playerController.init();
         registerSession(user);
         startSessionWatcher(user);
-        
         fetch("https://odd-credit-e6f8.rigobertin100.workers.dev/")
             .then(r => r.json())
             .then(data => {
