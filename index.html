@@ -286,30 +286,29 @@ onAuthStateChanged(auth, (user) => {
                     <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="row-anime"></div></div>
                 `;
                 
-// Llenar categorías
-            // --- Lógica para Novedades (Últimos 10 subidos) ---
-            const recentContainer = document.getElementById("row-recent");
-            recentContainer.innerHTML = ""; // Limpieza de seguridad
-            
-            // Solo mostramos los que sí tengan imagen y video válidos
-            const validVideos = allVideos.filter(v => v.img !== "" && v.url !== "");
-            const recentList = [...validVideos].reverse().slice(0, 10);
+// --- Lógica de Choque de Juani ---
+const recentContainer = document.getElementById("row-recent");
+recentContainer.innerHTML = ""; 
 
-            recentList.forEach(v => {
-                const card = document.createElement("div");
-                card.className = "card";
-                card.innerHTML = `
-                    <img loading="lazy" src="${v.img}" onerror="this.parentElement.style.display='none'">
-                `;
-                card.onclick = () => openVideo(v);
-                recentContainer.appendChild(card);
-            });
-            
-            // Renderizar el resto de categorías
-            renderCategory("", "cine", "row-cine");
-            renderCategory("", "pelicula", "row-movies");
-            renderCategory("", "serie", "row-series");
-            renderCategory("", "anime", "row-anime");
+// 1. Quitamos el filtro estricto temporalmente para ver si los datos llegan
+const recentList = [...allVideos].reverse().slice(0, 10);
+
+recentList.forEach(v => {
+    const card = document.createElement("div");
+    card.className = "card";
+    // Si v.img está vacío, usamos un placeholder para saber que el objeto existe
+    const imagenSrc = v.img || "https://via.placeholder.com/200x300?text=Cargando+Portada";
+    
+    card.innerHTML = `<img loading="lazy" src="${imagenSrc}">`;
+    card.onclick = () => openVideo(v);
+    recentContainer.appendChild(card);
+});
+
+// 2. Renderizamos categorías con un "salvavidas"
+renderCategory("Cine", "cine", "row-cine");
+renderCategory("Películas", "pelicula", "row-movies");
+renderCategory("Series", "serie", "row-series");
+renderCategory("Anime", "anime", "row-anime");
 
             document.getElementById("mainLoader").style.display = "none";
             });
