@@ -490,11 +490,24 @@ onAuthStateChanged(auth, async (user) => {
         playerController.init();
         registerSession(user);
         startSessionWatcher(user);
-        fetch("https://odd-credit-e6f8.rigobertin100.workers.dev/")
+        
+        const workerUrl = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
+
+        // PASO 1: Carga ultra-rápida (Solo los últimos 60 para llenar la Home)
+        fetch(`${workerUrl}?limit=60`)
             .then(r => r.json())
             .then(data => {
                 allVideos = data;
-                buildUI();
+                buildUI(); // La página se dibuja ya mismo
+                
+                // PASO 2: Carga de fondo (Traer el resto para el buscador)
+                // Se hace después de que el usuario ya está viendo la web
+                fetch(workerUrl)
+                    .then(r => r.json())
+                    .then(fullData => {
+                        allVideos = fullData; 
+                        console.log("Catálogo completo sincronizado.");
+                    });
             });
     } else {
         document.getElementById("loginModal").style.display = "flex";
