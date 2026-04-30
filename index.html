@@ -189,12 +189,16 @@ const videoPlayer = {
             };
         }
 
-        // Guardado inteligente (cada 15s)
-        this.el.ontimeupdate = () => {
-            if(currentUser && Math.floor(this.el.currentTime) % 15 === 0) {
-                this.saveProgress(v);
-            }
-        };
+// Añade una variable para controlar el último segundo guardado
+let lastSavedSecond = -1;
+
+this.el.ontimeupdate = () => {
+    const currentSec = Math.floor(this.el.currentTime);
+    if(currentUser && currentSec % 15 === 0 && currentSec !== lastSavedSecond) {
+        lastSavedSecond = currentSec; // Marcamos que ya guardamos este segundo
+        this.saveProgress(v);
+    }
+};
     },
     saveProgress(v) {
         const data = {
@@ -249,7 +253,7 @@ function renderCategory(title, tag, containerId) {
 onAuthStateChanged(auth, (user) => {
     if(user) {
         currentUser = user;
-        fetch("https://small-king-30c8.rigobertin100.workers.dev")
+        fetch("https://morning-glade-ac23.rigobertin100.workers.dev")
             .then(r => r.json())
             .then(data => {
                 allVideos = data;
@@ -262,7 +266,17 @@ onAuthStateChanged(auth, (user) => {
                 `;
                 
                 // Llenar categorías
-                renderCategory("", "reciente", "row-recent"); // Si tienes tag reciente
+                // --- Lógica para Novedades (Últimos 10 subidos) ---
+                const recentList = [...allVideos].reverse().slice(0, 10);
+                const recentContainer = document.getElementById("row-recent");
+                recentList.forEach(v => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    card.innerHTML = `<img loading="lazy" src="${v.img}">`;
+                    card.onclick = () => openVideo(v);
+                    recentContainer.appendChild(card);
+                });
+                
                 renderCategory("", "cine", "row-cine");
                 renderCategory("", "pelicula", "row-movies");
                 renderCategory("", "serie", "row-series");
