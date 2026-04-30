@@ -249,7 +249,7 @@ function renderCategory(title, tag, containerId) {
 onAuthStateChanged(auth, (user) => {
     if(user) {
         currentUser = user;
-        fetch("https://small-king-30c8.rigobertin100.workers.dev")
+        fetch("https://morning-glade-ac23.rigobertin100.workers.dev/")
             .then(r => r.json())
             .then(data => {
                 allVideos = data;
