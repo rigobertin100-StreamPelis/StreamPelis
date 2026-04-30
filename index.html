@@ -144,65 +144,83 @@ let currentUser = null;
 const videoPlayer = {
     el: document.getElementById("video"),
     hls: null,
-    async play(v) {
-        this.stop();
-        let savedTime = 0;
-        
+async play(v) {
+    this.stop();
+    let savedTime = 0;
+
+    // 🔥 Firestore protegido
+    try {
         if(currentUser) {
-            const snap = await getDoc(doc(db, "users", currentUser.uid, "progress", v.title.replace(/\s+/g, '_')));
+            const snap = await getDoc(
+                doc(db, "users", currentUser.uid, "progress", v.title.replace(/\s+/g, '_'))
+            );
             if(snap.exists()) savedTime = snap.data().time;
         }
-
-        if(v.video && v.video.includes(".m3u8")) {
-            if(Hls.isSupported()) {
-                this.hls = new Hls();
-                this.hls.loadSource(v.video);
-                this.hls.attachMedia(this.el);
-                this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    this.el.currentTime = savedTime;
-                    this.el.play();
-                });
-            } else if (this.el.canPlayType('application/vnd.apple.mpegurl')) {
-                this.el.src = v.video;
-                this.el.addEventListener('loadedmetadata', () => {
-                    this.el.currentTime = savedTime;
-                    this.el.play();
-                });
-            }
-        } else if (v.video) {
-            this.el.src = v.video;
-            this.el.onloadedmetadata = () => {
-                this.el.currentTime = savedTime;
-                this.el.play();
-            };
-        }
-
-        let lastSavedSecond = -1;
-        this.el.ontimeupdate = () => {
-            const currentSec = Math.floor(this.el.currentTime);
-            if(currentUser && currentSec % 15 === 0 && currentSec !== lastSavedSecond) {
-                lastSavedSecond = currentSec;
-                this.saveProgress(v);
-            }
-        };
-    },
-    saveProgress(v) {
-        const data = {
-            time: this.el.currentTime,
-            duration: this.el.duration,
-            img: v.img,
-            last: Date.now()
-        };
-        setDoc(doc(db, "users", currentUser.uid, "progress", v.title.replace(/\s+/g, '_')), data, { merge: true });
-        
-        const local = JSON.parse(localStorage.getItem("progress") || "{}");
-        local[v.title] = data;
-        localStorage.setItem("progress", JSON.stringify(local));
-    },
-    stop() {
-        if(this.hls) { this.hls.destroy(); this.hls = null; }
-        this.el.pause(); this.el.src = "";
+    } catch (e) {
+        console.warn("Firestore bloqueado, continuando sin progreso");
     }
+
+    // 🎥 Cargar video SIEMPRE
+    this.el.src = v.video;
+
+    this.el.onloadedmetadata = () => {
+        this.el.currentTime = savedTime;
+        this.el.play().catch(err => {
+            console.error("Error al reproducir:", err);
+        });
+    };
+
+    // 🔥 Detectar errores reales de video
+    this.el.onerror = (e) => {
+        console.error("Error de video:", e);
+        alert("Error al cargar el video");
+    };
+
+    let lastSavedSecond = -1;
+    this.el.ontimeupdate = () => {
+        const currentSec = Math.floor(this.el.currentTime);
+
+        if(currentUser && currentSec % 15 === 0 && currentSec !== lastSavedSecond) {
+            lastSavedSecond = currentSec;
+            this.saveProgress(v);
+        }
+    };
+},
+
+saveProgress(v) {
+    const data = {
+        time: this.el.currentTime,
+        duration: this.el.duration,
+        img: v.img,
+        last: Date.now()
+    };
+
+    // 🔥 PROTEGER TAMBIÉN AQUÍ
+    try {
+        if(currentUser) {
+            setDoc(
+                doc(db, "users", currentUser.uid, "progress", v.title.replace(/\s+/g, '_')),
+                data,
+                { merge: true }
+            );
+        }
+    } catch (e) {
+        console.warn("No se pudo guardar progreso");
+    }
+
+    const local = JSON.parse(localStorage.getItem("progress") || "{}");
+    local[v.title] = data;
+    localStorage.setItem("progress", JSON.stringify(local));
+},
+
+stop() {
+    if(this.hls) {
+        this.hls.destroy();
+        this.hls = null;
+    }
+    this.el.pause();
+    this.el.src = "";
+}
 };
 
 function handleFastForward(seconds) {
