@@ -107,18 +107,30 @@
     }
 
     window.openVideo = (url) => {
+        if (!url || url === "null") return alert("Error: URL de video no válida");
+        
         const p = document.getElementById('player');
         const v = document.getElementById('video');
+        
         p.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+
         v.src = url;
-        v.play();
+        v.load(); // Esto fuerza al navegador a cargar el nuevo archivo
+        
+        v.play().catch(e => console.error("Error al reproducir:", e));
     };
 
     window.closeVideo = () => {
         const p = document.getElementById('player');
         const v = document.getElementById('video');
+        
         v.pause();
+        v.src = ""; // Limpiamos la fuente para que no siga cargando de fondo
+        v.load();
+        
         p.style.display = 'none';
+        document.body.style.overflow = 'auto';
     };
 
     onAuthStateChanged(auth, user => {
