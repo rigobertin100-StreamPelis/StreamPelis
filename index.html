@@ -195,7 +195,11 @@ const playerController = {
     },
     play(v){
         this.cleanup();
-        this.currentId = currentSeries ? `${currentSeries.titulo}-S${currentSeason}-E${currentEpisode}` : v.titulo;
+        
+        // --- AQUÍ ES DONDE VA LA LÍNEA ---
+        this.currentId = currentSeries ? currentSeries.titulo : v.titulo;
+        // ---------------------------------
+
         const saved = getProgress()[this.currentId];
         
         if(v.url.includes(".m3u8") && Hls.isSupported()){
@@ -349,19 +353,23 @@ function renderContinue() {
     const data = getProgress();
     const row = document.getElementById("continueRow");
     const container = document.getElementById("contHeader");
+    if (!row || !container) return;
+    
     row.innerHTML = "";
     
-    // 1. Convertimos el objeto en un array y filtramos los que no han terminado
+    // 1. Mapeo y búsqueda exhaustiva
     let list = Object.keys(data).map(id => {
-        const base = allVideos.find(v => v.titulo === id);
-        return base ? { ...base, _prog: data[id] } : null;
+        // Buscamos el video ignorando mayúsculas/minúsculas y espacios
+        const base = allVideos.find(v => v.titulo.trim() === id.trim());
+        if (!base) return null;
+        return { ...base, _prog: data[id] };
     })
-    .filter(v => v && v._prog.time < v._prog.duration * 0.95);
+    .filter(v => v && v._prog.time > 5 && v._prog.time < v._prog.duration * 0.95);
 
-    // 2. ORDENAR por fecha (el más reciente primero)
+    // 2. Ordenar por lo más reciente
     list.sort((a, b) => b._prog.updated - a._prog.updated);
 
-    // 3. ELIMINAR DUPLICADOS (Solo dejar la entrada más reciente de cada serie/peli)
+    // 3. Eliminar duplicados de series/anime
     const uniqueList = [];
     const seenTitles = new Set();
 
@@ -372,7 +380,6 @@ function renderContinue() {
         }
     }
 
-    // 4. Renderizar (limitar a 8 tarjetas)
     const finalDisplay = uniqueList.slice(0, 8);
 
     if (finalDisplay.length === 0) {
@@ -384,9 +391,9 @@ function renderContinue() {
             const pct = (p.time / p.duration) * 100;
             const minsFaltantes = Math.ceil((p.duration - p.time) / 60);
             
-            // Si es serie, mostrará el capítulo que se quedó guardado en ese título
-            let infoTexto = (p.season !== null) 
-                ? `T${p.season + 1}:E${p.episode + 1} • Faltan ${minsFaltantes} min`
+            // Verificamos si tiene temporadas para decidir el texto
+            let infoTexto = (v.tipo === "serie" || v.tipo === "anime") 
+                ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1} • Faltan ${minsFaltantes} min`
                 : `Faltan ${minsFaltantes} min`;
 
             const card = document.createElement("div");
@@ -398,12 +405,15 @@ function renderContinue() {
                     <div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div>
                 </div>
             `;
+            
             card.onclick = () => {
                 if (v.tipo === "serie" || v.tipo === "anime") {
                     currentSeries = v;
                     currentSeason = p.season || 0;
                     currentEpisode = p.episode || 0;
-                    window.openVideo(v.temporadas[currentSeason].episodios[currentEpisode]);
+                    // IMPORTANTE: Acceder a la estructura correcta de episodios
+                    const episodio = v.temporadas[currentSeason].episodios[currentEpisode];
+                    window.openVideo(episodio);
                 } else {
                     currentSeries = null;
                     window.openVideo(v);
@@ -413,7 +423,7 @@ function renderContinue() {
         });
     }
 }
-
+    
 // --- BÚSQUEDA ---
 document.getElementById("search").oninput = (e) => {
     const val = e.target.value.toLowerCase();
