@@ -1,124 +1,53 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PlusUltra Universal</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PlusUltra Universal</title>
 
-    <!-- PWA & MOBILE OPTIMIZATION -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://i.ibb.co/3S7vX2P/logo-512.png">
-    <meta name="theme-color" content="#1c1c1e">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1c1c1e">
 
-    <!-- LIBRERÍAS DE VIDEO Y CAST -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://www.gstatic.com/cv/js/cast_sender.js"></script>
-    
-    <style>
-        :root {
-            --primary: #0a84ff;
-            --bg: #111;
-            --card-bg: #1c1c1e;
-        }
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        
-        body { 
-            margin: 0; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background: var(--bg); 
-            color: white; 
-            padding-top: 75px; 
-            overflow-x: hidden;
-            user-select: none;
-        }
-
-        .header { 
-            position: fixed; top: 0; left: 0; width: 100%; 
-            display: flex; align-items: center; justify-content: space-between; 
-            padding: 10px 4%; z-index: 9999; 
-            background: rgba(28, 28, 30, 0.9); 
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .logo { font-size: clamp(20px, 4vw, 28px); font-weight: 900; color: var(--primary); letter-spacing: -1px; cursor: pointer; }
-        
-        .nav-tools { display: flex; gap: 10px; align-items: center; }
-        .search { 
-            padding: 8px 15px; border-radius: 20px; border: none; 
-            background: rgba(255, 255, 255, 0.1); color: white; 
-            width: clamp(120px, 20vw, 250px); transition: 0.3s;
-        }
-        .search:focus { background: rgba(255, 255, 255, 0.2); width: clamp(150px, 25vw, 300px); }
-        .logout { padding: 8px 15px; border: none; border-radius: 20px; background: #ff3b30; color: white; font-weight: bold; cursor: pointer; font-size: 14px; }
-
-        .row { margin-bottom: 30px; padding: 0 4%; }
-        .row h2 { font-size: clamp(16px, 3vw, 22px); margin-bottom: 15px; font-weight: 700; color: #f2f2f7; display: flex; align-items: center; gap: 10px; }
-        
-        .carousel { 
-            display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; 
-            scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        .carousel::-webkit-scrollbar { display: none; }
-        
-        .card { 
-            width: clamp(130px, 15vw, 200px); 
-            flex-shrink: 0; aspect-ratio: 2/3; 
-            background: var(--card-bg); border-radius: 12px; 
-            overflow: hidden; position: relative; transition: transform 0.3s ease;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .card:hover { transform: scale(1.05); z-index: 2; }
-        .card img { width: 100%; height: 100%; object-fit: cover; transition: 0.4s; }
-
-        .player { position: fixed; inset: 0; display: none; background: #000; z-index: 100000; }
-        video { width: 100%; height: 100%; }
-        .gesture-area { position: absolute; top: 0; width: 30%; height: 90%; z-index: 10; cursor: pointer; }
-        .left-area { left: 0; }
-        .right-area { right: 0; }
-        .feedback-toast { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: rgba(0,0,0,0.8); color: white; padding: 15px 30px; 
-            border-radius: 50px; font-weight: bold; opacity: 0; pointer-events: none; z-index: 100;
-        }
-
-        #mainLoader { position: fixed; inset: 0; background: #000; display: flex; justify-content: center; align-items: center; z-index: 1000000; }
-        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        @media (max-width: 600px) {
-            body { padding-top: 70px; }
-            .header { padding: 10px 15px; }
-            .row { padding: 0 15px; }
-        }
-    </style>
+<style>
+:root { --primary:#0a84ff; --bg:#111; --card-bg:#1c1c1e; }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;outline:none;}
+body{margin:0;font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;padding-top:75px;}
+.header{position:fixed;top:0;width:100%;display:flex;justify-content:space-between;padding:10px 4%;background:rgba(28,28,30,.9);z-index:9999;}
+.logo{font-size:24px;font-weight:900;color:var(--primary);}
+.search{padding:8px;border-radius:20px;border:none;background:#222;color:#fff;}
+.logout{padding:8px;border:none;border-radius:20px;background:#ff3b30;color:#fff;}
+.row{margin-bottom:30px;padding:0 4%;}
+.carousel{display:flex;gap:15px;overflow-x:auto;}
+.card{width:150px;aspect-ratio:2/3;background:#222;border-radius:12px;overflow:hidden;cursor:pointer;}
+.card img{width:100%;height:100%;object-fit:cover;}
+.player{position:fixed;inset:0;display:none;background:#000;z-index:100000;}
+video{width:100%;height:100%;}
+#mainLoader{position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:1000000;}
+</style>
 </head>
+
 <body>
 
-<div id="mainLoader"><div class="spinner"></div></div>
+<div id="mainLoader">Cargando...</div>
 
 <header class="header">
-    <div class="logo" onclick="location.reload()">PlusUltra</div>
-    <div class="nav-tools">
-        <input id="searchField" class="search" placeholder="Buscar películas/series...">
-        <button class="logout" onclick="logout()">Salir</button>
-    </div>
+<div class="logo" onclick="location.reload()">PlusUltra</div>
+<div>
+<input id="searchField" class="search" placeholder="Buscar...">
+<button class="logout" onclick="logout()">Salir</button>
+</div>
 </header>
 
 <main id="app"></main>
 
 <div class="player" id="player">
-    <div id="feedbackToast" class="feedback-toast"></div>
-    <span style="position:absolute; top:20px; right:20px; z-index:101; font-size:35px; cursor:pointer;" onclick="closeVideo()">✕</span>
-    <div style="position:relative; width:100%; height:100%;">
-        <div class="gesture-area left-area" id="leftGesture"></div>
-        <div class="gesture-area right-area" id="rightGesture"></div>
-        <video id="video" controls playsinline></video>
-    </div>
+<span style="position:absolute;top:20px;right:20px;font-size:35px;cursor:pointer;" onclick="closeVideo()">✕</span>
+<video id="video" controls playsinline></video>
 </div>
 
 <script type="module">
@@ -126,200 +55,134 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
-    authDomain: "midata-40f73.firebaseapp.com",
-    projectId: "midata-40f73",
-    storageBucket: "midata-40f73.firebasestorage.app",
-    appId: "1:104287406146:web:d9fad446e22629559dc5db"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-let allVideos = [];
-let currentUser = null;
-
-const videoPlayer = {
-    el: document.getElementById("video"),
-    hls: null,
-async play(v) {
-    this.stop();
-    let savedTime = 0;
-
-    // 🔥 Firestore protegido
-    try {
-        if(currentUser) {
-            const snap = await getDoc(
-                doc(db, "users", currentUser.uid, "progress", v.title.replace(/\s+/g, '_'))
-            );
-            if(snap.exists()) savedTime = snap.data().time;
-        }
-    } catch (e) {
-        console.warn("Firestore bloqueado, continuando sin progreso");
-    }
-
-    // 🎥 Cargar video SIEMPRE
-    this.el.src = v.video;
-
-    this.el.onloadedmetadata = () => {
-        this.el.currentTime = savedTime;
-        this.el.play().catch(err => {
-            console.error("Error al reproducir:", err);
-        });
-    };
-
-    // 🔥 Detectar errores reales de video
-    this.el.onerror = (e) => {
-        console.error("Error de video:", e);
-        alert("Error al cargar el video");
-    };
-
-    let lastSavedSecond = -1;
-    this.el.ontimeupdate = () => {
-        const currentSec = Math.floor(this.el.currentTime);
-
-        if(currentUser && currentSec % 15 === 0 && currentSec !== lastSavedSecond) {
-            lastSavedSecond = currentSec;
-            this.saveProgress(v);
-        }
-    };
-},
-
-saveProgress(v) {
-    const data = {
-        time: this.el.currentTime,
-        duration: this.el.duration,
-        img: v.img,
-        last: Date.now()
-    };
-
-    // 🔥 PROTEGER TAMBIÉN AQUÍ
-    try {
-        if(currentUser) {
-            setDoc(
-                doc(db, "users", currentUser.uid, "progress", v.title.replace(/\s+/g, '_')),
-                data,
-                { merge: true }
-            );
-        }
-    } catch (e) {
-        console.warn("No se pudo guardar progreso");
-    }
-
-    const local = JSON.parse(localStorage.getItem("progress") || "{}");
-    local[v.title] = data;
-    localStorage.setItem("progress", JSON.stringify(local));
-},
-
-stop() {
-    if(this.hls) {
-        this.hls.destroy();
-        this.hls = null;
-    }
-    this.el.pause();
-    this.el.src = "";
-}
-};
-
-function handleFastForward(seconds) {
-    videoPlayer.el.currentTime += seconds;
-    const toast = document.getElementById("feedbackToast");
-    toast.innerText = seconds > 0 ? `⏩ +${seconds}s` : `⏪ ${seconds}s`;
-    toast.style.opacity = 1;
-    setTimeout(() => toast.style.opacity = 0, 700);
-}
-
-document.getElementById("rightGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(10); };
-document.getElementById("leftGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(-10); };
-
-function renderCategory(tag, containerId) {
-    const container = document.getElementById(containerId);
-    if(!container) return;
-    
-    let list = allVideos.filter(v => v.category === tag);
-    list = [...list].reverse(); 
-    
-    list.forEach(v => {
-        if(!v.img || !v.video) return; // 🔒 protección extra
-
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `<img loading="lazy" src="${v.img}">`;
-        card.onclick = () => openVideo(v);
-        container.appendChild(card);
-    });
-}
-
-onAuthStateChanged(auth, (user) => {
-    if(user) {
-        currentUser = user;
-
-        fetch("https://snowy-tree-dd6c.rigobertin100.workers.dev")
-            .then(async r => {
-                if(!r.ok) throw new Error("HTTP " + r.status);
-                return r.json();
-            })
-            .then(data => {
-                console.log("CATALOGO:", data); // 🔥 DEBUG CLAVE
-
-                if(!Array.isArray(data) || data.length === 0){
-                    document.getElementById("mainLoader").innerHTML = "<p>No hay contenido en el bucket.</p>";
-                    return;
-                }
-
-                allVideos = data;
-
-                document.getElementById("app").innerHTML = `
-                    <div class="row"><h2>🆕 Novedades</h2><div class="carousel" id="row-recent"></div></div>
-                    <div class="row"><h2>🍿 Cine en Casa</h2><div class="carousel" id="row-cine"></div></div>
-                    <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="row-movies"></div></div>
-                    <div class="row"><h2>📺 Series</h2><div class="carousel" id="row-series"></div></div>
-                    <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="row-anime"></div></div>
-                `;
-                
-                const recentList = [...allVideos].reverse().slice(0, 10);
-                const recentContainer = document.getElementById("row-recent");
-
-                recentList.forEach(v => {
-                    if(!v.img || !v.video) return;
-
-                    const card = document.createElement("div");
-                    card.className = "card";
-                    card.innerHTML = `<img loading="lazy" src="${v.img}">`;
-                    card.onclick = () => openVideo(v);
-                    recentContainer.appendChild(card);
-                });
-                
-                renderCategory("cine", "row-cine");
-                renderCategory("pelicula", "row-movies");
-                renderCategory("serie", "row-series");
-                renderCategory("anime", "row-anime");
-
-                document.getElementById("mainLoader").style.display = "none";
-            })
-            .catch(err => {
-                console.error("Error cargando catálogo:", err);
-                document.getElementById("mainLoader").innerHTML = "<p>Error de conexión con el servidor.</p>";
-            });
-
-    } else {
-        location.href = "login.html"; 
-    }
+const app = initializeApp({
+apiKey:"AIza...",
+authDomain:"midata-40f73.firebaseapp.com",
+projectId:"midata-40f73"
 });
 
-window.openVideo = (v) => {
-    document.getElementById("player").style.display = "block";
-    videoPlayer.play(v);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+let allVideos=[];
+let currentUser=null;
+
+const videoPlayer={
+el:document.getElementById("video"),
+
+async play(v){
+this.stop();
+
+let savedTime=0;
+
+try{
+if(currentUser){
+const snap=await getDoc(doc(db,"users",currentUser.uid,"progress",v.title.replace(/\s+/g,'_')));
+if(snap.exists()) savedTime=snap.data().time;
+}
+}catch(e){console.warn("Firestore error");}
+
+// limpiar eventos
+this.el.onloadedmetadata=null;
+this.el.onerror=null;
+this.el.ontimeupdate=null;
+
+// cargar video
+this.el.src=v.video;
+this.el.load();
+
+this.el.addEventListener('loadedmetadata',()=>{
+this.el.currentTime=savedTime;
+this.el.play().catch(()=>{});
+},{once:true});
+
+this.el.onerror=()=>alert("Error cargando video");
+
+let last=-1;
+this.el.ontimeupdate=()=>{
+const sec=Math.floor(this.el.currentTime);
+if(currentUser && sec%15===0 && sec!==last){
+last=sec;
+this.saveProgress(v);
+}
+};
+},
+
+saveProgress(v){
+try{
+if(currentUser){
+setDoc(doc(db,"users",currentUser.uid,"progress",v.title.replace(/\s+/g,'_')),{
+time:this.el.currentTime,
+duration:this.el.duration,
+img:v.img,
+last:Date.now()
+},{merge:true});
+}
+}catch(e){}
+
+const local=JSON.parse(localStorage.getItem("progress")||"{}");
+local[v.title]={time:this.el.currentTime};
+localStorage.setItem("progress",JSON.stringify(local));
+},
+
+stop(){
+this.el.pause();
+this.el.src="";
+}
 };
 
-window.closeVideo = () => {
-    videoPlayer.stop();
-    document.getElementById("player").style.display = "none";
+function renderCategory(tag,id){
+const c=document.getElementById(id);
+allVideos.filter(v=>v.category===tag).forEach(v=>{
+const d=document.createElement("div");
+d.className="card";
+d.innerHTML=`<img src="${v.img}">`;
+d.onclick=()=>openVideo(v);
+c.appendChild(d);
+});
+}
+
+onAuthStateChanged(auth,user=>{
+if(!user){location.href="login.html";return;}
+
+currentUser=user;
+
+fetch("https://snowy-tree-dd6c.rigobertin100.workers.dev")
+.then(r=>r.json())
+.then(data=>{
+
+if(!data.length){
+document.getElementById("mainLoader").innerHTML="Sin contenido";
+return;
+}
+
+allVideos=data;
+
+document.getElementById("app").innerHTML=`
+<div class="row"><div class="carousel" id="movies"></div></div>
+<div class="row"><div class="carousel" id="series"></div></div>
+<div class="row"><div class="carousel" id="anime"></div></div>
+`;
+
+renderCategory("pelicula","movies");
+renderCategory("serie","series");
+renderCategory("anime","anime");
+
+document.getElementById("mainLoader").style.display="none";
+});
+});
+
+window.openVideo=v=>{
+document.getElementById("player").style.display="block";
+videoPlayer.play(v);
 };
 
-window.logout = () => signOut(auth).then(() => location.reload());
+window.closeVideo=()=>{
+videoPlayer.stop();
+document.getElementById("player").style.display="none";
+};
+
+window.logout=()=>signOut(auth).then(()=>location.reload());
 
 </script>
 </body>
