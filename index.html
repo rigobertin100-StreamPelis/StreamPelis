@@ -231,6 +231,12 @@ window.openVideo = (v) => {
 window.closeVideo = () => {
     playerController.cleanup();
     document.getElementById("player").style.display = "none";
+    
+    // Si estábamos viendo una serie, volvemos a mostrar el modal al cerrar el video
+    if (currentSeries) {
+        document.getElementById("seriesModal").style.display = "flex";
+    }
+    
     renderContinue();
 };
 
@@ -270,7 +276,13 @@ function renderEpisodes(idx){
     season.episodios.forEach((ep, i) => {
         const btn = document.createElement("button");
         btn.innerText = ep.titulo;
-        btn.onclick = () => { currentEpisode = i; window.openVideo(ep); };
+        btn.onclick = () => { 
+            currentEpisode = i; 
+            // --- ESTO ES LO QUE ARREGLA EL PROBLEMA ---
+            document.getElementById("seriesModal").style.display = "none"; 
+            // ------------------------------------------
+            window.openVideo(ep); 
+        };
         list.appendChild(btn);
     });
 }
