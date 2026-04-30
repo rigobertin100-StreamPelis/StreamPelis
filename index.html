@@ -20,13 +20,21 @@
 
     <style>
         body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);color:white;padding-top:90px;overflow-x:hidden;}
-        .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:9999;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
+        .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:99999;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
         .logo{font-size:34px;font-weight:700;color:#0a84ff;}
         .header-right{display:flex;align-items:center;gap:12px;}
         .search{padding:10px 18px;border-radius:24px;border:none;width:260px;font-size:16px;background:rgba(255,255,255,.1);color:white;outline:none;}
         .logout{white-space:nowrap;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer;font-weight:bold;}
         
+        /* --- ESTILOS DEL BANNER --- */
+        .hero-banner {position: relative; width: 100%; height: 70vh; background: #000; overflow: hidden; margin-top: -90px; display: none;}
+        .hero-video-bg {position: absolute; top: 50%; left: 50%; width: 100vw; height: 56.25vw; transform: translate(-50%, -50%); pointer-events: none;}
+        .hero-overlay {position: absolute; inset: 0; background: linear-gradient(to right, rgba(28,28,30,0.9) 10%, transparent 70%), linear-gradient(to top, #1c1c1e 5%, transparent 50%); display: flex; flex-direction: column; justify-content: center; padding: 0 50px; z-index: 2;}
+        #heroTitle {font-size: clamp(30px, 5vw, 60px); margin: 0; color: #fff; text-transform: uppercase; max-width: 50%; line-height: 1.1;}
+        .hero-btn {width: fit-content; padding: 14px 35px; background: #fff; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 25px; transition: 0.2s;}
+        .hero-btn:hover {transform: scale(1.05); background: #0a84ff; color: #fff;}
+
         .row{margin-top:40px;padding-left:20px;}
         .row h2{font-size:22px;margin-bottom:14px;color:rgba(255,255,255,0.9);}
         .carousel{display:flex;gap:18px;overflow-x:auto;padding-bottom:20px;scroll-behavior:smooth;}
@@ -61,8 +69,6 @@
         
         .season-option {padding:10px 15px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;white-space:nowrap;}
         .season-option.active {background:#0a84ff;}
-        .episode-indicator{position:absolute;top:80px;background:rgba(10,132,255,0.8);padding:8px 20px;border-radius:20px;opacity:0;transition:0.4s;}
-        .episode-indicator.show{opacity:1;}
     </style>
 </head>
 
@@ -86,6 +92,15 @@
     </div>
 </div>
 
+<div id="heroBanner" class="hero-banner">
+    <div id="youtubePlayer" class="hero-video-bg"></div>
+    <div class="hero-overlay">
+        <h1 id="heroTitle"></h1>
+        <p id="heroDesc" style="font-size: 18px; color: rgba(255,255,255,0.7); margin: 10px 0;">Ya disponible en PlusUltra Cine</p>
+        <button id="heroPlayBtn" class="hero-btn">▶ Ver Película</button>
+    </div>
+</div>
+
 <div id="app"></div>
 
 <div class="player" id="player">
@@ -96,7 +111,6 @@
             <button onclick="nextEpisode()">⏭</button>
             <button id="castBtn" onclick="castVideo()" style="display:none;">📺 Cast</button>
         </div>
-        <div id="episodeIndicator" class="episode-indicator"></div>
         <video id="video" controls></video>
     </div>
 </div>
@@ -195,11 +209,7 @@ const playerController = {
     },
     play(v){
         this.cleanup();
-        
-        // --- AQUÍ ES DONDE VA LA LÍNEA ---
         this.currentId = currentSeries ? currentSeries.titulo : v.titulo;
-        // ---------------------------------
-
         const saved = getProgress()[this.currentId];
         
         if(v.url.includes(".m3u8") && Hls.isSupported()){
@@ -235,12 +245,9 @@ window.openVideo = (v) => {
 window.closeVideo = () => {
     playerController.cleanup();
     document.getElementById("player").style.display = "none";
-    
-    // Si estábamos viendo una serie, volvemos a mostrar el modal al cerrar el video
     if (currentSeries) {
         document.getElementById("seriesModal").style.display = "flex";
     }
-    
     renderContinue();
 };
 
@@ -249,7 +256,6 @@ window.openSeriesModal = (series) => {
     currentSeason = 0; 
     document.getElementById("seriesModal").style.display = "flex";
     document.getElementById("seriesTitle").innerText = series.titulo;
-    
     const box = document.getElementById("seasonSelect");
     box.innerHTML = "";
     
@@ -282,9 +288,7 @@ function renderEpisodes(idx){
         btn.innerText = ep.titulo;
         btn.onclick = () => { 
             currentEpisode = i; 
-            // --- ESTO ES LO QUE ARREGLA EL PROBLEMA ---
             document.getElementById("seriesModal").style.display = "none"; 
-            // ------------------------------------------
             window.openVideo(ep); 
         };
         list.appendChild(btn);
@@ -311,6 +315,32 @@ window.closeSeriesModal = () => {
     currentSeries = null;
 };
 
+// --- LOGICA DEL BANNER ---
+function setupHeroBanner() {
+    const cinePelis = allVideos.filter(v => v.tipo === "cine");
+    if (cinePelis.length === 0) return;
+
+    // Tomamos la última película de Cine para el banner
+    const ultimaPeli = cinePelis[cinePelis.length - 1];
+    const banner = document.getElementById("heroBanner");
+    const title = document.getElementById("heroTitle");
+    const playBtn = document.getElementById("heroPlayBtn");
+
+    banner.style.display = "block";
+    title.innerText = ultimaPeli.titulo;
+    playBtn.onclick = () => {
+        currentSeries = null;
+        window.openVideo(ultimaPeli);
+    };
+
+    // YouTube Search Link para el trailer
+    const searchQuery = encodeURIComponent(ultimaPeli.titulo + " trailer oficial español");
+    document.getElementById("youtubePlayer").innerHTML = `
+        <iframe width="100%" height="100%" 
+        src="https://www.youtube.com/embed?listType=search&list=${searchQuery}&autoplay=1&mute=1&controls=0&loop=1&rel=0&showinfo=0&iv_load_policy=3" 
+        frameborder="0" allow="autoplay; encrypted-media"></iframe>`;
+}
+
 function buildUI(){
     document.getElementById("app").innerHTML = `
         <div class="row"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
@@ -321,11 +351,13 @@ function buildUI(){
         <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
     `;
     renderAll();
+    setupHeroBanner(); // Activamos el banner
 }
 
 function renderAll(){
     const render = (tipo, id) => {
         const container = document.getElementById(id);
+        if(!container) return;
         const filtered = allVideos.filter(v => v.tipo === tipo);
         filtered.forEach(v => container.appendChild(createCard(v)));
     };
@@ -354,25 +386,19 @@ function renderContinue() {
     const row = document.getElementById("continueRow");
     const container = document.getElementById("contHeader");
     if (!row || !container) return;
-    
     row.innerHTML = "";
     
-    // 1. Mapeo y búsqueda exhaustiva
     let list = Object.keys(data).map(id => {
-        // Buscamos el video ignorando mayúsculas/minúsculas y espacios
         const base = allVideos.find(v => v.titulo.trim() === id.trim());
         if (!base) return null;
         return { ...base, _prog: data[id] };
     })
     .filter(v => v && v._prog.time > 5 && v._prog.time < v._prog.duration * 0.95);
 
-    // 2. Ordenar por lo más reciente
     list.sort((a, b) => b._prog.updated - a._prog.updated);
 
-    // 3. Eliminar duplicados de series/anime
     const uniqueList = [];
     const seenTitles = new Set();
-
     for (const item of list) {
         if (!seenTitles.has(item.titulo)) {
             seenTitles.add(item.titulo);
@@ -381,7 +407,6 @@ function renderContinue() {
     }
 
     const finalDisplay = uniqueList.slice(0, 8);
-
     if (finalDisplay.length === 0) {
         container.style.display = "none";
     } else {
@@ -391,7 +416,6 @@ function renderContinue() {
             const pct = (p.time / p.duration) * 100;
             const minsFaltantes = Math.ceil((p.duration - p.time) / 60);
             
-            // Verificamos si tiene temporadas para decidir el texto
             let infoTexto = (v.tipo === "serie" || v.tipo === "anime") 
                 ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1} • Faltan ${minsFaltantes} min`
                 : `Faltan ${minsFaltantes} min`;
@@ -411,7 +435,6 @@ function renderContinue() {
                     currentSeries = v;
                     currentSeason = p.season || 0;
                     currentEpisode = p.episode || 0;
-                    // IMPORTANTE: Acceder a la estructura correcta de episodios
                     const episodio = v.temporadas[currentSeason].episodios[currentEpisode];
                     window.openVideo(episodio);
                 } else {
