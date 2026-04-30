@@ -229,12 +229,9 @@ document.getElementById("rightGesture").onclick = (e) => { if(e.detail === 2) ha
 document.getElementById("leftGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(-10); };
 
 // RENDERIZADO DE CATEGORÍAS
-function renderCategory(title, tag, containerId) {
+function renderCategory(tag, containerId) {
     const container = document.getElementById(containerId);
-    let list = allVideos.filter(v => v.tipo?.toLowerCase() === tag.toLowerCase());
-    
-    // Algoritmo: Recientes primero, luego aleatorio
-    list = [...list].reverse(); 
+    const list = allVideos.filter(v => v.tipo?.toLowerCase() === tag.toLowerCase());
     
     list.forEach(v => {
         const card = document.createElement("div");
@@ -261,18 +258,26 @@ onAuthStateChanged(auth, (user) => {
                     <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="row-anime"></div></div>
                 `;
                 
-                // Llenar categorías
-                renderCategory("", "reciente", "row-recent"); // Si tienes tag reciente
-                renderCategory("", "cine", "row-cine");
-                renderCategory("", "pelicula", "row-movies");
-                renderCategory("", "serie", "row-series");
-                renderCategory("", "anime", "row-anime");
+                // 1. Lógica especial para Novedades (los 10 más recientes sin importar el tipo)
+                const recentContainer = document.getElementById("row-recent");
+                allVideos.slice(0, 10).forEach(v => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    card.innerHTML = `<img loading="lazy" src="${v.img}">`;
+                    card.onclick = () => openVideo(v);
+                    recentContainer.appendChild(card);
+                });
+
+                // 2. Llenar el resto de categorías normalmente
+                renderCategory("cine", "row-cine");
+                renderCategory("pelicula", "row-movies");
+                renderCategory("serie", "row-series");
+                renderCategory("anime", "row-anime");
 
                 document.getElementById("mainLoader").style.display = "none";
             });
     } else {
-        // Redirigir a login o mostrar modal
-        location.href = "login.html"; 
+        if(!location.href.includes("login.html")) location.href = "login.html"; 
     }
 });
 
