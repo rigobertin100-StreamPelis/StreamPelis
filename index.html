@@ -19,7 +19,7 @@
     </script>
 
     <style>
-        /* Mantenemos tus estilos originales */
+        /* Estilos originales preservados */
         body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);color:white;padding-top:90px;}
         .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:9999;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);}
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
@@ -112,6 +112,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// Configuración de Firebase preservada
 const firebaseConfig = {
     apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
     authDomain: "midata-40f73.firebaseapp.com",
@@ -132,25 +133,21 @@ let allVideos = [];
 let currentSeries = null;
 let currentSeason = 0;
 let currentEpisode = 0;
-let sessionInterval = null; // Para limpiar el watcher
+let sessionInterval = null;
 
-// REGISTRAR SESIÓN (Protegido por reglas de Firestore)
+// Lógica de sesiones Firebase preservada
 async function registerSession(user) {
     try {
         const ref = doc(db, "users", user.uid);
         const snap = await getDoc(ref);
         let sessions = snap.exists() ? snap.data().sessions || [] : [];
         const now = Date.now();
-
         sessions = sessions.filter(s => s.id !== sessionId);
         sessions.push({ id: sessionId, lastSeen: now });
         sessions.sort((a, b) => a.lastSeen - b.lastSeen);
-
         if (sessions.length > 2) sessions = sessions.slice(-2);
         await setDoc(ref, { sessions }, { merge: true });
-    } catch (e) {
-        console.error("Error de sesión:", e);
-    }
+    } catch (e) { console.error("Error de sesión:", e); }
 }
 
 async function validateSession(user) {
@@ -171,7 +168,7 @@ function startSessionWatcher(user) {
             await signOut(auth);
             location.reload();
         }
-    }, 10000); // Aumentado a 10s para reducir consumo
+    }, 10000);
 }
 
 // LÓGICA DE UI Y REPRODUCTOR
@@ -402,7 +399,14 @@ onAuthStateChanged(auth, async (user)=>{
         await registerSession(user);
         startSessionWatcher(user);
         playerController.init();
-        fetch("videos.json").then(r=>r.json()).then(data=>{ allVideos=data; buildUI(); });
+        // CAMBIO AQUÍ: Llamamos a tu Worker en lugar de al archivo local
+        fetch("https://small-king-30c8.rigobertin100.workers.dev")
+            .then(r=>r.json())
+            .then(data=>{ 
+                allVideos=data; 
+                buildUI(); 
+            })
+            .catch(err => console.error("Error cargando el catálogo del Worker:", err));
     }else{
         document.getElementById("loginModal").style.display="flex";
         if(sessionInterval) clearInterval(sessionInterval);
