@@ -36,7 +36,6 @@
             user-select: none;
         }
 
-        /* HEADER RESPONSIVO */
         .header { 
             position: fixed; top: 0; left: 0; width: 100%; 
             display: flex; align-items: center; justify-content: space-between; 
@@ -56,18 +55,16 @@
         .search:focus { background: rgba(255, 255, 255, 0.2); width: clamp(150px, 25vw, 300px); }
         .logout { padding: 8px 15px; border: none; border-radius: 20px; background: #ff3b30; color: white; font-weight: bold; cursor: pointer; font-size: 14px; }
 
-        /* SECCIONES Y CAROUSEL */
         .row { margin-bottom: 30px; padding: 0 4%; }
         .row h2 { font-size: clamp(16px, 3vw, 22px); margin-bottom: 15px; font-weight: 700; color: #f2f2f7; display: flex; align-items: center; gap: 10px; }
         
         .carousel { 
             display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; 
             scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none; 
         }
         .carousel::-webkit-scrollbar { display: none; }
         
-        /* CARD RESPONSIVA (Desktop vs Mobile) */
         .card { 
             width: clamp(130px, 15vw, 200px); 
             flex-shrink: 0; aspect-ratio: 2/3; 
@@ -78,7 +75,6 @@
         .card:hover { transform: scale(1.05); z-index: 2; }
         .card img { width: 100%; height: 100%; object-fit: cover; transition: 0.4s; }
 
-        /* REPRODUCTOR UNIVERSAL */
         .player { position: fixed; inset: 0; display: none; background: #000; z-index: 100000; }
         video { width: 100%; height: 100%; }
         .gesture-area { position: absolute; top: 0; width: 30%; height: 90%; z-index: 10; cursor: pointer; }
@@ -90,12 +86,6 @@
             border-radius: 50px; font-weight: bold; opacity: 0; pointer-events: none; z-index: 100;
         }
 
-        /* ETIQUETAS DE PROGRESO */
-        .continue-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.2); }
-        .continue-fill { height: 100%; background: var(--primary); box-shadow: 0 0 10px var(--primary); }
-        .ep-label { position: absolute; top: 8px; left: 8px; background: var(--primary); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
-
-        /* LOADER */
         #mainLoader { position: fixed; inset: 0; background: #000; display: flex; justify-content: center; align-items: center; z-index: 1000000; }
         .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -133,7 +123,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -151,7 +141,6 @@ const db = getFirestore(app);
 let allVideos = [];
 let currentUser = null;
 
-// LÓGICA DE REPRODUCCIÓN UNIVERSAL
 const videoPlayer = {
     el: document.getElementById("video"),
     hls: null,
@@ -159,37 +148,38 @@ const videoPlayer = {
         this.stop();
         let savedTime = 0;
         
-        // Recuperar progreso de la nube
+        // CORRECCIÓN: Tu Worker envía la propiedad 'video', no 'url'
+        const videoSource = v.video;
+
         if(currentUser) {
             const snap = await getDoc(doc(db, "users", currentUser.uid, "progress", v.titulo.replace(/\//g, '_')));
             if(snap.exists()) savedTime = snap.data().time;
         }
 
-        if(v.url.includes(".m3u8")) {
+        if(videoSource && videoSource.includes(".m3u8")) {
             if(Hls.isSupported()) {
                 this.hls = new Hls();
-                this.hls.loadSource(v.url);
+                this.hls.loadSource(videoSource);
                 this.hls.attachMedia(this.el);
                 this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     this.el.currentTime = savedTime;
                     this.el.play();
                 });
             } else if (this.el.canPlayType('application/vnd.apple.mpegurl')) {
-                this.el.src = v.url;
+                this.el.src = videoSource;
                 this.el.addEventListener('loadedmetadata', () => {
                     this.el.currentTime = savedTime;
                     this.el.play();
                 });
             }
-        } else {
-            this.el.src = v.url;
+        } else if (videoSource) {
+            this.el.src = videoSource;
             this.el.onloadedmetadata = () => {
                 this.el.currentTime = savedTime;
                 this.el.play();
             };
         }
 
-        // Guardado inteligente (cada 15s)
         this.el.ontimeupdate = () => {
             if(currentUser && Math.floor(this.el.currentTime) % 15 === 0) {
                 this.saveProgress(v);
@@ -200,12 +190,12 @@ const videoPlayer = {
         const data = {
             time: this.el.currentTime,
             duration: this.el.duration,
-            img: v.img,
+            // CORRECCIÓN: Usar v.imagen que es lo que manda el Worker
+            img: v.imagen, 
             last: Date.now()
         };
         setDoc(doc(db, "users", currentUser.uid, "progress", v.titulo.replace(/\//g, '_')), data, { merge: true });
         
-        // Actualizar localmente para el carrusel de "Continuar"
         const local = JSON.parse(localStorage.getItem("progress") || "{}");
         local[v.titulo] = data;
         localStorage.setItem("progress", JSON.stringify(local));
@@ -216,7 +206,6 @@ const videoPlayer = {
     }
 };
 
-// GESTOS / DOBLE CLIC (Universal: Mouse y Touch)
 function handleFastForward(seconds) {
     videoPlayer.el.currentTime += seconds;
     const toast = document.getElementById("feedbackToast");
@@ -228,7 +217,6 @@ function handleFastForward(seconds) {
 document.getElementById("rightGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(10); };
 document.getElementById("leftGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(-10); };
 
-// RENDERIZADO DE CATEGORÍAS
 function renderCategory(tag, containerId) {
     const container = document.getElementById(containerId);
     const list = allVideos.filter(v => v.tipo?.toLowerCase() === tag.toLowerCase());
@@ -236,13 +224,13 @@ function renderCategory(tag, containerId) {
     list.forEach(v => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `<img loading="lazy" src="${v.img}">`;
+        // CORRECCIÓN: Cambiado v.img por v.imagen
+        card.innerHTML = `<img loading="lazy" src="${v.imagen}" onerror="this.src='https://via.placeholder.com/200x300?text=Error+Img'">`;
         card.onclick = () => openVideo(v);
         container.appendChild(card);
     });
 }
 
-// INICIO DE SESIÓN Y CARGA
 onAuthStateChanged(auth, (user) => {
     if(user) {
         currentUser = user;
@@ -258,25 +246,28 @@ onAuthStateChanged(auth, (user) => {
                     <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="row-anime"></div></div>
                 `;
                 
-                // 1. Lógica especial para Novedades (los 10 más recientes sin importar el tipo)
                 const recentRow = document.getElementById("row-recent");
-allVideos.slice(0, 10).forEach(v => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `<img src="${v.img}" onerror="this.src='https://via.placeholder.com/200x300?text=Error+Img'">`;
-    card.onclick = () => openVideo(v);
-    recentRow.appendChild(card);
-});
+                allVideos.slice(0, 10).forEach(v => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    // CORRECCIÓN: Cambiado v.img por v.imagen
+                    card.innerHTML = `<img src="${v.imagen}" onerror="this.src='https://via.placeholder.com/200x300?text=Error+Img'">`;
+                    card.onclick = () => openVideo(v);
+                    recentRow.appendChild(card);
+                });
 
-                // 2. Llenar el resto de categorías normalmente
-renderCategory("cine", "row-cine");
-renderCategory("pelicula", "row-movies");
-renderCategory("serie", "row-series");
-renderCategory("anime", "row-anime");
+                renderCategory("cine", "row-cine");
+                renderCategory("pelicula", "row-movies");
+                renderCategory("serie", "row-series");
+                renderCategory("anime", "row-anime");
 
                 document.getElementById("mainLoader").style.display = "none";
+            }).catch(err => {
+                console.error("Error en Worker:", err);
+                document.getElementById("mainLoader").innerHTML = "Error cargando catálogo";
             });
     } else {
+        // IMPORTANTE: Asegúrate de tener el archivo login.html en GitHub
         if(!location.href.includes("login.html")) location.href = "login.html"; 
     }
 });
