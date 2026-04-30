@@ -105,7 +105,7 @@
     <div class="series-inner">
         <span class="close" onclick="closeSeriesModal()">✕</span>
         <h2 id="seriesTitle"></h2>
-        <div id="seasonSelect" class="season-select" style="display:flex; gap:10px; overflow-x:auto; width:100%"></div>
+        <div id="seasonSelect" style="display:flex; gap:10px; overflow-x:auto; width:100%; margin-bottom:10px;"></div>
         <div class="episode-list" id="episodeList"></div>
     </div>
 </div>
@@ -208,8 +208,10 @@ const playerController = {
             });
         } else {
             this.video.src = v.url;
-            if(saved) this.video.currentTime = saved.time;
-            this.video.play();
+            this.video.onloadedmetadata = () => {
+                if(saved) this.video.currentTime = saved.time;
+                this.video.play();
+            };
         }
     },
     cleanup(){
@@ -229,40 +231,45 @@ window.openVideo = (v) => {
 window.closeVideo = () => {
     playerController.cleanup();
     document.getElementById("player").style.display = "none";
-    renderContinue(); // Actualizar fila de continuar al cerrar
+    renderContinue();
 };
 
 window.openSeriesModal = (series) => {
     currentSeries = series;
+    currentSeason = 0; 
     document.getElementById("seriesModal").style.display = "flex";
     document.getElementById("seriesTitle").innerText = series.titulo;
     
-    fetch(series.temporadasUrl).then(r=>r.json()).then(data => {
-        currentSeries.temporadas = data;
-        const box = document.getElementById("seasonSelect");
-        box.innerHTML = "";
-        data.forEach((t, i) => {
-            const opt = document.createElement("div");
-            opt.className = `season-option ${i===currentSeason?'active':''}`;
-            opt.innerText = `T${t.numero}`;
-            opt.onclick = () => {
-                currentSeason = i;
-                document.querySelectorAll(".season-option").forEach(el=>el.classList.remove("active"));
-                opt.classList.add("active");
-                renderEpisodes(i);
-            };
-            box.appendChild(opt);
-        });
-        renderEpisodes(currentSeason);
+    const box = document.getElementById("seasonSelect");
+    box.innerHTML = "";
+    
+    if(!series.temporadas || series.temporadas.length === 0) {
+        document.getElementById("episodeList").innerHTML = "Próximamente...";
+        return;
+    }
+
+    series.temporadas.forEach((t, i) => {
+        const opt = document.createElement("div");
+        opt.className = `season-option ${i===currentSeason?'active':''}`;
+        opt.innerText = t.numero;
+        opt.onclick = () => {
+            currentSeason = i;
+            document.querySelectorAll(".season-option").forEach(el=>el.classList.remove("active"));
+            opt.classList.add("active");
+            renderEpisodes(i);
+        };
+        box.appendChild(opt);
     });
+    renderEpisodes(currentSeason);
 };
 
 function renderEpisodes(idx){
     const list = document.getElementById("episodeList");
     list.innerHTML = "";
-    currentSeries.temporadas[idx].episodios.forEach((ep, i) => {
+    const season = currentSeries.temporadas[idx];
+    season.episodios.forEach((ep, i) => {
         const btn = document.createElement("button");
-        btn.innerText = `E${i+1}: ${ep.titulo}`;
+        btn.innerText = ep.titulo;
         btn.onclick = () => { currentEpisode = i; window.openVideo(ep); };
         list.appendChild(btn);
     });
@@ -273,6 +280,13 @@ window.nextEpisode = () => {
     if(currentEpisode < s.episodios.length-1) {
         currentEpisode++;
         window.openVideo(s.episodios[currentEpisode]);
+    }
+};
+
+window.prevEpisode = () => {
+    if(currentEpisode > 0) {
+        currentEpisode--;
+        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
     }
 };
 
@@ -288,6 +302,7 @@ function buildUI(){
         <div class="row"><h2>🍿 Cine</h2><div class="carousel" id="cineRow"></div></div>
         <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
         <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
+        <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
     `;
     renderAll();
 }
@@ -301,8 +316,8 @@ function renderAll(){
     render("pelicula", "peliculasRow");
     render("serie", "seriesRow");
     render("cine", "cineRow");
+    render("anime", "animeRow");
     
-    // Recientes
     const recent = [...allVideos].reverse().slice(0,10);
     recent.forEach(v => document.getElementById("recentRow").appendChild(createCard(v)));
     
@@ -314,7 +329,7 @@ function createCard(v){
     card.className = "card";
     card.dataset.title = v.titulo.toLowerCase();
     card.innerHTML = `<img src="${v.img}">`;
-    card.onclick = () => v.tipo === "serie" ? window.openSeriesModal(v) : window.openVideo(v);
+    card.onclick = () => (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v);
     return card;
 }
 
@@ -327,11 +342,10 @@ function renderContinue(){
     const list = Object.keys(data).map(id => {
         const cleanTitle = id.split("-S")[0];
         const base = allVideos.find(v => v.titulo === cleanTitle);
-        // Retornamos el objeto con los datos de progreso inyectados
         return base ? {...base, _prog: data[id]} : null;
     })
-    .filter(v => v && v._prog.time < v._prog.duration * 0.95) // Filtra si ya terminó
-    .sort((a,b) => b._prog.updated - a._prog.updated) // El más reciente primero
+    .filter(v => v && v._prog.time < v._prog.duration * 0.95)
+    .sort((a,b) => b._prog.updated - a._prog.updated)
     .slice(0,8);
 
     if(list.length === 0) {
@@ -341,16 +355,12 @@ function renderContinue(){
         list.forEach(v => {
             const p = v._prog;
             const pct = (p.time / p.duration) * 100;
-            
-            // Lógica para el texto de tiempo y episodios
             const minsFaltantes = Math.ceil((p.duration - p.time) / 60);
             let infoTexto = "";
 
             if (p.season !== null && p.episode !== null) {
-                // Es una serie o anime
                 infoTexto = `T${p.season + 1}:E${p.episode + 1} • Faltan ${minsFaltantes} min`;
             } else {
-                // Es una película
                 infoTexto = `Faltan ${minsFaltantes} min`;
             }
 
@@ -368,10 +378,8 @@ function renderContinue(){
                     currentSeries = v; 
                     currentSeason = p.season || 0; 
                     currentEpisode = p.episode || 0;
-                    fetch(v.temporadasUrl).then(r=>r.json()).then(d => {
-                        currentSeries.temporadas = d;
-                        window.openVideo(d[currentSeason].episodios[currentEpisode]);
-                    });
+                    const ep = v.temporadas[currentSeason].episodios[currentEpisode];
+                    window.openVideo(ep);
                 } else {
                     currentSeries = null;
                     window.openVideo(v);
@@ -405,7 +413,6 @@ onAuthStateChanged(auth, async (user) => {
         registerSession(user);
         startSessionWatcher(user);
         
-        // USAMOS LA URL QUE SABEMOS QUE FUNCIONA
         fetch("https://odd-credit-e6f8.rigobertin100.workers.dev/")
             .then(r => r.json())
             .then(data => {
