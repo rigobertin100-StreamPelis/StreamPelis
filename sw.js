@@ -1,59 +1,35 @@
-const CACHE_NAME = 'plusultra-v2';
-const IMAGE_CACHE = 'plusultra-images';
+const CACHE_NAME = 'plusultra-v3'; // Subimos versión para forzar actualización
 
-// Archivos básicos de la interfaz
 const ASSETS = [
   '/',
-  '/index.html',
-  'https://cdn.jsdelivr.net/npm/hls.js@latest'
+  '/index.html'
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Fuerza a que el nuevo SW tome el control
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim()); // Toma el control de las pestañas abiertas inmediatamente
 });
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // ESTRATEGIA PARA IMÁGENES (Cache First)
-  // Si es una imagen de R2 o de tu dominio, buscar en caché primero
-  if (request.destination === 'image') {
-    event.respondWith(
-      caches.open(IMAGE_CACHE).then((cache) => {
-        return cache.match(request).then((response) => {
-          return response || fetch(request).then((networkResponse) => {
-            cache.put(request, networkResponse.clone());
-            return networkResponse;
-          });
-        });
-      })
-    );
-    return;
+  // NO CACHEAR peticiones de Firebase o autenticación
+  if (url.hostname.includes('firebase') || url.hostname.includes('googleapis')) {
+    return; 
   }
 
-  // ESTRATEGIA PARA EL JSON DEL WORKER (Stale-While-Revalidate)
-  if (url.hostname.includes('workers.dev')) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then((cache) => {
-        return cache.match(request).then((cachedResponse) => {
-          const fetchPromise = fetch(request).then((networkResponse) => {
-            cache.put(request, networkResponse.clone());
-            return networkResponse;
-          });
-          return cachedResponse || fetchPromise;
-        });
-      })
-    );
-    return;
-  }
-
-  // Para todo lo demás (Firebase, etc), red normal
+  // Estrategia: Network First (Red primero, si falla, caché)
+  // Esto evitará que te quedes pegado en el "Loading" si el Worker actualiza
   event.respondWith(
-    caches.match(request).then((response) => {
-      return response || fetch(request);
+    fetch(request).catch(() => {
+      return caches.match(request);
     })
   );
 });
