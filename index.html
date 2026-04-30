@@ -148,8 +148,10 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let allVideos = [];
+// --- ESTADO GLOBAL ---
+let allVideos = []; // Única declaración permitida
 let currentUser = null;
+let lastSavedSecond = -1;
 
 // LÓGICA DE REPRODUCCIÓN UNIVERSAL
 const videoPlayer = {
@@ -166,7 +168,7 @@ const videoPlayer = {
         }
 
         if(v.url.includes(".m3u8")) {
-            if(Hls.isSupported()) {
+            if(window.Hls && Hls.isSupported()) {
                 this.hls = new Hls();
                 this.hls.loadSource(v.url);
                 this.hls.attachMedia(this.el);
@@ -189,16 +191,13 @@ const videoPlayer = {
             };
         }
 
-// Añade una variable para controlar el último segundo guardado
-let lastSavedSecond = -1;
-
-this.el.ontimeupdate = () => {
-    const currentSec = Math.floor(this.el.currentTime);
-    if(currentUser && currentSec % 15 === 0 && currentSec !== lastSavedSecond) {
-        lastSavedSecond = currentSec; // Marcamos que ya guardamos este segundo
-        this.saveProgress(v);
-    }
-};
+        this.el.ontimeupdate = () => {
+            const currentSec = Math.floor(this.el.currentTime);
+            if(currentUser && currentSec % 15 === 0 && currentSec !== lastSavedSecond) {
+                lastSavedSecond = currentSec; 
+                this.saveProgress(v);
+            }
+        };
     },
     saveProgress(v) {
         const data = {
@@ -209,7 +208,6 @@ this.el.ontimeupdate = () => {
         };
         setDoc(doc(db, "users", currentUser.uid, "progress", v.titulo.replace(/\//g, '_')), data, { merge: true });
         
-        // Actualizar localmente para el carrusel de "Continuar"
         const local = JSON.parse(localStorage.getItem("progress") || "{}");
         local[v.titulo] = data;
         localStorage.setItem("progress", JSON.stringify(local));
@@ -220,7 +218,7 @@ this.el.ontimeupdate = () => {
     }
 };
 
-// GESTOS / DOBLE CLIC (Universal: Mouse y Touch)
+// GESTOS / DOBLE CLIC
 function handleFastForward(seconds) {
     videoPlayer.el.currentTime += seconds;
     const toast = document.getElementById("feedbackToast");
@@ -232,20 +230,16 @@ function handleFastForward(seconds) {
 document.getElementById("rightGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(10); };
 document.getElementById("leftGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(-10); };
 
-// RENDERIZADO DE CATEGORÍAS - VERSIÓN ULTRA-CORREGIDA
+// RENDERIZADO DE CATEGORÍAS
 function renderCategory(title, tag, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return; 
     
     container.innerHTML = "";
-
-    // Filtro inteligente de Juani: Ignora mayúsculas y busca coincidencias parciales
     let list = allVideos.filter(v => {
         if (!v.tipo) return false;
         const tipo = v.tipo.toLowerCase();
         const busca = tag.toLowerCase();
-        
-        // Esto captura "pelicula", "películas", "P.Pelicula", etc.
         return tipo.includes(busca) || 
                (busca === "movies" && tipo.includes("peli")) ||
                (busca === "series" && tipo.includes("serie"));
@@ -254,7 +248,6 @@ function renderCategory(title, tag, containerId) {
     list = [...list].reverse(); 
     
     if (list.length === 0) {
-        // Si no hay nada, ocultamos la fila entera para que no se vea el título vacío
         container.parentElement.style.display = "none";
         return;
     }
@@ -262,29 +255,17 @@ function renderCategory(title, tag, containerId) {
     list.forEach(v => {
         const card = document.createElement("div");
         card.className = "card";
-        
-        // Usamos el título del video como "alt" y mejoramos el placeholder
-        card.innerHTML = `
-            <img loading="lazy" 
-                 src="${v.img}" 
-                 onerror="this.src='https://via.placeholder.com/200x300?text=${encodeURIComponent(v.titulo)}'">
-        `;
-        
+        card.innerHTML = `<img loading="lazy" src="${v.img}" onerror="this.src='https://via.placeholder.com/200x300?text=${encodeURIComponent(v.titulo)}'">`;
         card.onclick = () => openVideo(v);
         container.appendChild(card);
     });
 }
 
-// 1. VARIABLE GLOBAL CORRECTA
-let allVideos = []; 
-
-// 2. BLOQUE DE CARGA UNIFICADO
+// BLOQUE DE CARGA PRINCIPAL
 onAuthStateChanged(auth, (user) => {
     console.log("Juani: Revisando usuario...");
     if(user) {
         currentUser = user;
-        console.log("Juani: Usuario detectado, llamando al Worker...");
-        
         fetch("https://morning-glade-ac23.rigobertin100.workers.dev")
             .then(r => {
                 if (!r.ok) throw new Error("Error en el Worker: " + r.status);
@@ -292,7 +273,7 @@ onAuthStateChanged(auth, (user) => {
             })
             .then(data => {
                 console.log("Juani: ¡Datos recibidos!", data);
-                allVideos = data; // Guardamos en la variable correcta
+                allVideos = data; 
                 
                 const appContainer = document.getElementById("app");
                 if (appContainer) {
@@ -305,10 +286,9 @@ onAuthStateChanged(auth, (user) => {
                     `;
                 }
 
-                // Renderizamos Novedades
                 const recentContainer = document.getElementById("row-recent");
                 if (recentContainer) {
-                    const recentList = [...allVideos].reverse().slice(0, 10);
+                    const recentList = [...allVideos].slice(0, 10);
                     recentList.forEach(v => {
                         const card = document.createElement("div");
                         card.className = "card";
@@ -319,16 +299,13 @@ onAuthStateChanged(auth, (user) => {
                     });
                 }
 
-                // Renderizamos Categorías
                 renderCategory("Cine", "cine", "row-cine");
                 renderCategory("Películas", "peli", "row-movies"); 
                 renderCategory("Series", "serie", "row-series");
                 renderCategory("Anime", "anime", "row-anime");
 
-                // Apagamos el loader
                 const loader = document.getElementById("mainLoader");
                 if (loader) loader.style.display = "none";
-                
                 console.log("Juani: Interfaz cargada correctamente.");
             })
             .catch(err => {
@@ -341,6 +318,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+// FUNCIONES GLOBALES
 window.openVideo = (v) => {
     document.getElementById("player").style.display = "block";
     videoPlayer.play(v);
@@ -353,6 +331,12 @@ window.closeVideo = () => {
 
 window.logout = () => signOut(auth).then(() => location.reload());
 
+// Registro de Service Worker
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(console.error);
+    });
+}
 </script>
 </body>
 </html>
