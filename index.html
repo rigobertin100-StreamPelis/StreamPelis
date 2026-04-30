@@ -232,37 +232,42 @@ function handleFastForward(seconds) {
 document.getElementById("rightGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(10); };
 document.getElementById("leftGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(-10); };
 
-// RENDERIZADO DE CATEGORÍAS CORREGIDO POR JUANI
+// RENDERIZADO DE CATEGORÍAS - VERSIÓN ULTRA-CORREGIDA
 function renderCategory(title, tag, containerId) {
     const container = document.getElementById(containerId);
-    if (!container) return; // Seguridad por si el ID no existe
+    if (!container) return; 
     
-    // Limpiamos el contenedor antes de renderizar
     container.innerHTML = "";
 
-    // Filtramos con flexibilidad
+    // Filtro inteligente de Juani: Ignora mayúsculas y busca coincidencias parciales
     let list = allVideos.filter(v => {
-        const tipo = v.tipo?.toLowerCase();
+        if (!v.tipo) return false;
+        const tipo = v.tipo.toLowerCase();
         const busca = tag.toLowerCase();
-        // Esto permite que coincida "pelicula" con "movies" o "pelicula"
-        return tipo === busca || 
-               (busca === "movies" && tipo === "pelicula") ||
-               (busca === "series" && tipo === "serie");
+        
+        // Esto captura "pelicula", "películas", "P.Pelicula", etc.
+        return tipo.includes(busca) || 
+               (busca === "movies" && tipo.includes("peli")) ||
+               (busca === "series" && tipo.includes("serie"));
     });
     
-    // Algoritmo: Recientes primero
     list = [...list].reverse(); 
     
+    if (list.length === 0) {
+        // Si no hay nada, ocultamos la fila entera para que no se vea el título vacío
+        container.parentElement.style.display = "none";
+        return;
+    }
+
     list.forEach(v => {
         const card = document.createElement("div");
         card.className = "card";
         
-        // Añadimos un placeholder por si la imagen falla en cargar
+        // Usamos el título del video como "alt" y mejoramos el placeholder
         card.innerHTML = `
             <img loading="lazy" 
                  src="${v.img}" 
-                 onerror="this.src='https://via.placeholder.com/200x300?text=Cargando...'">
-            <div class="card-title-overlay">${v.titulo}</div>
+                 onerror="this.src='https://via.placeholder.com/200x300?text=${encodeURIComponent(v.titulo)}'">
         `;
         
         card.onclick = () => openVideo(v);
@@ -270,21 +275,59 @@ function renderCategory(title, tag, containerId) {
     });
 }
 
-// INICIO DE SESIÓN Y CARGA
+// INICIO DE SESIÓN Y CARGA CENTRALIZADO (Versión Juani)
 onAuthStateChanged(auth, (user) => {
     if(user) {
         currentUser = user;
+        
+        // Llamada al Worker de Cloudflare
         fetch("https://morning-glade-ac23.rigobertin100.workers.dev")
             .then(r => r.json())
             .then(data => {
                 allVideos = data;
+                
+                // 1. Inyectamos la estructura de las filas
                 document.getElementById("app").innerHTML = `
-                    <div class="row"><h2>🆕 Novedades</h2><div class="carousel" id="row-recent"></div></div>
-                    <div class="row"><h2>🍿 Cine en Casa</h2><div class="carousel" id="row-cine"></div></div>
-                    <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="row-movies"></div></div>
-                    <div class="row"><h2>📺 Series</h2><div class="carousel" id="row-series"></div></div>
-                    <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="row-anime"></div></div>
+                    <div class="row" id="sec-recent"><h2>🆕 Novedades</h2><div class="carousel" id="row-recent"></div></div>
+                    <div class="row" id="sec-cine"><h2>🍿 Cine en Casa</h2><div class="carousel" id="row-cine"></div></div>
+                    <div class="row" id="sec-movies"><h2>🎬 Películas</h2><div class="carousel" id="row-movies"></div></div>
+                    <div class="row" id="sec-series"><h2>📺 Series</h2><div class="carousel" id="row-series"></div></div>
+                    <div class="row" id="sec-anime"><h2>🍥 Anime</h2><div class="carousel" id="row-anime"></div></div>
                 `;
+                
+                // 2. Lógica para Novedades (Los 10 últimos)
+                const recentContainer = document.getElementById("row-recent");
+                const recentList = [...allVideos].reverse().slice(0, 10);
+
+                recentList.forEach(v => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    // Placeholder con el título del video si la imagen falla
+                    const imgError = `this.src='https://via.placeholder.com/200x300?text=${encodeURIComponent(v.titulo)}'`;
+                    card.innerHTML = `<img loading="lazy" src="${v.img || ''}" onerror="${imgError}">`;
+                    card.onclick = () => openVideo(v);
+                    recentContainer.appendChild(card);
+                });
+
+                // 3. Renderizar categorías filtradas
+                // Juani: "peli" y "serie" capturan mejor las carpetas de R2
+                renderCategory("Cine", "cine", "row-cine");
+                renderCategory("Películas", "peli", "row-movies"); 
+                renderCategory("Series", "serie", "row-series");
+                renderCategory("Anime", "anime", "row-anime");
+
+                // 4. Apagar el Loader
+                document.getElementById("mainLoader").style.display = "none";
+            })
+            .catch(err => {
+                console.error("Error en el fetch:", err);
+                document.getElementById("mainLoader").innerHTML = "<p style='padding:20px;'>Juani dice: El Worker no responde. Revisa la consola (F12).</p>";
+            });
+    } else {
+        // Si no hay usuario, directo al login
+        location.href = "login.html"; 
+    }
+});
                 
 // --- Lógica de Choque de Juani ---
 const recentContainer = document.getElementById("row-recent");
