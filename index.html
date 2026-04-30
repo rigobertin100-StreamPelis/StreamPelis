@@ -232,18 +232,39 @@ function handleFastForward(seconds) {
 document.getElementById("rightGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(10); };
 document.getElementById("leftGesture").onclick = (e) => { if(e.detail === 2) handleFastForward(-10); };
 
-// RENDERIZADO DE CATEGORÍAS
+// RENDERIZADO DE CATEGORÍAS CORREGIDO POR JUANI
 function renderCategory(title, tag, containerId) {
     const container = document.getElementById(containerId);
-    let list = allVideos.filter(v => v.tipo?.toLowerCase() === tag.toLowerCase());
+    if (!container) return; // Seguridad por si el ID no existe
     
-    // Algoritmo: Recientes primero, luego aleatorio
+    // Limpiamos el contenedor antes de renderizar
+    container.innerHTML = "";
+
+    // Filtramos con flexibilidad
+    let list = allVideos.filter(v => {
+        const tipo = v.tipo?.toLowerCase();
+        const busca = tag.toLowerCase();
+        // Esto permite que coincida "pelicula" con "movies" o "pelicula"
+        return tipo === busca || 
+               (busca === "movies" && tipo === "pelicula") ||
+               (busca === "series" && tipo === "serie");
+    });
+    
+    // Algoritmo: Recientes primero
     list = [...list].reverse(); 
     
     list.forEach(v => {
         const card = document.createElement("div");
         card.className = "card";
-        card.innerHTML = `<img loading="lazy" src="${v.img}">`;
+        
+        // Añadimos un placeholder por si la imagen falla en cargar
+        card.innerHTML = `
+            <img loading="lazy" 
+                 src="${v.img}" 
+                 onerror="this.src='https://via.placeholder.com/200x300?text=Cargando...'">
+            <div class="card-title-overlay">${v.titulo}</div>
+        `;
+        
         card.onclick = () => openVideo(v);
         container.appendChild(card);
     });
@@ -265,24 +286,32 @@ onAuthStateChanged(auth, (user) => {
                     <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="row-anime"></div></div>
                 `;
                 
-                // Llenar categorías
-                // --- Lógica para Novedades (Últimos 10 subidos) ---
-                const recentList = [...allVideos].reverse().slice(0, 10);
-                const recentContainer = document.getElementById("row-recent");
-                recentList.forEach(v => {
-                    const card = document.createElement("div");
-                    card.className = "card";
-                    card.innerHTML = `<img loading="lazy" src="${v.img}">`;
-                    card.onclick = () => openVideo(v);
-                    recentContainer.appendChild(card);
-                });
-                
-                renderCategory("", "cine", "row-cine");
-                renderCategory("", "pelicula", "row-movies");
-                renderCategory("", "serie", "row-series");
-                renderCategory("", "anime", "row-anime");
+// Llenar categorías
+            // --- Lógica para Novedades (Últimos 10 subidos) ---
+            const recentContainer = document.getElementById("row-recent");
+            recentContainer.innerHTML = ""; // Limpieza de seguridad
+            
+            // Solo mostramos los que sí tengan imagen y video válidos
+            const validVideos = allVideos.filter(v => v.img !== "" && v.url !== "");
+            const recentList = [...validVideos].reverse().slice(0, 10);
 
-                document.getElementById("mainLoader").style.display = "none";
+            recentList.forEach(v => {
+                const card = document.createElement("div");
+                card.className = "card";
+                card.innerHTML = `
+                    <img loading="lazy" src="${v.img}" onerror="this.parentElement.style.display='none'">
+                `;
+                card.onclick = () => openVideo(v);
+                recentContainer.appendChild(card);
+            });
+            
+            // Renderizar el resto de categorías
+            renderCategory("", "cine", "row-cine");
+            renderCategory("", "pelicula", "row-movies");
+            renderCategory("", "serie", "row-series");
+            renderCategory("", "anime", "row-anime");
+
+            document.getElementById("mainLoader").style.display = "none";
             });
     } else {
         // Redirigir a login o mostrar modal
