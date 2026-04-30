@@ -400,7 +400,7 @@ onAuthStateChanged(auth, async (user)=>{
         startSessionWatcher(user);
         playerController.init();
         // CAMBIO AQUÍ: Llamamos a tu Worker en lugar de al archivo local
-        fetch("https://small-king-30c8.rigobertin100.workers.dev")
+        fetch("https://odd-credit-e6f8.rigobertin100.workers.dev/")
             .then(r=>r.json())
             .then(data=>{ 
                 allVideos=data; 
