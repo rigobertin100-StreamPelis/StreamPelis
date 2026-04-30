@@ -321,39 +321,61 @@ function createCard(v){
 function renderContinue(){
     const data = getProgress();
     const row = document.getElementById("continueRow");
+    const container = document.getElementById("contHeader");
     row.innerHTML = "";
     
     const list = Object.keys(data).map(id => {
         const cleanTitle = id.split("-S")[0];
         const base = allVideos.find(v => v.titulo === cleanTitle);
+        // Retornamos el objeto con los datos de progreso inyectados
         return base ? {...base, _prog: data[id]} : null;
     })
-    .filter(v => v && v._prog.time < v._prog.duration * 0.9)
-    .sort((a,b) => b._prog.updated - a._prog.updated)
-    .slice(0,6);
+    .filter(v => v && v._prog.time < v._prog.duration * 0.95) // Filtra si ya terminó
+    .sort((a,b) => b._prog.updated - a._prog.updated) // El más reciente primero
+    .slice(0,8);
 
-    if(list.length === 0) document.getElementById("contHeader").style.display = "none";
-    else {
-        document.getElementById("contHeader").style.display = "block";
+    if(list.length === 0) {
+        container.style.display = "none";
+    } else {
+        container.style.display = "block";
         list.forEach(v => {
+            const p = v._prog;
+            const pct = (p.time / p.duration) * 100;
+            
+            // Lógica para el texto de tiempo y episodios
+            const minsFaltantes = Math.ceil((p.duration - p.time) / 60);
+            let infoTexto = "";
+
+            if (p.season !== null && p.episode !== null) {
+                // Es una serie o anime
+                infoTexto = `T${p.season + 1}:E${p.episode + 1} • Faltan ${minsFaltantes} min`;
+            } else {
+                // Es una película
+                infoTexto = `Faltan ${minsFaltantes} min`;
+            }
+
             const card = document.createElement("div");
             card.className = "card";
-            const pct = (v._prog.time / v._prog.duration) * 100;
             card.innerHTML = `
                 <img src="${v.img}">
                 <div class="continue-overlay">
-                    <div class="continue-info">Continuar</div>
+                    <div class="continue-info">${infoTexto}</div>
                     <div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div>
                 </div>
             `;
             card.onclick = () => {
-                if(v.tipo === "serie"){
-                    currentSeries = v; currentSeason = v._prog.season || 0; currentEpisode = v._prog.episode || 0;
+                if(v.tipo === "serie" || v.tipo === "anime"){
+                    currentSeries = v; 
+                    currentSeason = p.season || 0; 
+                    currentEpisode = p.episode || 0;
                     fetch(v.temporadasUrl).then(r=>r.json()).then(d => {
                         currentSeries.temporadas = d;
                         window.openVideo(d[currentSeason].episodios[currentEpisode]);
                     });
-                } else window.openVideo(v);
+                } else {
+                    currentSeries = null;
+                    window.openVideo(v);
+                }
             };
             row.appendChild(card);
         });
