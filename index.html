@@ -403,7 +403,8 @@ function createCard(v){
     const card = document.createElement("div");
     card.className = "card";
     card.dataset.title = v.titulo.toLowerCase();
-    card.innerHTML = `<img src="${v.img}">`;
+    // Añadimos loading="lazy" y un decodificación asíncrona para mayor fluidez
+    card.innerHTML = `<img src="${v.img}" loading="lazy" decoding="async">`;
     card.onclick = () => (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v);
     return card;
 }
@@ -447,15 +448,16 @@ function renderContinue() {
                 ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1} • Faltan ${minsFaltantes} min`
                 : `Faltan ${minsFaltantes} min`;
 
-            const card = document.createElement("div");
-            card.className = "card";
-            card.innerHTML = `
-                <img src="${v.img}">
-                <div class="continue-overlay">
-                    <div class="continue-info">${infoTexto}</div>
-                    <div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div>
-                </div>
-            `;
+// Dentro de la función renderContinue, localiza donde se crea la card:
+const card = document.createElement("div");
+card.className = "card";
+card.innerHTML = `
+    <img src="${v.img}" loading="lazy" decoding="async">
+    <div class="continue-overlay">
+        <div class="continue-info">${infoTexto}</div>
+        <div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div>
+    </div>
+`;
             
             card.onclick = () => {
                 if (v.tipo === "serie" || v.tipo === "anime") {
