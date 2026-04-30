@@ -259,20 +259,20 @@ onAuthStateChanged(auth, (user) => {
                 `;
                 
                 // 1. Lógica especial para Novedades (los 10 más recientes sin importar el tipo)
-                const recentContainer = document.getElementById("row-recent");
-                allVideos.slice(0, 10).forEach(v => {
-                    const card = document.createElement("div");
-                    card.className = "card";
-                    card.innerHTML = `<img loading="lazy" src="${v.img}">`;
-                    card.onclick = () => openVideo(v);
-                    recentContainer.appendChild(card);
-                });
+                const recentRow = document.getElementById("row-recent");
+allVideos.slice(0, 10).forEach(v => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<img src="${v.img}" onerror="this.src='https://via.placeholder.com/200x300?text=Error+Img'">`;
+    card.onclick = () => openVideo(v);
+    recentRow.appendChild(card);
+});
 
                 // 2. Llenar el resto de categorías normalmente
-                renderCategory("cine", "row-cine");
-                renderCategory("pelicula", "row-movies");
-                renderCategory("serie", "row-series");
-                renderCategory("anime", "row-anime");
+renderCategory("cine", "row-cine");
+renderCategory("pelicula", "row-movies");
+renderCategory("serie", "row-series");
+renderCategory("anime", "row-anime");
 
                 document.getElementById("mainLoader").style.display = "none";
             });
