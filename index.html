@@ -45,7 +45,12 @@
 
 <div id="player">
     <span class="close-btn" onclick="closeVideo()">×</span>
-    <video id="video" controls></video>
+    <!-- Añadimos un contenedor para forzar la recarga del elemento video -->
+    <div id="video-container" style="width:100%; height:100%;">
+        <video id="video" controls playsinline crossorigin="anonymous">
+            Tu navegador no soporta video.
+        </video>
+    </div>
 </div>
 
 <script type="module">
