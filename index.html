@@ -171,24 +171,21 @@ let sessionInterval = null;
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 
-// --- NAVEGACIÓN TV RESTRINGIDA ---
+// --- NAVEGACIÓN TV Y CONTROL REMOTO ---
 function initTVNavigation() {
     if (window.SpatialNavigation) {
         SpatialNavigation.init();
         
-        // Configuración por defecto (Catálogo)
         SpatialNavigation.add({
             id: 'main',
             selector: '.card, .hero-btn, .logout, .search, #loginBtn, #loginBox input'
         });
 
-        // Configuración Modal de Series
         SpatialNavigation.add({
             id: 'modal',
             selector: '.series-modal .season-option, .series-modal .episode-list button, .series-modal .close'
         });
 
-        // Configuración Reproductor
         SpatialNavigation.add({
             id: 'player',
             selector: '.player .player-nav button, .player .close'
@@ -197,22 +194,40 @@ function initTVNavigation() {
         SpatialNavigation.makeFocusable();
         
         window.addEventListener('keydown', (e) => {
+            const video = document.getElementById("video");
+            const playerOpen = document.getElementById("player").style.display === "flex";
+            const modalOpen = document.getElementById("seriesModal").style.display === "flex";
+
+            // 1. Lógica de botón OK (Enter)
             if (e.keyCode === 13) { 
                 const active = document.activeElement;
                 if (active) active.click();
             }
-            if (e.keyCode === 27 || e.key === "Escape") {
-                if (document.getElementById("player").style.display === "flex") {
+
+            // 2. Lógica de botón ATRÁS (Back / Backspace / Esc)
+            if (e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 461 || e.keyCode === 10009) {
+                if (playerOpen) {
+                    e.preventDefault();
                     window.closeVideo();
-                } else if (document.getElementById("seriesModal").style.display === "flex") {
+                } else if (modalOpen) {
+                    e.preventDefault();
                     window.closeSeriesModal();
+                }
+            }
+
+            // 3. Adelantar / Atrasar en TV (Flechas Derecha e Izquierda)
+            if (playerOpen) {
+                if (e.keyCode === 39) { // Flecha Derecha
+                    video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                }
+                if (e.keyCode === 37) { // Flecha Izquierda
+                    video.currentTime = Math.max(0, video.currentTime - 10);
                 }
             }
         }, true);
     }
 }
 
-// Función para cambiar el grupo de navegación activo
 function switchFocusGroup(groupId) {
     if (window.SpatialNavigation) {
         SpatialNavigation.disable('main');
@@ -227,7 +242,6 @@ window.toggleFullScreen = () => {
     const video = document.getElementById("video");
     if (video.requestFullscreen) video.requestFullscreen();
     else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-    else if (video.msRequestFullscreen) video.msRequestFullscreen();
 };
 
 function applyTVOptimizations() {
@@ -327,14 +341,8 @@ const playerController = {
 window.openVideo = (v) => {
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
-    document.getElementById("playerNav").style.display = currentSeries ? "flex" : "flex";
     playerController.play(v);
-    
     switchFocusGroup('player');
-    setTimeout(() => {
-        const firstBtn = document.getElementById("btnNext");
-        if(firstBtn) firstBtn.focus();
-    }, 200);
 };
 
 window.closeVideo = () => {
@@ -343,10 +351,6 @@ window.closeVideo = () => {
     if (currentSeries) {
         document.getElementById("seriesModal").style.display = "flex";
         switchFocusGroup('modal');
-        setTimeout(() => {
-            const firstEp = document.querySelector("#episodeList button");
-            if(firstEp) firstEp.focus();
-        }, 200);
     } else {
         switchFocusGroup('main');
     }
@@ -380,12 +384,7 @@ window.openSeriesModal = (series) => {
         box.appendChild(opt);
     });
     renderEpisodes(currentSeason);
-    
     switchFocusGroup('modal');
-    setTimeout(() => {
-        const firstOpt = document.querySelector(".season-option");
-        if(firstOpt) firstOpt.focus();
-    }, 200);
 };
 
 function renderEpisodes(idx){
@@ -396,10 +395,7 @@ function renderEpisodes(idx){
         const btn = document.createElement("button");
         btn.innerText = ep.titulo;
         btn.tabIndex = 0; 
-        btn.onclick = () => { 
-            currentEpisode = i; 
-            window.openVideo(ep); 
-        };
+        btn.onclick = () => { currentEpisode = i; window.openVideo(ep); };
         list.appendChild(btn);
     });
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
@@ -464,7 +460,7 @@ async function setupHeroBanner() {
     document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="autoplay"></iframe>`;
 }
 
-// --- RENDERIZADO CON PAGINACIÓN ---
+// --- RENDERIZADO ---
 function buildUI(){
     document.getElementById("app").innerHTML = `
         <div class="row"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
@@ -527,7 +523,7 @@ function createCard(v){
     card.className = "card";
     card.tabIndex = 0; 
     card.dataset.title = v.titulo.toLowerCase();
-    card.innerHTML = `<img src="${v.img}" loading="lazy" decoding="async">`;
+    card.innerHTML = `<img src="${v.img}" loading="lazy">`;
     card.onclick = () => (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v);
     return card;
 }
@@ -548,27 +544,16 @@ function renderContinue(limite = 5) {
     finalDisplay.forEach(v => {
         const p = v._prog;
         const pct = (p.time / p.duration) * 100;
-        const minsFaltantes = Math.ceil((p.duration - p.time) / 60);
         let infoTexto = (v.tipo === "serie" || v.tipo === "anime") 
-            ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1} • ${minsFaltantes} min`
-            : `Faltan ${minsFaltantes} min`;
+            ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1} • ${Math.ceil((p.duration - p.time)/60)} min`
+            : `Faltan ${Math.ceil((p.duration - p.time)/60)} min`;
         const card = createCard(v);
-        card.innerHTML += `
-            <div class="continue-overlay">
-                <div class="continue-info">${infoTexto}</div>
-                <div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div>
-            </div>
-        `;
+        card.innerHTML += `<div class="continue-overlay"><div class="continue-info">${infoTexto}</div><div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div></div>`;
         card.onclick = () => {
             if (v.tipo === "serie" || v.tipo === "anime") {
-                currentSeries = v;
-                currentSeason = p.season || 0;
-                currentEpisode = p.episode || 0;
+                currentSeries = v; currentSeason = p.season || 0; currentEpisode = p.episode || 0;
                 window.openVideo(v.temporadas[currentSeason].episodios[currentEpisode]);
-            } else {
-                currentSeries = null;
-                window.openVideo(v);
-            }
+            } else { currentSeries = null; window.openVideo(v); }
         };
         row.appendChild(card);
     });
@@ -600,33 +585,18 @@ onAuthStateChanged(auth, async (user) => {
         startSessionWatcher(user);
         const workerUrl = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
         const cacheKey = 'plusultra_catalog_cache';
-        const etagKey = 'plusultra_catalog_etag';
         const cachedData = localStorage.getItem(cacheKey);
-        if (cachedData) {
-            allVideos = JSON.parse(cachedData);
-            buildUI();
-        }
-        async function fetchCatalog(limit = 0) {
-            const headers = {};
-            const savedEtag = localStorage.getItem(etagKey);
-            if (savedEtag && limit === 0) headers['If-None-Match'] = savedEtag;
-            const url = limit > 0 ? `${workerUrl}?limit=${limit}` : workerUrl;
+        if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
+        async function fetchCatalog() {
             try {
-                const response = await fetch(url, { headers });
-                if (response.status === 200) {
-                    const data = await response.json();
-                    allVideos = data;
-                    if (limit === 0) {
-                        const newEtag = response.headers.get('ETag');
-                        localStorage.setItem(cacheKey, JSON.stringify(data));
-                        if (newEtag) localStorage.setItem(etagKey, newEtag);
-                    }
-                    buildUI(); 
-                }
-            } catch (e) { console.error(e); }
+                const r = await fetch(workerUrl);
+                const data = await r.json();
+                allVideos = data;
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+                buildUI();
+            } catch (e) {}
         }
-        if (!cachedData) await fetchCatalog(60);
-        fetchCatalog(0);
+        fetchCatalog();
     } else {
         document.getElementById("loginModal").style.display = "flex";
         initTVNavigation();
