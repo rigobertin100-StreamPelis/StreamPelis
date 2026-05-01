@@ -479,10 +479,10 @@ const cinePelis = allVideos.filter(v => v.tipo === "cine");
         const response = await fetch(txtUrl); 
         if (response.ok) manualVideoId = (await response.text()).trim(); 
     } catch (e) {}
-    let finalSrc = (manualVideoId && manualVideoId.length < 15) 
-        ? `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0` 
-        : `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer oficial")}&autoplay=1&mute=1&controls=0`;
-    document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="autoplay"></iframe>`;
+let finalSrc = (manualVideoId && manualVideoId.length < 15)
+    ? `https://www.youtube-nocookie.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0&modestbranding=1`
+    : `https://www.youtube-nocookie.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer oficial")}&autoplay=1&mute=1&controls=0&modestbranding=1`;
+    document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
 }
 
 function buildUI(){
