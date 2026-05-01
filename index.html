@@ -25,13 +25,21 @@
 
     <style>
         body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);color:white;padding-top:90px;overflow-x:hidden;}
-        .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:99999;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
+        .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:1000;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
         
-        /* OPTIMIZACIÓN TV */
+        /* OPTIMIZACIÓN TV Y FOCO */
         .tv-mode { backdrop-filter: none !important; background: #1c1c1e !important; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
-        .tv-mode .card { box-shadow: none !important; }
+        
+        /* Foco ultra visible para TV y PC */
+        :focus {
+            outline: 5px solid #0a84ff !important;
+            outline-offset: 2px;
+            transform: scale(1.05);
+            z-index: 1001;
+            box-shadow: 0 0 20px rgba(10, 132, 255, 0.6);
+        }
 
         .logo{font-size:34px;font-weight:700;color:#0a84ff;}
         .header-right{display:flex;align-items:center;gap:12px;}
@@ -44,12 +52,6 @@
         #heroTitle {font-size: clamp(30px, 5vw, 60px); margin: 0; color: #fff; text-transform: uppercase; max-width: 50%; line-height: 1.1;}
         .hero-btn {width: fit-content; padding: 14px 35px; background: #fff; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 25px; transition: 0.2s;}
 
-        .card:focus, .hero-btn:focus, .logout:focus, .search:focus, .season-option:focus, .episode-list button:focus {
-            outline: 4px solid #0a84ff !important;
-            transform: scale(1.05);
-            z-index: 100;
-        }
-
         .row{margin-top:40px;padding-left:20px;}
         .row h2{font-size:22px;margin-bottom:14px;color:rgba(255,255,255,0.9);}
         .carousel{display:flex;gap:18px;overflow-x:auto;padding-bottom:20px;scroll-behavior:smooth;}
@@ -59,21 +61,12 @@
         .card{width:220px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:20px;overflow:hidden;cursor:pointer;transition:0.3s; background: #2c2c2e;}
         .card img{width:100%;height:100%;object-fit:cover;}
 
-        /* Estilo para el cargador de segmentos */
-        .loading-sentinel {
-            min-width: 100px;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: #0a84ff;
-            font-weight: bold;
-        }
+        .loading-sentinel { min-width: 100px; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #0a84ff; font-weight: bold; }
         
-        .player,.series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:999999;}
-        .player{background:#000;}
-        .series-modal{background:rgba(28,28,30,0.98);backdrop-filter:blur(20px);}
+        /* JERARQUÍA DE MODALES CORREGIDA */
+        .series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:5000; background:rgba(28,28,30,0.98);backdrop-filter:blur(20px);}
+        .player{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:9000; background:#000;}
+
         .player-inner,.series-inner{width:92vw;height:88vh;background:#1c1c1e;border-radius:24px;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;padding:20px;}
         video{width:100%;height:100%;border-radius:15px;background:#000;}
         
@@ -133,8 +126,8 @@
     <div class="player-inner">
         <span class="close" onclick="closeVideo()">✕</span>
         <div class="player-nav" id="playerNav">
-            <button onclick="prevEpisode()" tabindex="0">⏮</button>
-            <button onclick="nextEpisode()" tabindex="0">⏭</button>
+            <button id="btnPrev" onclick="prevEpisode()" tabindex="0">⏮</button>
+            <button id="btnNext" onclick="nextEpisode()" tabindex="0">⏭</button>
             <button id="castBtn" onclick="castVideo()" style="display:none;" tabindex="0">📺 Cast</button>
         </div>
         <video id="video" controls></video>
@@ -177,31 +170,40 @@ let currentSeason = 0;
 let currentEpisode = 0;
 let sessionInterval = null;
 
-// --- PAGINACIÓN CONFIG ---
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 
-// --- OPTIMIZACIÓN SMART TV ---
-function applyTVOptimizations() {
-    const ua = navigator.userAgent.toLowerCase();
-    const isTV = /smart-tv|tizen|webos|hisense|apple-tv|googletv/.test(ua);
-    if (isTV) document.body.classList.add("tv-mode");
-}
-
+// --- NAVEGACIÓN Y TECLADO ---
 function initTVNavigation() {
     if (window.SpatialNavigation) {
         SpatialNavigation.init();
         SpatialNavigation.add({
-            selector: '.card, .hero-btn, .logout, .search, .season-option, .episode-list button, #loginBtn, #loginBox input'
+            selector: '.card, .hero-btn, .logout, .search, .season-option, .episode-list button, #loginBtn, #loginBox input, .player-nav button, .close'
         });
         SpatialNavigation.makeFocusable();
+        
         window.addEventListener('keydown', (e) => {
+            // ENTER
             if (e.keyCode === 13) { 
                 const active = document.activeElement;
                 if (active) active.click();
             }
+            // ESCAPE (Para PC y algunas TV)
+            if (e.keyCode === 27) {
+                if (document.getElementById("player").style.display === "flex") {
+                    window.closeVideo();
+                } else if (document.getElementById("seriesModal").style.display === "flex") {
+                    window.closeSeriesModal();
+                }
+            }
         });
     }
+}
+
+function applyTVOptimizations() {
+    const ua = navigator.userAgent.toLowerCase();
+    const isTV = /smart-tv|tizen|webos|hisense|apple-tv|googletv/.test(ua);
+    if (isTV) document.body.classList.add("tv-mode");
 }
 
 // --- SESIÓN ---
@@ -290,16 +292,31 @@ const playerController = {
 
 // --- INTERFAZ ---
 window.openVideo = (v) => {
+    // Asegurar que el modal de series no estorbe visualmente
+    document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
     document.getElementById("playerNav").style.display = currentSeries ? "flex" : "none";
     playerController.play(v);
-    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    
+    // Enfocar el botón de cerrar o nav para que el usuario sepa dónde está
+    setTimeout(() => {
+        const btn = document.getElementById("btnNext") || document.querySelector(".player .close");
+        if(btn) btn.focus();
+        if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    }, 100);
 };
 
 window.closeVideo = () => {
     playerController.cleanup();
     document.getElementById("player").style.display = "none";
-    if (currentSeries) document.getElementById("seriesModal").style.display = "flex";
+    if (currentSeries) {
+        document.getElementById("seriesModal").style.display = "flex";
+        // Al regresar al modal, enfocamos el primer episodio
+        setTimeout(() => {
+            const firstEp = document.querySelector("#episodeList button");
+            if(firstEp) firstEp.focus();
+        }, 100);
+    }
     renderContinue(5);
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 };
@@ -331,7 +348,13 @@ window.openSeriesModal = (series) => {
         box.appendChild(opt);
     });
     renderEpisodes(currentSeason);
-    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    
+    // Enfocar la primera temporada al abrir
+    setTimeout(() => {
+        const firstOpt = document.querySelector(".season-option");
+        if(firstOpt) firstOpt.focus();
+        if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    }, 100);
 };
 
 function renderEpisodes(idx){
@@ -344,7 +367,6 @@ function renderEpisodes(idx){
         btn.tabIndex = 0; 
         btn.onclick = () => { 
             currentEpisode = i; 
-            document.getElementById("seriesModal").style.display = "none"; 
             window.openVideo(ep); 
         };
         list.appendChild(btn);
