@@ -1,0 +1,29 @@
+# --- Seguridad de Firebase ---
+# Ignorar archivos de configuración local de Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# --- Datos del Catálogo ---
+# Si no quieres que otros descarguen tus JSONs fácilmente
+# Descomenta las siguientes líneas si prefieres mantenerlos privados
+Peliculas.json
+Anime.json
+
+# --- Node / Dependencias ---
+# Por si instalas herramientas de desarrollo local
+node_modules/
+dist/
+.env
+
+# --- Archivos de Sistema y Editores ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
+
+# --- Temporales ---
+tmp/
+temp/
