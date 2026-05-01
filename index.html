@@ -207,6 +207,7 @@ function initTVNavigation() {
         });
 
         window.addEventListener('keydown', (e) => {
+            if (document.activeElement.id === "search") return;
             const playerOpen = document.getElementById("player").style.display === "flex";
             const modalOpen = document.getElementById("seriesModal").style.display === "flex";
             const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -560,22 +561,20 @@ function handleSearch(query) {
 const searchInput = document.getElementById("search");
 
 searchInput.addEventListener("keydown", (e) => {
-    // 1. Permitir borrar (Backspace) y escribir espacios sin interferencia
-    if (e.key === "Backspace" || e.key === " ") {
-        e.stopPropagation(); 
-        return;
+    // Detiene cualquier otra función de la página para que no interfiera con el teclado
+    e.stopImmediatePropagation();
+
+    if (e.key === "Backspace") {
+        return; // Permite que el navegador borre normalmente
     }
 
-    // 2. Ejecutar búsqueda al presionar Enter
     if (e.key === "Enter") {
         e.preventDefault();
-        e.stopPropagation();
         handleSearch(e.target.value);
         e.target.blur(); 
     }
-});
+}, true); // El 'true' es la clave para ganar prioridad sobre el control de TV
 
-// 3. Pausar navegación de TV mientras se escribe para evitar conflictos
 searchInput.addEventListener("focus", () => {
     if (window.SpatialNavigation) SpatialNavigation.pause();
 });
