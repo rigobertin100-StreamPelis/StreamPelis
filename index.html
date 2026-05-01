@@ -31,7 +31,6 @@
         .tv-mode { backdrop-filter: none !important; background: #1c1c1e !important; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
         
-        /* FOCO CORREGIDO: AMARILLO NEÓN PARA MÁXIMA VISIBILIDAD */
         :focus {
             outline: 6px solid #ccff00 !important;
             outline-offset: 3px;
@@ -85,7 +84,6 @@
         .continue-progress{height:100%;background:#0a84ff;}
         
         .season-option {padding:10px 15px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;white-space:nowrap; border: 2px solid transparent;}
-        /* TEMPORADA ACTIVA CON BORDE PARA DISTINGUIR DEL FOCO AMARILLO */
         .season-option.active {background:#0a84ff; border-color: white;}
     </style>
 </head>
@@ -127,6 +125,7 @@
         <div class="player-nav" id="playerNav">
             <button id="btnPrev" onclick="prevEpisode()" tabindex="0">⏮</button>
             <button id="btnNext" onclick="nextEpisode()" tabindex="0">⏭</button>
+            <button id="btnFull" onclick="toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
             <button id="castBtn" onclick="castVideo()" style="display:none;" tabindex="0">📺 Cast</button>
         </div>
         <video id="video" controls></video>
@@ -172,22 +171,36 @@ let sessionInterval = null;
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 
-// --- NAVEGACIÓN Y TECLADO (CORREGIDO ESCAPE) ---
+// --- NAVEGACIÓN TV RESTRINGIDA ---
 function initTVNavigation() {
     if (window.SpatialNavigation) {
         SpatialNavigation.init();
+        
+        // Configuración por defecto (Catálogo)
         SpatialNavigation.add({
-            selector: '.card, .hero-btn, .logout, .search, .season-option, .episode-list button, #loginBtn, #loginBox input, .player-nav button, .close'
+            id: 'main',
+            selector: '.card, .hero-btn, .logout, .search, #loginBtn, #loginBox input'
         });
+
+        // Configuración Modal de Series
+        SpatialNavigation.add({
+            id: 'modal',
+            selector: '.series-modal .season-option, .series-modal .episode-list button, .series-modal .close'
+        });
+
+        // Configuración Reproductor
+        SpatialNavigation.add({
+            id: 'player',
+            selector: '.player .player-nav button, .player .close'
+        });
+
         SpatialNavigation.makeFocusable();
         
         window.addEventListener('keydown', (e) => {
-            // ENTER
             if (e.keyCode === 13) { 
                 const active = document.activeElement;
                 if (active) active.click();
             }
-            // ESCAPE (CORRECCIÓN: Prioridad máxima)
             if (e.keyCode === 27 || e.key === "Escape") {
                 if (document.getElementById("player").style.display === "flex") {
                     window.closeVideo();
@@ -198,6 +211,24 @@ function initTVNavigation() {
         }, true);
     }
 }
+
+// Función para cambiar el grupo de navegación activo
+function switchFocusGroup(groupId) {
+    if (window.SpatialNavigation) {
+        SpatialNavigation.disable('main');
+        SpatialNavigation.disable('modal');
+        SpatialNavigation.disable('player');
+        SpatialNavigation.enable(groupId);
+        SpatialNavigation.focus(groupId);
+    }
+}
+
+window.toggleFullScreen = () => {
+    const video = document.getElementById("video");
+    if (video.requestFullscreen) video.requestFullscreen();
+    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+    else if (video.msRequestFullscreen) video.msRequestFullscreen();
+};
 
 function applyTVOptimizations() {
     const ua = navigator.userAgent.toLowerCase();
@@ -232,7 +263,6 @@ function startSessionWatcher(user) {
     sessionInterval = setInterval(async () => {
         const valid = await validateSession(user);
         if (!valid) {
-            alert("Sesión abierta en otro dispositivo");
             signOut(auth).then(()=> location.reload());
         }
     }, 15000);
@@ -271,7 +301,6 @@ const playerController = {
             this.hls.loadSource(v.url);
             this.hls.attachMedia(this.video);
             this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                // Mejora: Solo restaurar tiempo si el episodio coincide o es película
                 if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
                     this.video.currentTime = saved.time;
                 }
@@ -298,14 +327,14 @@ const playerController = {
 window.openVideo = (v) => {
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
-    document.getElementById("playerNav").style.display = currentSeries ? "flex" : "none";
+    document.getElementById("playerNav").style.display = currentSeries ? "flex" : "flex";
     playerController.play(v);
     
+    switchFocusGroup('player');
     setTimeout(() => {
-        const btn = document.getElementById("btnNext") || document.querySelector(".player .close");
-        if(btn) btn.focus();
-        if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
-    }, 100);
+        const firstBtn = document.getElementById("btnNext");
+        if(firstBtn) firstBtn.focus();
+    }, 200);
 };
 
 window.closeVideo = () => {
@@ -313,13 +342,15 @@ window.closeVideo = () => {
     document.getElementById("player").style.display = "none";
     if (currentSeries) {
         document.getElementById("seriesModal").style.display = "flex";
+        switchFocusGroup('modal');
         setTimeout(() => {
             const firstEp = document.querySelector("#episodeList button");
             if(firstEp) firstEp.focus();
-        }, 100);
+        }, 200);
+    } else {
+        switchFocusGroup('main');
     }
     renderContinue(5);
-    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 };
 
 window.openSeriesModal = (series) => {
@@ -350,11 +381,11 @@ window.openSeriesModal = (series) => {
     });
     renderEpisodes(currentSeason);
     
+    switchFocusGroup('modal');
     setTimeout(() => {
         const firstOpt = document.querySelector(".season-option");
         if(firstOpt) firstOpt.focus();
-        if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
-    }, 100);
+    }, 200);
 };
 
 function renderEpisodes(idx){
@@ -374,34 +405,27 @@ function renderEpisodes(idx){
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
-// --- LÓGICA DE SALTO DE TEMPORADA CORREGIDA ---
 window.nextEpisode = () => {
     if (!currentSeries) return;
     const s = currentSeries.temporadas[currentSeason];
-    
     if(currentEpisode < s.episodios.length - 1) {
-        // Siguiente episodio misma temporada
         currentEpisode++;
         window.openVideo(s.episodios[currentEpisode]);
     } else if (currentSeason < currentSeries.temporadas.length - 1) {
-        // Salto a la siguiente temporada
         currentSeason++;
         currentEpisode = 0;
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
     } else {
-        // Fin de la serie
         window.closeVideo();
     }
 };
 
 window.prevEpisode = () => {
     if (!currentSeries) return;
-    
     if(currentEpisode > 0) {
         currentEpisode--;
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
     } else if (currentSeason > 0) {
-        // Regreso a la temporada anterior (último capítulo)
         currentSeason--;
         currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1;
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
@@ -411,7 +435,7 @@ window.prevEpisode = () => {
 window.closeSeriesModal = () => {
     document.getElementById("seriesModal").style.display = "none";
     currentSeries = null;
-    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    switchFocusGroup('main');
 };
 
 // --- BANNER ---
@@ -452,7 +476,8 @@ function buildUI(){
     `;
     renderAll();
     setupHeroBanner();
-    initTVNavigation(); 
+    initTVNavigation();
+    switchFocusGroup('main');
 }
 
 function renderAll(){
@@ -467,21 +492,16 @@ function renderAll(){
     sections.forEach(section => {
         const container = document.getElementById(section.id);
         if(!container) return;
-        
         container.innerHTML = "";
         loadedCounts[section.id] = 0;
-
         loadNextSegment(section.id, section.data);
-
         const sentinel = document.createElement("div");
         sentinel.className = "loading-sentinel";
         sentinel.innerText = "•••";
         container.appendChild(sentinel);
-
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting) loadNextSegment(section.id, section.data);
         }, { root: container, threshold: 0.1 });
-
         observer.observe(sentinel);
     });
     renderContinue(5);
@@ -493,12 +513,10 @@ function loadNextSegment(containerId, sourceData) {
     const start = loadedCounts[containerId];
     const end = start + SEGMENT_SIZE;
     const segment = sourceData.slice(start, end);
-
     segment.forEach(v => {
         const card = createCard(v);
         sentinel ? container.insertBefore(card, sentinel) : container.appendChild(card);
     });
-
     loadedCounts[containerId] = end;
     if (end >= sourceData.length && sentinel) sentinel.style.display = "none";
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
@@ -520,16 +538,13 @@ function renderContinue(limite = 5) {
     const container = document.getElementById("contHeader");
     if (!row || !container) return;
     row.innerHTML = "";
-    
     let list = Object.keys(data).map(id => {
         const base = allVideos.find(v => v.titulo.trim() === id.trim());
         return base ? { ...base, _prog: data[id] } : null;
     }).filter(v => v && v._prog.time > 5 && v._prog.time < v._prog.duration * 0.95);
-
     list.sort((a, b) => b._prog.updated - a._prog.updated);
     const finalDisplay = list.slice(0, limite);
     container.style.display = finalDisplay.length === 0 ? "none" : "block";
-
     finalDisplay.forEach(v => {
         const p = v._prog;
         const pct = (p.time / p.duration) * 100;
@@ -537,7 +552,6 @@ function renderContinue(limite = 5) {
         let infoTexto = (v.tipo === "serie" || v.tipo === "anime") 
             ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1} • ${minsFaltantes} min`
             : `Faltan ${minsFaltantes} min`;
-
         const card = createCard(v);
         card.innerHTML += `
             <div class="continue-overlay">
@@ -560,7 +574,6 @@ function renderContinue(limite = 5) {
     });
 }
 
-// --- BÚSQUEDA ---
 document.getElementById("search").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         const val = e.target.value.toLowerCase().trim();
@@ -571,7 +584,6 @@ document.getElementById("search").addEventListener("keydown", (e) => {
     }
 });
 
-// --- ARRANQUE ---
 document.getElementById("loginBtn").onclick = async () => {
     const u = document.getElementById("loginUser").value;
     const p = document.getElementById("loginPass").value;
@@ -586,23 +598,19 @@ onAuthStateChanged(auth, async (user) => {
         playerController.init();
         registerSession(user);
         startSessionWatcher(user);
-        
         const workerUrl = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
         const cacheKey = 'plusultra_catalog_cache';
         const etagKey = 'plusultra_catalog_etag';
-
         const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) {
             allVideos = JSON.parse(cachedData);
             buildUI();
         }
-
         async function fetchCatalog(limit = 0) {
             const headers = {};
             const savedEtag = localStorage.getItem(etagKey);
             if (savedEtag && limit === 0) headers['If-None-Match'] = savedEtag;
             const url = limit > 0 ? `${workerUrl}?limit=${limit}` : workerUrl;
-
             try {
                 const response = await fetch(url, { headers });
                 if (response.status === 200) {
@@ -617,7 +625,6 @@ onAuthStateChanged(auth, async (user) => {
                 }
             } catch (e) { console.error(e); }
         }
-
         if (!cachedData) await fetchCatalog(60);
         fetchCatalog(0);
     } else {
