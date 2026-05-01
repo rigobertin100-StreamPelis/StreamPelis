@@ -234,9 +234,8 @@ function initTVNavigation() {
                 } else if (modalOpen) {
                     window.closeSeriesModal();
                 } else if (document.getElementById("search").value !== "") {
-                    // Mejora: El botón atrás limpia la búsqueda si hay texto
-                    handleSearch("");
                     document.getElementById("search").value = "";
+                    handleSearch("");
                 }
             }
         }, true);
@@ -508,7 +507,7 @@ async function setupHeroBanner() {
 
 function buildUI(){
     document.getElementById("app").innerHTML = `
-        <div class="row"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
+        <div class="row" id="recentRowContainer"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
         <div class="row" id="contHeader"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
         <div class="row"><h2>🍿 Cine</h2><div class="carousel" id="cineRow"></div></div>
         <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
@@ -518,29 +517,60 @@ function buildUI(){
 }
 
 function renderAll(){
-    const sections = [ { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, { id: "peliculasRow", data: allVideos.filter(v => v.tipo === "pelicula").reverse() }, { id: "seriesRow", data: allVideos.filter(v => v.tipo === "serie").reverse() }, { id: "cineRow", data: allVideos.filter(v => v.tipo === "cine").reverse() }, { id: "animeRow", data: allVideos.filter(v => v.tipo === "anime").reverse() } ];
+    const sections = [ 
+        { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, 
+        { id: "peliculasRow", data: allVideos.filter(v => v.tipo === "pelicula").reverse() }, 
+        { id: "seriesRow", data: allVideos.filter(v => v.tipo === "serie").reverse() }, 
+        { id: "cineRow", data: allVideos.filter(v => v.tipo === "cine").reverse() }, 
+        { id: "animeRow", data: allVideos.filter(v => v.tipo === "anime").reverse() } 
+    ];
+    
     sections.forEach(section => {
-        const container = document.getElementById(section.id); if(!container) return;
-        container.innerHTML = ""; loadedCounts[section.id] = 0; loadNextSegment(section.id, section.data);
-        const sentinel = document.createElement("div"); sentinel.className = "loading-sentinel"; sentinel.innerText = "•••"; container.appendChild(sentinel);
-        new IntersectionObserver((entries) => { if (entries[0].isIntersecting) loadNextSegment(section.id, section.data); }, { root: container, threshold: 0.1 }).observe(sentinel);
+        const container = document.getElementById(section.id); 
+        if(!container) return;
+        container.innerHTML = ""; 
+        loadedCounts[section.id] = 0; 
+        loadNextSegment(section.id, section.data);
+        
+        // El sentinel se encarga de cargar más al hacer scroll
+        const sentinel = document.createElement("div"); 
+        sentinel.className = "loading-sentinel"; 
+        sentinel.innerText = "•••"; 
+        container.appendChild(sentinel);
+        
+        new IntersectionObserver((entries) => { 
+            if (entries[0].isIntersecting) loadNextSegment(section.id, section.data); 
+        }, { root: container, threshold: 0.1 }).observe(sentinel);
     });
     renderContinue(5);
 }
 
 function loadNextSegment(containerId, sourceData) {
-    const container = document.getElementById(containerId); const sentinel = container.querySelector(".loading-sentinel");
-    const start = loadedCounts[containerId]; const segment = sourceData.slice(start, start + SEGMENT_SIZE);
-    segment.forEach(v => { const card = createCard(v); sentinel ? container.insertBefore(card, sentinel) : container.appendChild(card); });
+    const container = document.getElementById(containerId); 
+    const sentinel = container.querySelector(".loading-sentinel");
+    const start = loadedCounts[containerId]; 
+    const segment = sourceData.slice(start, start + SEGMENT_SIZE);
+    
+    segment.forEach(v => { 
+        const card = createCard(v); 
+        sentinel ? container.insertBefore(card, sentinel) : container.appendChild(card); 
+    });
+    
     loadedCounts[containerId] = start + SEGMENT_SIZE;
     if (loadedCounts[containerId] >= sourceData.length && sentinel) sentinel.style.display = "none";
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
 function createCard(v){
-    const card = document.createElement("div"); card.className = "card"; card.tabIndex = 0; card.dataset.title = v.titulo.toLowerCase();
+    const card = document.createElement("div"); 
+    card.className = "card"; 
+    card.tabIndex = 0; 
+    card.dataset.title = v.titulo.toLowerCase();
     card.innerHTML = `<img src="${v.img}" loading="lazy" onerror="this.src='https://via.placeholder.com/500x750?text=Sin+Imagen'">`;
-    card.onclick = (e) => { e.preventDefault(); (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v); };
+    card.onclick = (e) => { 
+        e.preventDefault(); 
+        (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v); 
+    };
     return card;
 }
 
@@ -565,34 +595,38 @@ function renderContinue(limite = 5) {
 function handleSearch(query) {
     const cleanQuery = query.toLowerCase().trim();
     const rows = document.querySelectorAll('.row');
-    const container = document.getElementById("recentRow");
-    const title = container.parentElement.querySelector('h2');
+    const recentRowContainer = document.getElementById("recentRowContainer");
+    const recentRow = document.getElementById("recentRow");
+    const recentTitle = recentRowContainer.querySelector('h2');
     const hero = document.getElementById("heroBanner");
 
     if (cleanQuery === "") {
+        // Restaurar todo el catálogo
         rows.forEach(r => r.style.display = 'block');
         if (hero) hero.style.display = 'block'; 
-        title.innerText = "🆕 Recién agregadas";
-        // Mejora: Restaurar catálogo solo si es necesario para evitar parpadeos
-        if (container.innerHTML.includes("Resultados") || container.innerHTML === "") {
-            renderAll();
-        }
+        recentTitle.innerText = "🆕 Recién agregadas";
+        
+        // Re-renderizamos para que el catálogo vuelva a su estado original
+        renderAll();
         return;
     }
     
+    // Ejecutar búsqueda
     const filtered = allVideos.filter(v => v.titulo.toLowerCase().includes(cleanQuery));
-    if (hero) hero.style.display = 'none'; // Ocultar hero en búsqueda
+    if (hero) hero.style.display = 'none'; 
     
+    // Ocultamos todas las filas
     rows.forEach(r => r.style.display = 'none');
-    container.parentElement.style.display = 'block';
-    title.innerText = `Resultados: ${query}`;
-    container.innerHTML = "";
+    
+    // Usamos la fila "recentRow" para mostrar los resultados de búsqueda
+    recentRowContainer.style.display = 'block';
+    recentTitle.innerText = `Resultados: ${query}`;
+    recentRow.innerHTML = "";
     
     if(filtered.length === 0) {
-        container.innerHTML = "<p style='padding:20px'>No se encontraron resultados.</p>";
+        recentRow.innerHTML = "<p style='padding:20px'>No se encontraron resultados.</p>";
     } else {
-        // Mejora: Límite de 20 para fluidez en TV
-        filtered.slice(0, 20).forEach(v => container.appendChild(createCard(v)));
+        filtered.forEach(v => recentRow.appendChild(createCard(v)));
     }
     
     if (window.SpatialNavigation) {
