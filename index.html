@@ -233,13 +233,16 @@ function initTVNavigation() {
                     window.closeVideo();
                 } else if (modalOpen) {
                     window.closeSeriesModal();
+                } else if (document.getElementById("search").value !== "") {
+                    // Mejora: El botón atrás limpia la búsqueda si hay texto
+                    handleSearch("");
+                    document.getElementById("search").value = "";
                 }
             }
         }, true);
     }
 }
 
-// Mejora: Escuchador global para botón atrás físico (Navegadores/Android TV)
 window.addEventListener('popstate', function(event) {
     if (document.getElementById("player").style.display === "flex") {
         window.closeVideo();
@@ -374,10 +377,7 @@ const playerController = {
 window.openVideo = (v) => {
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
-    
-    // Mejora: Guardar estado en historial para botón atrás físico
     history.pushState({ action: "close_video" }, "");
-    
     playerController.play(v); 
     window.switchFocusGroup('player');
 };
@@ -390,7 +390,7 @@ window.togglePlay = () => {
 window.closeVideo = () => {
     playerController.cleanup(); 
     document.getElementById("player").style.display = "none";
-    document.body.style.cursor = "default"; // Recuperar cursor al cerrar
+    document.body.style.cursor = "default"; 
     
     if (currentSeries) { 
         document.getElementById("seriesModal").style.display = "flex"; 
@@ -406,8 +406,6 @@ window.openSeriesModal = (series) => {
     currentSeason = 0;
     document.getElementById("seriesModal").style.display = "flex";
     document.getElementById("seriesTitle").innerText = series.titulo;
-    
-    // Mejora: Historial para cerrar modal con botón atrás físico
     history.pushState({ action: "close_modal" }, "");
 
     const box = document.getElementById("seasonSelect"); 
@@ -541,10 +539,7 @@ function loadNextSegment(containerId, sourceData) {
 
 function createCard(v){
     const card = document.createElement("div"); card.className = "card"; card.tabIndex = 0; card.dataset.title = v.titulo.toLowerCase();
-    
-    // Mejora: Imagen de respaldo si falla el link original
     card.innerHTML = `<img src="${v.img}" loading="lazy" onerror="this.src='https://via.placeholder.com/500x750?text=Sin+Imagen'">`;
-    
     card.onclick = (e) => { e.preventDefault(); (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v); };
     return card;
 }
@@ -572,17 +567,23 @@ function handleSearch(query) {
     const rows = document.querySelectorAll('.row');
     const container = document.getElementById("recentRow");
     const title = container.parentElement.querySelector('h2');
+    const hero = document.getElementById("heroBanner");
 
     if (cleanQuery === "") {
         rows.forEach(r => r.style.display = 'block');
+        if (hero) hero.style.display = 'block'; 
         title.innerText = "🆕 Recién agregadas";
-        renderAll();
+        // Mejora: Restaurar catálogo solo si es necesario para evitar parpadeos
+        if (container.innerHTML.includes("Resultados") || container.innerHTML === "") {
+            renderAll();
+        }
         return;
     }
     
     const filtered = allVideos.filter(v => v.titulo.toLowerCase().includes(cleanQuery));
-    rows.forEach(r => r.style.display = 'none');
+    if (hero) hero.style.display = 'none'; // Ocultar hero en búsqueda
     
+    rows.forEach(r => r.style.display = 'none');
     container.parentElement.style.display = 'block';
     title.innerText = `Resultados: ${query}`;
     container.innerHTML = "";
@@ -590,28 +591,36 @@ function handleSearch(query) {
     if(filtered.length === 0) {
         container.innerHTML = "<p style='padding:20px'>No se encontraron resultados.</p>";
     } else {
-        filtered.forEach(v => container.appendChild(createCard(v)));
+        // Mejora: Límite de 20 para fluidez en TV
+        filtered.slice(0, 20).forEach(v => container.appendChild(createCard(v)));
     }
     
-    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    if (window.SpatialNavigation) {
+        SpatialNavigation.makeFocusable();
+        setTimeout(() => SpatialNavigation.focus('main'), 100);
+    }
 }
 
 const searchInput = document.getElementById("search");
 
 searchInput.addEventListener("keydown", (e) => {
     e.stopImmediatePropagation();
-    if (e.key === "Backspace") return;
     if (e.key === "Enter") {
         e.preventDefault();
         handleSearch(e.target.value);
-        e.target.blur(); 
+        e.target.blur();
     }
 }, true);
+
+searchInput.addEventListener("input", (e) => {
+    if (e.target.value.trim() === "") {
+        handleSearch("");
+    }
+});
 
 searchInput.addEventListener("focus", () => {
     if (window.SpatialNavigation) SpatialNavigation.pause();
 });
-
 searchInput.addEventListener("blur", () => {
     if (window.SpatialNavigation) SpatialNavigation.resume();
 });
