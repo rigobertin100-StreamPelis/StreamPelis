@@ -381,7 +381,7 @@ async function setupHeroBanner() {
         window.openVideo(ultimaPeli);
     };
 
-    const txtUrl = ultimaPeli.img.replace(/\.(jpg|png)$/i, ".txt");
+    const txtUrl = ultimaPeli.img.substring(0, ultimaPeli.img.lastIndexOf('.')) + ".txt";
     let manualVideoId = null;
 
     try {
