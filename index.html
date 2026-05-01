@@ -192,7 +192,7 @@ function initTVNavigation() {
     }
 }
 
-// --- FUNCIONES DE SESIÓN (Tu código estable) ---
+// --- FUNCIONES DE SESIÓN ---
 async function registerSession(user) {
     try {
         const ref = doc(db, "users", user.uid);
@@ -311,7 +311,7 @@ window.openSeriesModal = (series) => {
         const opt = document.createElement("div");
         opt.className = `season-option ${i===currentSeason?'active':''}`;
         opt.innerText = t.numero;
-        opt.tabIndex = 0; // Para TV
+        opt.tabIndex = 0; 
         opt.onclick = () => {
             currentSeason = i;
             document.querySelectorAll(".season-option").forEach(el=>el.classList.remove("active"));
@@ -331,7 +331,7 @@ function renderEpisodes(idx){
     season.episodios.forEach((ep, i) => {
         const btn = document.createElement("button");
         btn.innerText = ep.titulo;
-        btn.tabIndex = 0; // Para TV
+        btn.tabIndex = 0; 
         btn.onclick = () => { 
             currentEpisode = i; 
             document.getElementById("seriesModal").style.display = "none"; 
@@ -415,7 +415,7 @@ function buildUI(){
     `;
     renderAll();
     setupHeroBanner();
-    initTVNavigation(); // Activar navegación por flechas
+    initTVNavigation(); 
 }
 
 function renderAll(){
@@ -443,7 +443,7 @@ function renderAll(){
 function createCard(v){
     const card = document.createElement("div");
     card.className = "card";
-    card.tabIndex = 0; // Vital para Smart TV
+    card.tabIndex = 0; 
     card.dataset.title = v.titulo.toLowerCase();
     card.innerHTML = `<img src="${v.img}" loading="lazy" decoding="async">`;
     card.onclick = () => (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v);
@@ -506,27 +506,19 @@ function renderContinue(limite = 5) {
     });
 }
 
-// --- BÚSQUEDA (Solo al presionar Enter) ---
+// --- BÚSQUEDA ---
 document.getElementById("search").addEventListener("keydown", (e) => {
-    // Verificamos si la tecla presionada es "Enter"
     if (e.key === "Enter") {
         const val = e.target.value.toLowerCase().trim();
-        
-        // Realizamos el filtrado
         document.querySelectorAll(".card").forEach(c => {
             const title = c.dataset.title || "";
             c.style.display = title.includes(val) ? "block" : "none";
         });
-
-        // Opcional: Quitar el foco del input para que el usuario 
-        // pueda navegar por los resultados inmediatamente en la TV
-        if (val !== "") {
-            e.target.blur();
-        }
+        if (val !== "") e.target.blur();
     }
 });
 
-// --- LOGIN Y ARRANQUE ---
+// --- LOGIN Y ARRANQUE OPTIMIZADO CON PERSISTENCIA ---
 document.getElementById("loginBtn").onclick = async () => {
     const u = document.getElementById("loginUser").value;
     const p = document.getElementById("loginPass").value;
@@ -543,19 +535,68 @@ onAuthStateChanged(auth, async (user) => {
         startSessionWatcher(user);
         
         const workerUrl = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
+        const cacheKey = 'plusultra_catalog_cache';
+        const etagKey = 'plusultra_catalog_etag';
 
-        // Carga rápida inicial
-        fetch(`${workerUrl}?limit=60`)
-            .then(r => r.json())
-            .then(data => {
-                allVideos = data;
-                buildUI();
-                // Carga completa de fondo
-                fetch(workerUrl).then(r => r.json()).then(fullData => {
-                    allVideos = fullData; 
-                    console.log("Catálogo completo cargado.");
-                });
-            });
+        // 1. CARGA INSTANTÁNEA (Desde LocalStorage)
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+            console.log("⚡ Carga instantánea: Usando catálogo local.");
+            allVideos = JSON.parse(cachedData);
+            buildUI();
+        }
+
+        // 2. ACTUALIZACIÓN INTELIGENTE (Consultar al Worker)
+        async function fetchCatalog(limit = 0) {
+            const headers = {};
+            const savedEtag = localStorage.getItem(etagKey);
+            
+            // Solo usamos ETag si estamos pidiendo el catálogo completo (limit=0)
+            if (savedEtag && limit === 0) {
+                headers['If-None-Match'] = savedEtag;
+            }
+
+            const url = limit > 0 ? `${workerUrl}?limit=${limit}` : workerUrl;
+
+            try {
+                const response = await fetch(url, { headers });
+
+                if (response.status === 200) {
+                    const data = await response.json();
+                    allVideos = data;
+                    
+                    // Si es el catálogo completo, lo guardamos para la próxima vez
+                    if (limit === 0) {
+                        const newEtag = response.headers.get('ETag');
+                        localStorage.setItem(cacheKey, JSON.stringify(data));
+                        if (newEtag) localStorage.setItem(etagKey, newEtag);
+                        console.log("✅ Catálogo completo actualizado y guardado.");
+                    } else {
+                        console.log("🚀 Carga rápida de 60 elementos completada.");
+                    }
+                    
+                    // Solo reconstruimos la UI si no había nada cargado o si hay cambios reales
+                    buildUI(); 
+                } else if (response.status === 304) {
+                    console.log("💎 El catálogo local ya está actualizado (304).");
+                    if (!cachedData) buildUI(); // Caso raro donde el ETag existe pero el cache no
+                }
+            } catch (e) {
+                console.error("❌ Error al conectar con el servidor:", e);
+                // Si falla el servidor pero tenemos cache, ya construimos la UI arriba
+                if (!cachedData) alert("Error de conexión. Revisa tu internet.");
+            }
+        }
+
+        // Ejecutar estrategia de carga
+        if (!cachedData) {
+            // Si no hay nada guardado, hacemos la carga rápida de 60 primero
+            await fetchCatalog(60);
+        }
+        
+        // Siempre buscamos el catálogo completo de fondo para actualizar/verificar
+        fetchCatalog(0);
+
     } else {
         document.getElementById("loginModal").style.display = "flex";
         initTVNavigation();
