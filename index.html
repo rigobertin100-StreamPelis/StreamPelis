@@ -123,14 +123,23 @@
     <div class="player-inner">
         <span class="close" onclick="window.closeVideo()" tabindex="0">✕</span>
         <div class="player-nav" id="playerNav">
+            <!-- Botón 1: Play/Pausa (Para ambos) -->
+            <button id="btnPlayPause" onclick="window.togglePlay()" tabindex="0">⏯</button>
+            
+            <!-- Botones específicos para Series (Se muestran/ocultan por JS) -->
             <button id="btnPrev" onclick="window.prevEpisode()" tabindex="0">⏮</button>
+            
+            <!-- Botones de tiempo -->
             <button id="btnRew" onclick="document.getElementById('video').currentTime -= 10" tabindex="0">-10s</button>
             <button id="btnFwd" onclick="document.getElementById('video').currentTime += 10" tabindex="0">+10s</button>
+            
+            <!-- Botón específico para Series -->
             <button id="btnNext" onclick="window.nextEpisode()" tabindex="0">⏭</button>
+            
+            <!-- Botón Fullscreen -->
             <button id="btnFull" onclick="window.toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
-            <button id="castBtn" onclick="castVideo()" style="display:none;" tabindex="0">📺 Cast</button>
         </div>
-        <video id="video" controls></video>
+        <video id="video" playsinline></video>
     </div>
 </div>
 
@@ -254,40 +263,58 @@ const STORAGE_KEY="plus_ultra_progress";
 const getProgress = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
 const playerController = {
-    video: null, hls: null, currentId: null,
+    video: null, hls: null, currentId: null, idleTimer: null,
     init(){
         this.video = document.getElementById("video");
         this.video.ontimeupdate = () => {
             if(this.currentId && this.video.currentTime > 5) {
                 const data = getProgress();
-                data[this.currentId] = { time: this.video.currentTime, duration: this.video.duration, updated: Date.now(), season: currentSeries ? currentSeason : null, episode: currentSeries ? currentEpisode : null };
+                data[this.currentId] = { 
+                    time: this.video.currentTime, 
+                    duration: this.video.duration, 
+                    updated: Date.now(), 
+                    season: currentSeries ? currentSeason : null, 
+                    episode: currentSeries ? currentEpisode : null 
+                };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             }
         };
         this.video.onended = () => currentSeries ? window.nextEpisode() : window.closeVideo();
+        
+        // Auto-ocultar botones tras 5 segundos de inactividad
+        const nav = document.getElementById("playerNav");
+        const resetTimer = () => {
+            nav.style.opacity = "1";
+            clearTimeout(this.idleTimer);
+            this.idleTimer = setTimeout(() => { nav.style.opacity = "0"; }, 5000);
+        };
+        window.addEventListener("mousemove", resetTimer);
+        window.addEventListener("keydown", resetTimer);
     },
     play(v){
         this.cleanup();
-        this.currentId = currentSeries ? currentSeries.titulo : v.titulo;
-        
-        // MOSTRAR U OCULTAR BOTONES SEGUN TIPO
         const isSerie = currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime");
+        
+        // Configurar visibilidad de botones según tipo de contenido
         document.getElementById("btnPrev").style.display = isSerie ? "inline-block" : "none";
         document.getElementById("btnNext").style.display = isSerie ? "inline-block" : "none";
 
+        this.currentId = currentSeries ? currentSeries.titulo : v.titulo;
         const saved = getProgress()[this.currentId];
+
+        const startVideo = () => {
+            if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
+                this.video.currentTime = saved.time;
+            }
+            this.video.play();
+        };
+
         if(v.url.includes(".m3u8") && Hls.isSupported()){
             this.hls = new Hls(); this.hls.loadSource(v.url); this.hls.attachMedia(this.video);
-            this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) this.video.currentTime = saved.time;
-                this.video.play();
-            });
+            this.hls.on(Hls.Events.MANIFEST_PARSED, startVideo);
         } else {
             this.video.src = v.url;
-            this.video.onloadedmetadata = () => {
-                if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) this.video.currentTime = saved.time;
-                this.video.play();
-            };
+            this.video.onloadedmetadata = startVideo;
         }
     },
     cleanup(){ if(this.hls) this.hls.destroy(); this.video.pause(); this.video.src = ""; }
