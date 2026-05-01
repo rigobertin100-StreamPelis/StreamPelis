@@ -28,7 +28,7 @@
         .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:99999;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
         
-        /* OPTIMIZACIÓN TV: Menos carga gráfica */
+        /* OPTIMIZACIÓN TV */
         .tv-mode { backdrop-filter: none !important; background: #1c1c1e !important; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
         .tv-mode .card { box-shadow: none !important; }
@@ -44,7 +44,6 @@
         #heroTitle {font-size: clamp(30px, 5vw, 60px); margin: 0; color: #fff; text-transform: uppercase; max-width: 50%; line-height: 1.1;}
         .hero-btn {width: fit-content; padding: 14px 35px; background: #fff; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 25px; transition: 0.2s;}
 
-        /* ESTILO DE FOCO (Control Remoto) */
         .card:focus, .hero-btn:focus, .logout:focus, .search:focus, .season-option:focus, .episode-list button:focus {
             outline: 4px solid #0a84ff !important;
             transform: scale(1.05);
@@ -59,6 +58,18 @@
         
         .card{width:220px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:20px;overflow:hidden;cursor:pointer;transition:0.3s; background: #2c2c2e;}
         .card img{width:100%;height:100%;object-fit:cover;}
+
+        /* Estilo para el cargador de segmentos */
+        .loading-sentinel {
+            min-width: 100px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #0a84ff;
+            font-weight: bold;
+        }
         
         .player,.series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:999999;}
         .player{background:#000;}
@@ -166,13 +177,15 @@ let currentSeason = 0;
 let currentEpisode = 0;
 let sessionInterval = null;
 
-// --- OPTIMIZACIÓN SMART TV Y NAVEGACIÓN ---
+// --- PAGINACIÓN CONFIG ---
+const SEGMENT_SIZE = 10;
+const loadedCounts = {};
+
+// --- OPTIMIZACIÓN SMART TV ---
 function applyTVOptimizations() {
     const ua = navigator.userAgent.toLowerCase();
     const isTV = /smart-tv|tizen|webos|hisense|apple-tv|googletv/.test(ua);
-    if (isTV) {
-        document.body.classList.add("tv-mode");
-    }
+    if (isTV) document.body.classList.add("tv-mode");
 }
 
 function initTVNavigation() {
@@ -182,9 +195,8 @@ function initTVNavigation() {
             selector: '.card, .hero-btn, .logout, .search, .season-option, .episode-list button, #loginBtn, #loginBox input'
         });
         SpatialNavigation.makeFocusable();
-        
         window.addEventListener('keydown', (e) => {
-            if (e.keyCode === 13) { // OK / Enter
+            if (e.keyCode === 13) { 
                 const active = document.activeElement;
                 if (active) active.click();
             }
@@ -192,7 +204,7 @@ function initTVNavigation() {
     }
 }
 
-// --- FUNCIONES DE SESIÓN ---
+// --- SESIÓN ---
 async function registerSession(user) {
     try {
         const ref = doc(db, "users", user.uid);
@@ -225,7 +237,7 @@ function startSessionWatcher(user) {
     }, 15000);
 }
 
-// --- REPRODUCTOR Y PROGRESO ---
+// --- REPRODUCTOR ---
 const STORAGE_KEY="plus_ultra_progress";
 const getProgress = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 
@@ -287,9 +299,7 @@ window.openVideo = (v) => {
 window.closeVideo = () => {
     playerController.cleanup();
     document.getElementById("player").style.display = "none";
-    if (currentSeries) {
-        document.getElementById("seriesModal").style.display = "flex";
-    }
+    if (currentSeries) document.getElementById("seriesModal").style.display = "flex";
     renderContinue(5);
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 };
@@ -363,47 +373,33 @@ window.closeSeriesModal = () => {
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 };
 
-// --- LOGICA DEL BANNER HÍBRIDA ---
+// --- BANNER ---
 async function setupHeroBanner() {
     const cinePelis = allVideos.filter(v => v.tipo === "cine");
     if (cinePelis.length === 0) return;
-
     const ultimaPeli = cinePelis[cinePelis.length - 1];
     const banner = document.getElementById("heroBanner");
     const title = document.getElementById("heroTitle");
     const playBtn = document.getElementById("heroPlayBtn");
-
     banner.style.display = "block";
     title.innerText = ultimaPeli.titulo;
-    
-    playBtn.onclick = () => {
-        currentSeries = null;
-        window.openVideo(ultimaPeli);
-    };
+    playBtn.onclick = () => { currentSeries = null; window.openVideo(ultimaPeli); };
 
     const txtUrl = ultimaPeli.img.substring(0, ultimaPeli.img.lastIndexOf('.')) + ".txt";
     let manualVideoId = null;
-
     try {
         const response = await fetch(txtUrl);
-        if (response.ok) {
-            const text = await response.text();
-            manualVideoId = text.trim();
-        }
+        if (response.ok) manualVideoId = (await response.text()).trim();
     } catch (e) {}
 
-    let finalSrc = "";
-    if (manualVideoId && manualVideoId.length < 15) {
-        finalSrc = `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0`;
-    } else {
-        const searchQuery = encodeURIComponent(ultimaPeli.titulo + " trailer oficial");
-        finalSrc = `https://www.youtube.com/embed?listType=search&list=${searchQuery}&autoplay=1&mute=1&controls=0`;
-    }
+    let finalSrc = (manualVideoId && manualVideoId.length < 15)
+        ? `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0`
+        : `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer oficial")}&autoplay=1&mute=1&controls=0`;
 
     document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="autoplay"></iframe>`;
 }
 
-// --- UI Y RENDERIZADO ---
+// --- RENDERIZADO CON PAGINACIÓN ---
 function buildUI(){
     document.getElementById("app").innerHTML = `
         <div class="row"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
@@ -419,25 +415,52 @@ function buildUI(){
 }
 
 function renderAll(){
-    const render = (tipo, id, limite) => {
-        const container = document.getElementById(id);
-        if(!container) return;
-        const filtered = allVideos.filter(v => v.tipo === tipo);
-        const displayList = filtered.slice(-limite).reverse();
-        displayList.forEach(v => container.appendChild(createCard(v)));
-    };
+    const sections = [
+        { id: "recentRow", data: [...allVideos].slice(-30).reverse() },
+        { id: "peliculasRow", data: allVideos.filter(v => v.tipo === "pelicula").reverse() },
+        { id: "seriesRow", data: allVideos.filter(v => v.tipo === "serie").reverse() },
+        { id: "cineRow", data: allVideos.filter(v => v.tipo === "cine").reverse() },
+        { id: "animeRow", data: allVideos.filter(v => v.tipo === "anime").reverse() }
+    ];
 
-    render("pelicula", "peliculasRow", 30);
-    render("serie", "seriesRow", 15);
-    render("cine", "cineRow", 10);
-    render("anime", "animeRow", 15);
-    
-    const recentRow = document.getElementById("recentRow");
-    if(recentRow) {
-        const recent = [...allVideos].slice(-30).reverse();
-        recent.forEach(v => recentRow.appendChild(createCard(v)));
-    }
+    sections.forEach(section => {
+        const container = document.getElementById(section.id);
+        if(!container) return;
+        
+        container.innerHTML = "";
+        loadedCounts[section.id] = 0;
+
+        loadNextSegment(section.id, section.data);
+
+        const sentinel = document.createElement("div");
+        sentinel.className = "loading-sentinel";
+        sentinel.innerText = "•••";
+        container.appendChild(sentinel);
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) loadNextSegment(section.id, section.data);
+        }, { root: container, threshold: 0.1 });
+
+        observer.observe(sentinel);
+    });
     renderContinue(5);
+}
+
+function loadNextSegment(containerId, sourceData) {
+    const container = document.getElementById(containerId);
+    const sentinel = container.querySelector(".loading-sentinel");
+    const start = loadedCounts[containerId];
+    const end = start + SEGMENT_SIZE;
+    const segment = sourceData.slice(start, end);
+
+    segment.forEach(v => {
+        const card = createCard(v);
+        sentinel ? container.insertBefore(card, sentinel) : container.appendChild(card);
+    });
+
+    loadedCounts[containerId] = end;
+    if (end >= sourceData.length && sentinel) sentinel.style.display = "none";
+    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
 function createCard(v){
@@ -459,21 +482,11 @@ function renderContinue(limite = 5) {
     
     let list = Object.keys(data).map(id => {
         const base = allVideos.find(v => v.titulo.trim() === id.trim());
-        if (!base) return null;
-        return { ...base, _prog: data[id] };
+        return base ? { ...base, _prog: data[id] } : null;
     }).filter(v => v && v._prog.time > 5 && v._prog.time < v._prog.duration * 0.95);
 
     list.sort((a, b) => b._prog.updated - a._prog.updated);
-    const uniqueList = [];
-    const seenTitles = new Set();
-    for (const item of list) {
-        if (!seenTitles.has(item.titulo)) {
-            seenTitles.add(item.titulo);
-            uniqueList.push(item);
-        }
-    }
-
-    const finalDisplay = uniqueList.slice(0, limite);
+    const finalDisplay = list.slice(0, limite);
     container.style.display = finalDisplay.length === 0 ? "none" : "block";
 
     finalDisplay.forEach(v => {
@@ -511,14 +524,13 @@ document.getElementById("search").addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         const val = e.target.value.toLowerCase().trim();
         document.querySelectorAll(".card").forEach(c => {
-            const title = c.dataset.title || "";
-            c.style.display = title.includes(val) ? "block" : "none";
+            c.style.display = (c.dataset.title || "").includes(val) ? "block" : "none";
         });
         if (val !== "") e.target.blur();
     }
 });
 
-// --- LOGIN Y ARRANQUE OPTIMIZADO CON PERSISTENCIA ---
+// --- ARRANQUE ---
 document.getElementById("loginBtn").onclick = async () => {
     const u = document.getElementById("loginUser").value;
     const p = document.getElementById("loginPass").value;
@@ -538,65 +550,35 @@ onAuthStateChanged(auth, async (user) => {
         const cacheKey = 'plusultra_catalog_cache';
         const etagKey = 'plusultra_catalog_etag';
 
-        // 1. CARGA INSTANTÁNEA (Desde LocalStorage)
         const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) {
-            console.log("⚡ Carga instantánea: Usando catálogo local.");
             allVideos = JSON.parse(cachedData);
             buildUI();
         }
 
-        // 2. ACTUALIZACIÓN INTELIGENTE (Consultar al Worker)
         async function fetchCatalog(limit = 0) {
             const headers = {};
             const savedEtag = localStorage.getItem(etagKey);
-            
-            // Solo usamos ETag si estamos pidiendo el catálogo completo (limit=0)
-            if (savedEtag && limit === 0) {
-                headers['If-None-Match'] = savedEtag;
-            }
-
+            if (savedEtag && limit === 0) headers['If-None-Match'] = savedEtag;
             const url = limit > 0 ? `${workerUrl}?limit=${limit}` : workerUrl;
 
             try {
                 const response = await fetch(url, { headers });
-
                 if (response.status === 200) {
                     const data = await response.json();
                     allVideos = data;
-                    
-                    // Si es el catálogo completo, lo guardamos para la próxima vez
                     if (limit === 0) {
                         const newEtag = response.headers.get('ETag');
                         localStorage.setItem(cacheKey, JSON.stringify(data));
                         if (newEtag) localStorage.setItem(etagKey, newEtag);
-                        console.log("✅ Catálogo completo actualizado y guardado.");
-                    } else {
-                        console.log("🚀 Carga rápida de 60 elementos completada.");
                     }
-                    
-                    // Solo reconstruimos la UI si no había nada cargado o si hay cambios reales
                     buildUI(); 
-                } else if (response.status === 304) {
-                    console.log("💎 El catálogo local ya está actualizado (304).");
-                    if (!cachedData) buildUI(); // Caso raro donde el ETag existe pero el cache no
                 }
-            } catch (e) {
-                console.error("❌ Error al conectar con el servidor:", e);
-                // Si falla el servidor pero tenemos cache, ya construimos la UI arriba
-                if (!cachedData) alert("Error de conexión. Revisa tu internet.");
-            }
+            } catch (e) { console.error(e); }
         }
 
-        // Ejecutar estrategia de carga
-        if (!cachedData) {
-            // Si no hay nada guardado, hacemos la carga rápida de 60 primero
-            await fetchCatalog(60);
-        }
-        
-        // Siempre buscamos el catálogo completo de fondo para actualizar/verificar
+        if (!cachedData) await fetchCatalog(60);
         fetchCatalog(0);
-
     } else {
         document.getElementById("loginModal").style.display = "flex";
         initTVNavigation();
