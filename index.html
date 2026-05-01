@@ -332,14 +332,24 @@ function renderEpisodes(idx){
 
 window.nextEpisode = () => {
     if (!currentSeries) return;
-    const s = currentSeries.temporadas[currentSeason];
-    if(currentEpisode < s.episodios.length - 1) { 
+    
+    const temporadaActual = currentSeries.temporadas[currentSeason];
+    const totalEpisodiosEnTemporada = temporadaActual.episodios.length;
+
+    // 1. Si hay un siguiente capítulo en la misma temporada
+    if (currentEpisode < totalEpisodiosEnTemporada - 1) { 
         currentEpisode++; 
-        window.openVideo(s.episodios[currentEpisode]); 
-    } else if (currentSeason < currentSeries.temporadas.length - 1) { 
+        window.openVideo(temporadaActual.episodios[currentEpisode]); 
+    } 
+    // 2. Si es el último capítulo, pero hay una siguiente temporada
+    else if (currentSeason < currentSeries.temporadas.length - 1) { 
         currentSeason++; 
         currentEpisode = 0; 
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
+    }
+    // 3. Si no hay más (último cap de la última temporada), cerramos el player
+    else {
+        window.closeVideo();
     }
 };
 
