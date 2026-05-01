@@ -28,17 +28,16 @@
         .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:1000;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
         
-        /* OPTIMIZACIÓN TV Y FOCO */
         .tv-mode { backdrop-filter: none !important; background: #1c1c1e !important; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
         
-        /* Foco ultra visible para TV y PC */
+        /* FOCO CORREGIDO: AMARILLO NEÓN PARA MÁXIMA VISIBILIDAD */
         :focus {
-            outline: 5px solid #0a84ff !important;
-            outline-offset: 2px;
-            transform: scale(1.05);
-            z-index: 1001;
-            box-shadow: 0 0 20px rgba(10, 132, 255, 0.6);
+            outline: 6px solid #ccff00 !important;
+            outline-offset: 3px;
+            transform: scale(1.08);
+            z-index: 99999 !important;
+            box-shadow: 0 0 25px rgba(204, 255, 0, 0.7);
         }
 
         .logo{font-size:34px;font-weight:700;color:#0a84ff;}
@@ -63,7 +62,6 @@
 
         .loading-sentinel { min-width: 100px; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #0a84ff; font-weight: bold; }
         
-        /* JERARQUÍA DE MODALES CORREGIDA */
         .series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:5000; background:rgba(28,28,30,0.98);backdrop-filter:blur(20px);}
         .player{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:9000; background:#000;}
 
@@ -86,8 +84,9 @@
         .continue-line{height:4px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden;}
         .continue-progress{height:100%;background:#0a84ff;}
         
-        .season-option {padding:10px 15px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;white-space:nowrap;}
-        .season-option.active {background:#0a84ff;}
+        .season-option {padding:10px 15px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;white-space:nowrap; border: 2px solid transparent;}
+        /* TEMPORADA ACTIVA CON BORDE PARA DISTINGUIR DEL FOCO AMARILLO */
+        .season-option.active {background:#0a84ff; border-color: white;}
     </style>
 </head>
 
@@ -124,7 +123,7 @@
 
 <div class="player" id="player">
     <div class="player-inner">
-        <span class="close" onclick="closeVideo()">✕</span>
+        <span class="close" onclick="closeVideo()" tabindex="0">✕</span>
         <div class="player-nav" id="playerNav">
             <button id="btnPrev" onclick="prevEpisode()" tabindex="0">⏮</button>
             <button id="btnNext" onclick="nextEpisode()" tabindex="0">⏭</button>
@@ -136,7 +135,7 @@
 
 <div class="series-modal" id="seriesModal">
     <div class="series-inner">
-        <span class="close" onclick="closeSeriesModal()">✕</span>
+        <span class="close" onclick="closeSeriesModal()" tabindex="0">✕</span>
         <h2 id="seriesTitle"></h2>
         <div id="seasonSelect" style="display:flex; gap:10px; overflow-x:auto; width:100%; margin-bottom:10px;"></div>
         <div class="episode-list" id="episodeList"></div>
@@ -173,7 +172,7 @@ let sessionInterval = null;
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 
-// --- NAVEGACIÓN Y TECLADO ---
+// --- NAVEGACIÓN Y TECLADO (CORREGIDO ESCAPE) ---
 function initTVNavigation() {
     if (window.SpatialNavigation) {
         SpatialNavigation.init();
@@ -188,15 +187,15 @@ function initTVNavigation() {
                 const active = document.activeElement;
                 if (active) active.click();
             }
-            // ESCAPE (Para PC y algunas TV)
-            if (e.keyCode === 27) {
+            // ESCAPE (CORRECCIÓN: Prioridad máxima)
+            if (e.keyCode === 27 || e.key === "Escape") {
                 if (document.getElementById("player").style.display === "flex") {
                     window.closeVideo();
                 } else if (document.getElementById("seriesModal").style.display === "flex") {
                     window.closeSeriesModal();
                 }
             }
-        });
+        }, true);
     }
 }
 
@@ -272,13 +271,18 @@ const playerController = {
             this.hls.loadSource(v.url);
             this.hls.attachMedia(this.video);
             this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                if(saved) this.video.currentTime = saved.time;
+                // Mejora: Solo restaurar tiempo si el episodio coincide o es película
+                if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
+                    this.video.currentTime = saved.time;
+                }
                 this.video.play();
             });
         } else {
             this.video.src = v.url;
             this.video.onloadedmetadata = () => {
-                if(saved) this.video.currentTime = saved.time;
+                if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
+                    this.video.currentTime = saved.time;
+                }
                 this.video.play();
             };
         }
@@ -292,13 +296,11 @@ const playerController = {
 
 // --- INTERFAZ ---
 window.openVideo = (v) => {
-    // Asegurar que el modal de series no estorbe visualmente
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
     document.getElementById("playerNav").style.display = currentSeries ? "flex" : "none";
     playerController.play(v);
     
-    // Enfocar el botón de cerrar o nav para que el usuario sepa dónde está
     setTimeout(() => {
         const btn = document.getElementById("btnNext") || document.querySelector(".player .close");
         if(btn) btn.focus();
@@ -311,7 +313,6 @@ window.closeVideo = () => {
     document.getElementById("player").style.display = "none";
     if (currentSeries) {
         document.getElementById("seriesModal").style.display = "flex";
-        // Al regresar al modal, enfocamos el primer episodio
         setTimeout(() => {
             const firstEp = document.querySelector("#episodeList button");
             if(firstEp) firstEp.focus();
@@ -349,7 +350,6 @@ window.openSeriesModal = (series) => {
     });
     renderEpisodes(currentSeason);
     
-    // Enfocar la primera temporada al abrir
     setTimeout(() => {
         const firstOpt = document.querySelector(".season-option");
         if(firstOpt) firstOpt.focus();
@@ -374,17 +374,36 @@ function renderEpisodes(idx){
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
+// --- LÓGICA DE SALTO DE TEMPORADA CORREGIDA ---
 window.nextEpisode = () => {
+    if (!currentSeries) return;
     const s = currentSeries.temporadas[currentSeason];
-    if(currentEpisode < s.episodios.length-1) {
+    
+    if(currentEpisode < s.episodios.length - 1) {
+        // Siguiente episodio misma temporada
         currentEpisode++;
         window.openVideo(s.episodios[currentEpisode]);
+    } else if (currentSeason < currentSeries.temporadas.length - 1) {
+        // Salto a la siguiente temporada
+        currentSeason++;
+        currentEpisode = 0;
+        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
+    } else {
+        // Fin de la serie
+        window.closeVideo();
     }
 };
 
 window.prevEpisode = () => {
+    if (!currentSeries) return;
+    
     if(currentEpisode > 0) {
         currentEpisode--;
+        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
+    } else if (currentSeason > 0) {
+        // Regreso a la temporada anterior (último capítulo)
+        currentSeason--;
+        currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1;
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]);
     }
 };
