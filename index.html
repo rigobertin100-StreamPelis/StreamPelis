@@ -173,6 +173,24 @@ let unsubscribeSession = null;
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 
+    // --- DETECCIÓN DE DISPOSITIVO ---
+function getDeviceType() {
+    const ua = navigator.userAgent.toLowerCase();
+    if (/smart-tv|tizen|webos|hisense|apple-tv|googletv|firetv|roku|hbbtv|viera|netcast/i.test(ua)) {
+        return "PANTALLA";
+    }
+    if (/android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua)) {
+        return "CELULAR";
+    }
+    return "PC";
+}
+
+const DISPOSITIVO = getDeviceType();
+console.log("Iniciando PlusUltra Pro en:", DISPOSITIVO);
+
+// Aplicar clase al body para usar en CSS si lo necesitas
+document.body.classList.add("mode-" + DISPOSITIVO.toLowerCase());
+
 function initTVNavigation() {
     if (window.SpatialNavigation) {
         SpatialNavigation.init();
