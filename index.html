@@ -445,9 +445,12 @@ window.closeSeriesModal = () => {
 };
 
 async function setupHeroBanner() {
-    const cinePelis = allVideos.filter(v => v.tipo === "cine"); 
+const cinePelis = allVideos.filter(v => v.tipo === "cine"); 
     if (cinePelis.length === 0) return;
-    const ultimaPeli = cinePelis[cinePelis.length - 1];
+    
+    // Seleccionar aleatoriamente una de las últimas 5 películas agregadas
+    const ultimas5 = cinePelis.slice(-5);
+    const ultimaPeli = ultimas5[Math.floor(Math.random() * ultimas5.length)];
     document.getElementById("heroBanner").style.display = "block";
     document.getElementById("heroTitle").innerText = ultimaPeli.titulo;
     document.getElementById("heroPlayBtn").onclick = () => { currentSeries = null; window.openVideo(ultimaPeli); };
