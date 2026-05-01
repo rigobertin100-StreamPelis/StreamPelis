@@ -124,8 +124,8 @@
         <span class="close" onclick="closeVideo()" tabindex="0">✕</span>
         <div class="player-nav" id="playerNav">
             <button id="btnPrev" onclick="prevEpisode()" tabindex="0">⏮</button>
-            <button onclick="document.getElementById('video').currentTime -= 10" tabindex="0">-10s</button>
-            <button onclick="document.getElementById('video').currentTime += 10" tabindex="0">+10s</button>
+            <button id="btnRew" onclick="document.getElementById('video').currentTime -= 10" tabindex="0">-10s</button>
+            <button id="btnFwd" onclick="document.getElementById('video').currentTime += 10" tabindex="0">+10s</button>
             <button id="btnNext" onclick="nextEpisode()" tabindex="0">⏭</button>
             <button id="btnFull" onclick="toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
             <button id="castBtn" onclick="castVideo()" style="display:none;" tabindex="0">📺 Cast</button>
@@ -182,7 +182,6 @@ function initTVNavigation() {
         SpatialNavigation.makeFocusable();
         
         window.addEventListener('keydown', (e) => {
-            const video = document.getElementById("video");
             const playerOpen = document.getElementById("player").style.display === "flex";
             const modalOpen = document.getElementById("seriesModal").style.display === "flex";
 
@@ -191,10 +190,8 @@ function initTVNavigation() {
                 if (playerOpen) { e.preventDefault(); window.closeVideo(); }
                 else if (modalOpen) { e.preventDefault(); window.closeSeriesModal(); }
             }
-            if (playerOpen) {
-                if (e.keyCode === 39) video.currentTime = Math.min(video.duration, video.currentTime + 10);
-                if (e.keyCode === 37) video.currentTime = Math.max(0, video.currentTime - 10);
-            }
+            // CORRECCIÓN: Se eliminó la lógica de movimiento de tiempo con flechas 37 y 39.
+            // Spatial Navigation ahora maneja el foco en los botones de la interfaz automáticamente.
         }, true);
     }
 }
