@@ -121,13 +121,13 @@
 
 <div class="player" id="player">
     <div class="player-inner">
-        <span class="close" onclick="closeVideo()" tabindex="0">✕</span>
+        <span class="close" onclick="window.closeVideo()" tabindex="0">✕</span>
         <div class="player-nav" id="playerNav">
-            <button id="btnPrev" onclick="prevEpisode()" tabindex="0">⏮</button>
+            <button id="btnPrev" onclick="window.prevEpisode()" tabindex="0">⏮</button>
             <button id="btnRew" onclick="document.getElementById('video').currentTime -= 10" tabindex="0">-10s</button>
             <button id="btnFwd" onclick="document.getElementById('video').currentTime += 10" tabindex="0">+10s</button>
-            <button id="btnNext" onclick="nextEpisode()" tabindex="0">⏭</button>
-            <button id="btnFull" onclick="toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
+            <button id="btnNext" onclick="window.nextEpisode()" tabindex="0">⏭</button>
+            <button id="btnFull" onclick="window.toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
             <button id="castBtn" onclick="castVideo()" style="display:none;" tabindex="0">📺 Cast</button>
         </div>
         <video id="video" controls></video>
@@ -136,7 +136,7 @@
 
 <div class="series-modal" id="seriesModal">
     <div class="series-inner">
-        <span class="close" onclick="closeSeriesModal()" tabindex="0">✕</span>
+        <span class="close" onclick="window.closeSeriesModal()" tabindex="0">✕</span>
         <h2 id="seriesTitle"></h2>
         <div id="seasonSelect" style="display:flex; gap:10px; overflow-x:auto; width:100%; margin-bottom:10px;"></div>
         <div class="episode-list" id="episodeList"></div>
@@ -184,14 +184,24 @@ function initTVNavigation() {
         window.addEventListener('keydown', (e) => {
             const playerOpen = document.getElementById("player").style.display === "flex";
             const modalOpen = document.getElementById("seriesModal").style.display === "flex";
+            const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
 
             if (e.keyCode === 13) { const active = document.activeElement; if (active) active.click(); }
+            
+            // Lógica de botón ATRAS / ESC / BACK
             if (e.keyCode === 27 || e.keyCode === 8 || e.keyCode === 461 || e.keyCode === 10009) {
-                if (playerOpen) { e.preventDefault(); window.closeVideo(); }
-                else if (modalOpen) { e.preventDefault(); window.closeSeriesModal(); }
+                if (isFullScreen) {
+                    e.preventDefault();
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                } else if (playerOpen) {
+                    e.preventDefault();
+                    window.closeVideo();
+                } else if (modalOpen) {
+                    e.preventDefault();
+                    window.closeSeriesModal();
+                }
             }
-            // CORRECCIÓN: Se eliminó la lógica de movimiento de tiempo con flechas 37 y 39.
-            // Spatial Navigation ahora maneja el foco en los botones de la interfaz automáticamente.
         }, true);
     }
 }
@@ -259,6 +269,12 @@ const playerController = {
     play(v){
         this.cleanup();
         this.currentId = currentSeries ? currentSeries.titulo : v.titulo;
+        
+        // MOSTRAR U OCULTAR BOTONES SEGUN TIPO
+        const isSerie = currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime");
+        document.getElementById("btnPrev").style.display = isSerie ? "inline-block" : "none";
+        document.getElementById("btnNext").style.display = isSerie ? "inline-block" : "none";
+
         const saved = getProgress()[this.currentId];
         if(v.url.includes(".m3u8") && Hls.isSupported()){
             this.hls = new Hls(); this.hls.loadSource(v.url); this.hls.attachMedia(this.video);
@@ -317,15 +333,26 @@ function renderEpisodes(idx){
 window.nextEpisode = () => {
     if (!currentSeries) return;
     const s = currentSeries.temporadas[currentSeason];
-    if(currentEpisode < s.episodios.length - 1) { currentEpisode++; window.openVideo(s.episodios[currentEpisode]); }
-    else if (currentSeason < currentSeries.temporadas.length - 1) { currentSeason++; currentEpisode = 0; window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); }
-    else window.closeVideo();
+    if(currentEpisode < s.episodios.length - 1) { 
+        currentEpisode++; 
+        window.openVideo(s.episodios[currentEpisode]); 
+    } else if (currentSeason < currentSeries.temporadas.length - 1) { 
+        currentSeason++; 
+        currentEpisode = 0; 
+        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
+    }
 };
 
 window.prevEpisode = () => {
     if (!currentSeries) return;
-    if(currentEpisode > 0) { currentEpisode--; window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); }
-    else if (currentSeason > 0) { currentSeason--; currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1; window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); }
+    if(currentEpisode > 0) { 
+        currentEpisode--; 
+        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
+    } else if (currentSeason > 0) { 
+        currentSeason--; 
+        currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1; 
+        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
+    }
 };
 
 window.closeSeriesModal = () => { document.getElementById("seriesModal").style.display = "none"; currentSeries = null; switchFocusGroup('main'); };
