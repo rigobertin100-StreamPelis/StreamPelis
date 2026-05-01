@@ -506,13 +506,25 @@ function renderContinue(limite = 5) {
     });
 }
 
-// --- BÚSQUEDA ---
-document.getElementById("search").oninput = (e) => {
-    const val = e.target.value.toLowerCase();
-    document.querySelectorAll(".card").forEach(c => {
-        c.style.display = c.dataset.title.includes(val) ? "block" : "none";
-    });
-};
+// --- BÚSQUEDA (Solo al presionar Enter) ---
+document.getElementById("search").addEventListener("keydown", (e) => {
+    // Verificamos si la tecla presionada es "Enter"
+    if (e.key === "Enter") {
+        const val = e.target.value.toLowerCase().trim();
+        
+        // Realizamos el filtrado
+        document.querySelectorAll(".card").forEach(c => {
+            const title = c.dataset.title || "";
+            c.style.display = title.includes(val) ? "block" : "none";
+        });
+
+        // Opcional: Quitar el foco del input para que el usuario 
+        // pueda navegar por los resultados inmediatamente en la TV
+        if (val !== "") {
+            e.target.blur();
+        }
+    }
+});
 
 // --- LOGIN Y ARRANQUE ---
 document.getElementById("loginBtn").onclick = async () => {
