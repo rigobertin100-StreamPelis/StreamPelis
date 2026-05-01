@@ -271,7 +271,7 @@ function applyTVOptimizations() {
 }
 
 async function setupSessionSecurity(user) {
-    if (unsubscribeSession) unsubscribeSession();
+    if (typeof unsubscribeSession === 'function') unsubscribeSession();
     const userRef = doc(db, "users", user.uid);
     
     const snap = await getDoc(userRef);
@@ -569,17 +569,30 @@ function renderContinue(limite = 5) {
 
 function handleSearch(query) {
     const cleanQuery = query.toLowerCase().trim();
+    const rows = document.querySelectorAll('.row');
+    const container = document.getElementById("recentRow");
+    const title = container.parentElement.querySelector('h2');
+
     if (cleanQuery === "") {
+        rows.forEach(r => r.style.display = 'block');
+        title.innerText = "🆕 Recién agregadas";
         renderAll();
         return;
     }
+    
     const filtered = allVideos.filter(v => v.titulo.toLowerCase().includes(cleanQuery));
-    const container = document.getElementById("recentRow");
-    document.querySelectorAll('.row').forEach(r => r.style.display = 'none');
+    rows.forEach(r => r.style.display = 'none');
+    
     container.parentElement.style.display = 'block';
-    container.parentElement.querySelector('h2').innerText = `Resultados: ${query}`;
+    title.innerText = `Resultados: ${query}`;
     container.innerHTML = "";
-    filtered.forEach(v => container.appendChild(createCard(v)));
+    
+    if(filtered.length === 0) {
+        container.innerHTML = "<p style='padding:20px'>No se encontraron resultados.</p>";
+    } else {
+        filtered.forEach(v => container.appendChild(createCard(v)));
+    }
+    
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
@@ -622,13 +635,14 @@ onAuthStateChanged(auth, async (user) => {
             buildUI(); 
         } catch (e) {}
     } else { 
+        if (playerController) playerController.cleanup();
         document.getElementById("loginModal").style.display = "flex"; 
         initTVNavigation(); 
     }
 });
 
 window.logout = () => {
-    if (unsubscribeSession) unsubscribeSession();
+    if (typeof unsubscribeSession === 'function') unsubscribeSession();
     signOut(auth).then(() => location.reload());
 };
 </script>
