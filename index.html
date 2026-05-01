@@ -320,41 +320,90 @@ const playerController = {
     cleanup(){ if(this.hls) this.hls.destroy(); this.video.pause(); this.video.src = ""; }
 };
 
+// --- BLOQUE DE FUNCIONES GLOBALES Y NAVEGACIÓN ---
+
 window.openVideo = (v) => {
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
-    playerController.play(v); switchFocusGroup('player');
+    playerController.play(v); 
+    switchFocusGroup('player');
+};
+
+// Nueva función para el botón de Play/Pausa
+window.togglePlay = () => {
+    const v = document.getElementById("video");
+    if (v.paused) {
+        v.play();
+    } else {
+        v.pause();
+    }
 };
 
 window.closeVideo = () => {
-    playerController.cleanup(); document.getElementById("player").style.display = "none";
-    if (currentSeries) { document.getElementById("seriesModal").style.display = "flex"; switchFocusGroup('modal'); }
-    else switchFocusGroup('main');
+    playerController.cleanup(); 
+    document.getElementById("player").style.display = "none";
+    
+    // Si el contenido actual es una serie, regresamos al modal de capítulos
+    if (currentSeries) { 
+        document.getElementById("seriesModal").style.display = "flex"; 
+        switchFocusGroup('modal'); 
+    } else { 
+        // Si es película o cine, regresamos al catálogo principal
+        switchFocusGroup('main'); 
+    }
     renderContinue(5);
 };
 
 window.openSeriesModal = (series) => {
-    currentSeries = series; currentSeason = 0;
+    currentSeries = series; 
+    currentSeason = 0;
     document.getElementById("seriesModal").style.display = "flex";
     document.getElementById("seriesTitle").innerText = series.titulo;
-    const box = document.getElementById("seasonSelect"); box.innerHTML = "";
-    if(!series.temporadas || series.temporadas.length === 0) { document.getElementById("episodeList").innerHTML = "Próximamente..."; return; }
+    
+    const box = document.getElementById("seasonSelect"); 
+    box.innerHTML = "";
+    
+    if(!series.temporadas || series.temporadas.length === 0) { 
+        document.getElementById("episodeList").innerHTML = "Próximamente..."; 
+        return; 
+    }
+    
     series.temporadas.forEach((t, i) => {
-        const opt = document.createElement("div"); opt.className = `season-option ${i===currentSeason?'active':''}`; opt.innerText = t.numero; opt.tabIndex = 0;
-        opt.onclick = () => { currentSeason = i; document.querySelectorAll(".season-option").forEach(el=>el.classList.remove("active")); opt.classList.add("active"); renderEpisodes(i); };
+        const opt = document.createElement("div"); 
+        opt.className = `season-option ${i === currentSeason ? 'active' : ''}`; 
+        opt.innerText = t.numero; 
+        opt.tabIndex = 0;
+        opt.onclick = () => { 
+            currentSeason = i; 
+            document.querySelectorAll(".season-option").forEach(el => el.classList.remove("active")); 
+            opt.classList.add("active"); 
+            renderEpisodes(i); 
+        };
         box.appendChild(opt);
     });
-    renderEpisodes(currentSeason); switchFocusGroup('modal');
+    
+    renderEpisodes(currentSeason); 
+    switchFocusGroup('modal');
 };
 
-function renderEpisodes(idx){
-    const list = document.getElementById("episodeList"); list.innerHTML = "";
+function renderEpisodes(idx) {
+    const list = document.getElementById("episodeList"); 
+    list.innerHTML = "";
+    
     currentSeries.temporadas[idx].episodios.forEach((ep, i) => {
-        const btn = document.createElement("button"); btn.innerText = ep.titulo; btn.tabIndex = 0;
-        btn.onclick = () => { currentEpisode = i; window.openVideo(ep); };
+        const btn = document.createElement("button"); 
+        btn.innerText = ep.titulo; 
+        btn.tabIndex = 0;
+        btn.onclick = () => { 
+            currentEpisode = i; 
+            window.openVideo(ep); 
+        };
         list.appendChild(btn);
     });
-    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    
+    if (window.SpatialNavigation) {
+        SpatialNavigation.makeFocusable();
+    }
 }
 
 window.nextEpisode = () => {
@@ -374,7 +423,7 @@ window.nextEpisode = () => {
         currentEpisode = 0; 
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
     }
-    // 3. Si no hay más (último cap de la última temporada), cerramos el player
+    // 3. Si es el final de la serie, cerramos el player
     else {
         window.closeVideo();
     }
@@ -391,24 +440,44 @@ window.prevEpisode = () => {
     // 2. Si es el primer capítulo, pero hay una temporada anterior
     else if (currentSeason > 0) { 
         currentSeason--; 
-        // Vamos al último capítulo de esa temporada anterior
+        // Saltamos al último capítulo de la temporada anterior
         currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1; 
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
     }
-    // 3. Si es el primer capítulo de la primera temporada, no hace nada (según tu instrucción)
+    // 3. Si es el inicio de la serie, no hace nada
 };
 
-window.closeSeriesModal = () => { document.getElementById("seriesModal").style.display = "none"; currentSeries = null; switchFocusGroup('main'); };
+window.closeSeriesModal = () => { 
+    document.getElementById("seriesModal").style.display = "none"; 
+    currentSeries = null; 
+    switchFocusGroup('main'); 
+};
 
 async function setupHeroBanner() {
-    const cinePelis = allVideos.filter(v => v.tipo === "cine"); if (cinePelis.length === 0) return;
+    const cinePelis = allVideos.filter(v => v.tipo === "cine"); 
+    if (cinePelis.length === 0) return;
+    
     const ultimaPeli = cinePelis[cinePelis.length - 1];
     document.getElementById("heroBanner").style.display = "block";
     document.getElementById("heroTitle").innerText = ultimaPeli.titulo;
-    document.getElementById("heroPlayBtn").onclick = () => { currentSeries = null; window.openVideo(ultimaPeli); };
+    
+    document.getElementById("heroPlayBtn").onclick = () => { 
+        currentSeries = null; 
+        window.openVideo(ultimaPeli); 
+    };
+    
     const txtUrl = ultimaPeli.img.substring(0, ultimaPeli.img.lastIndexOf('.')) + ".txt";
-    let manualVideoId = null; try { const response = await fetch(txtUrl); if (response.ok) manualVideoId = (await response.text()).trim(); } catch (e) {}
-    let finalSrc = (manualVideoId && manualVideoId.length < 15) ? `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0` : `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer oficial")}&autoplay=1&mute=1&controls=0`;
+    let manualVideoId = null; 
+    
+    try { 
+        const response = await fetch(txtUrl); 
+        if (response.ok) manualVideoId = (await response.text()).trim(); 
+    } catch (e) {}
+    
+    let finalSrc = (manualVideoId && manualVideoId.length < 15) 
+        ? `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0` 
+        : `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer oficial")}&autoplay=1&mute=1&controls=0`;
+    
     document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="autoplay"></iframe>`;
 }
 
