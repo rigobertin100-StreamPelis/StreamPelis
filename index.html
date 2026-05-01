@@ -355,14 +355,20 @@ window.nextEpisode = () => {
 
 window.prevEpisode = () => {
     if (!currentSeries) return;
-    if(currentEpisode > 0) { 
+
+    // 1. Si hay un capítulo anterior en la misma temporada
+    if (currentEpisode > 0) { 
         currentEpisode--; 
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
-    } else if (currentSeason > 0) { 
+    } 
+    // 2. Si es el primer capítulo, pero hay una temporada anterior
+    else if (currentSeason > 0) { 
         currentSeason--; 
+        // Vamos al último capítulo de esa temporada anterior
         currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1; 
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
     }
+    // 3. Si es el primer capítulo de la primera temporada, no hace nada (según tu instrucción)
 };
 
 window.closeSeriesModal = () => { document.getElementById("seriesModal").style.display = "none"; currentSeries = null; switchFocusGroup('main'); };
