@@ -197,7 +197,7 @@ function initTVNavigation() {
                 if(playerOpen || modalOpen) e.preventDefault();
             }
 
-            if (e.keyCode === 13) { 
+            if (e.keyCode === 13 && document.activeElement.id !== "search") { 
                 const active = document.activeElement; 
                 if (active && typeof active.click === 'function') {
                     e.preventDefault();
@@ -539,11 +539,31 @@ function handleSearch(query) {
     if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
-document.getElementById("search").addEventListener("keydown", (e) => { 
-    if (e.key === "Enter") { 
+const searchInput = document.getElementById("search");
+
+searchInput.addEventListener("keydown", (e) => {
+    // 1. Permitir borrar (Backspace) y escribir espacios sin interferencia
+    if (e.key === "Backspace" || e.key === " ") {
+        e.stopPropagation(); 
+        return;
+    }
+
+    // 2. Ejecutar búsqueda al presionar Enter
+    if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
         handleSearch(e.target.value);
         e.target.blur(); 
-    } 
+    }
+});
+
+// 3. Pausar navegación de TV mientras se escribe para evitar conflictos
+searchInput.addEventListener("focus", () => {
+    if (window.SpatialNavigation) SpatialNavigation.pause();
+});
+
+searchInput.addEventListener("blur", () => {
+    if (window.SpatialNavigation) SpatialNavigation.resume();
 });
 
 document.getElementById("loginBtn").onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); } catch(e) { document.getElementById("loginError").style.display = "block"; } };
