@@ -208,10 +208,10 @@
 
         <div class="modal-info-content">
             <div class="info-left">
-                <h1 class="tmdb-title" id="seriesTitle"></h1>
-                <div class="tmdb-meta" id="tmdbMeta"></div>
-                <div class="tmdb-overview" id="tmdbOverview"></div>
-                <div id="tmdbCredits" style="margin-top:20px; font-size:14px; color:rgba(255,255,255,0.5)"></div>
+                <h1 class="-title" id="seriesTitle"></h1>
+                <div class="-meta" id="Meta"></div>
+                <div class="-overview" id="Overview"></div>
+                <div id="Credits" style="margin-top:20px; font-size:14px; color:rgba(255,255,255,0.5)"></div>
             </div>
             <div class="info-right">
                 <button class="btn-play-now" id="modalPlayBtn">Iniciar Película</button>
@@ -229,7 +229,7 @@ import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Tu Token de TMDB ya está aquí[cite: 1]
-const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1ZGI3MWZlM2U2ZjJlMTlkNjUzYWI4OGI4ZmY3MjliIiwiInN1YiI6MTc3NzA5Dk2MC42NTYsInN1YmIi6IjY5ZWM2MGQwOgzM2EyZk5Yje3Y2QxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCI2ZXJzaW9uIjoxfQ.mrFPRC5QmWKQ4lDFgAuBwwyv4U2Js5sQZv7HeU3TfE6Q"; 
+const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZGI3MWZlYmU2ZjJlMTlkNjUzYWI4OGI4ZmY3MjliNiIsIm5iZiI6MTc3NzA5ODk2MC42NTYsInN1YiI6IjY5ZWM2MGQwODgzM2EyZDk5YjE3Y2QxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.mrFPRC5QmWKQ4lDFgAuBwwyv4U2Js5qZv7HeU3TfE6Q"; 
 
 const firebaseConfig = {
     apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
