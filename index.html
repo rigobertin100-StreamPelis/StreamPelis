@@ -28,10 +28,10 @@
         .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:1000;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
         
-        .tv-mode { backdrop-filter: none !important; background: #1c1c1e !important; }
+        /* Estilos condicionales para TV */
+        .tv-mode { cursor: none; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
-        
-        :focus {
+        .tv-mode :focus {
             outline: 6px solid #ccff00 !important;
             outline-offset: 3px;
             transform: scale(1.05);
@@ -73,10 +73,11 @@
         
         .episode-list{width:100%;display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;overflow-y:auto;}
         
-        #loginModal{position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:9999999;}
-        #loginBox{background:#1c1c1e;padding:40px;border-radius:28px;display:flex;flex-direction:column;gap:16px;width:320px;}
-        #loginBox input{padding:14px;border-radius:12px;border:none;background:#2c2c2e;color:white;font-size:16px;}
-        #loginBox button{padding:14px;border:none;border-radius:12px;background:#0a84ff;color:#fff;font-weight:bold;cursor:pointer;}
+        /* Modales de Inicio */
+        #loginModal, #expModal {position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:9999999;}
+        #loginBox, #expBox {background:#1c1c1e;padding:40px;border-radius:28px;display:flex;flex-direction:column;gap:16px;width:320px;}
+        #loginBox input, #expBox button {padding:14px;border-radius:12px;border:none;background:#2c2c2e;color:white;font-size:16px;}
+        #loginBox button, .exp-btn-active {padding:14px;border:none;border-radius:12px;background:#0a84ff;color:#fff;font-weight:bold;cursor:pointer;}
         
         .continue-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.9), transparent);display:flex;flex-direction:column;justify-content:flex-end;padding:15px;gap:8px;}
         .continue-info{font-size:12px;color:#0a84ff;font-weight:bold;}
@@ -97,6 +98,15 @@
         <input id="loginPass" type="password" placeholder="Contraseña" tabindex="2">
         <button id="loginBtn" tabindex="3">Ingresar</button>
         <p id="loginError" style="color:#ff453a; display:none; text-align:center">Credenciales incorrectas</p>
+    </div>
+</div>
+
+<!-- Nuevo Modal de Selección de Experiencia -->
+<div id="expModal" style="display:none;">
+    <div id="expBox">
+        <h2 style="text-align:center">Elegir Experiencia</h2>
+        <button onclick="setExperience('tv')" tabindex="1" class="exp-btn-active">📺 Pantalla (TV)</button>
+        <button onclick="setExperience('mobile')" tabindex="2" style="background:#3a3a3c">📱 SmartPhone / PC</button>
     </div>
 </div>
 
@@ -173,6 +183,34 @@ let sessionInterval = null;
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 
+// --- Lógica de Experiencia ---
+window.setExperience = (type) => {
+    localStorage.setItem("user_experience", type);
+    document.getElementById("expModal").style.display = "none";
+    location.reload(); // Recargamos para aplicar la configuración limpia
+};
+
+function initExperience() {
+    const exp = localStorage.getItem("user_experience");
+    if (!exp) {
+        document.getElementById("expModal").style.display = "flex";
+        // Si no hay experiencia, forzamos navegación básica para el modal
+        if (window.SpatialNavigation) {
+            SpatialNavigation.init();
+            SpatialNavigation.add({ id: 'exp', selector: '#expBox button' });
+            SpatialNavigation.makeFocusable();
+            SpatialNavigation.focus('exp');
+        }
+        return false;
+    }
+
+    if (exp === 'tv') {
+        document.body.classList.add("tv-mode");
+        initTVNavigation();
+    }
+    return true;
+}
+
 function initTVNavigation() {
     if (window.SpatialNavigation) {
         SpatialNavigation.init();
@@ -186,7 +224,6 @@ function initTVNavigation() {
             const modalOpen = document.getElementById("seriesModal").style.display === "flex";
             const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
 
-            // Evitar comportamiento default de flechas/enter
             if([37, 38, 39, 40, 13].includes(e.keyCode)) {
                 if(playerOpen || modalOpen) e.preventDefault();
             }
@@ -217,6 +254,7 @@ function initTVNavigation() {
 }
 
 window.switchFocusGroup = (groupId) => {
+    if (localStorage.getItem("user_experience") !== 'tv') return;
     if (window.SpatialNavigation) {
         SpatialNavigation.disable('main'); 
         SpatialNavigation.disable('modal'); 
@@ -231,12 +269,6 @@ window.toggleFullScreen = () => {
     if (video.requestFullscreen) video.requestFullscreen();
     else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
 };
-
-function applyTVOptimizations() {
-    const ua = navigator.userAgent.toLowerCase();
-    const isTV = /smart-tv|tizen|webos|hisense|apple-tv|googletv/.test(ua);
-    if (isTV) document.body.classList.add("tv-mode");
-}
 
 async function registerSession(user) {
     try {
@@ -391,7 +423,7 @@ function renderEpisodes(idx) {
         };
         list.appendChild(btn);
     });
-    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
 window.nextEpisode = () => {
@@ -454,7 +486,9 @@ function buildUI(){
         <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
         <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
         <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>`;
-    renderAll(); setupHeroBanner(); initTVNavigation(); window.switchFocusGroup('main');
+    renderAll(); 
+    setupHeroBanner(); 
+    window.switchFocusGroup('main');
 }
 
 function renderAll(){
@@ -474,7 +508,7 @@ function loadNextSegment(containerId, sourceData) {
     segment.forEach(v => { const card = createCard(v); sentinel ? container.insertBefore(card, sentinel) : container.appendChild(card); });
     loadedCounts[containerId] = start + SEGMENT_SIZE;
     if (loadedCounts[containerId] >= sourceData.length && sentinel) sentinel.style.display = "none";
-    if (window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
 function createCard(v){
@@ -508,14 +542,33 @@ document.getElementById("loginBtn").onclick = async () => { try { await signInWi
 
 onAuthStateChanged(auth, async (user) => {
     if(user){
-        document.getElementById("loginModal").style.display = "none"; applyTVOptimizations(); playerController.init(); registerSession(user); startSessionWatcher(user);
+        document.getElementById("loginModal").style.display = "none"; 
+        
+        // Ejecutar selector de experiencia si no existe
+        if (!initExperience()) return;
+
+        playerController.init(); 
+        registerSession(user); 
+        startSessionWatcher(user);
+        
         const cacheKey = 'plusultra_catalog_cache'; const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
         try { const r = await fetch("https://odd-credit-e6f8.rigobertin100.workers.dev/"); const data = await r.json(); allVideos = data; localStorage.setItem(cacheKey, JSON.stringify(data)); buildUI(); } catch (e) {}
-    } else { document.getElementById("loginModal").style.display = "flex"; initTVNavigation(); }
+    } else { 
+        document.getElementById("loginModal").style.display = "flex"; 
+        // Navegación TV para el login si es necesario
+        if (window.SpatialNavigation) {
+            SpatialNavigation.init();
+            SpatialNavigation.add({ id: 'login', selector: '#loginBox input, #loginBtn' });
+            SpatialNavigation.makeFocusable();
+        }
+    }
 });
 
-window.logout = () => signOut(auth);
+window.logout = () => {
+    localStorage.removeItem("user_experience"); // Borrar preferencia al salir
+    signOut(auth);
+};
 </script>
 </body>
 </html>
