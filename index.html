@@ -165,21 +165,27 @@
 <div id="app"></div>
 
 <div class="player" id="player">
-    <div class="player-inner">
-        <span class="close" onclick="window.closeVideo()" tabindex="0">✕</span>
-        <div class="player-nav" id="playerNav">
-            <button id="btnPlayPause" onclick="window.togglePlay()" tabindex="0">⏯</button>
-            <button id="btnPrev" onclick="window.prevEpisode()" tabindex="0">⏮</button>
-            <button id="btnRew" onclick="document.getElementById('video').currentTime -= 10" tabindex="0">-10s</button>
-            <button id="btnFwd" onclick="document.getElementById('video').currentTime += 10" tabindex="0">+10s</button>
-            <button id="btnNext" onclick="window.nextEpisode()" tabindex="0">⏭</button>
-            <button id="btnFull" onclick="window.toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
-        </div>
-        <video id="video" playsinline></video>
-        <div id="playerCustomControls" class="custom-controls-overlay">
-            <button id="prevEpisodeBtn" class="nav-ep-btn left">❮ Anterior</button>
-            <button id="nextEpisodeBtn" class="nav-ep-btn right">Siguiente ❯</button>
-        </div>
+<div class="player-inner">
+    <!-- Iconos de control superior (Siempre funcionales) -->
+    <span class="fullscreen-icon" onclick="window.toggleFullScreen()" style="position:absolute; top:20px; right:70px; font-size:24px; cursor:pointer; color:white; z-index:10001;">⛶</span>
+    <span class="close" onclick="window.closeVideo()" tabindex="0" style="z-index:10001;">✕</span>
+
+    <!-- ESTE ES TU BLOQUE DE TV: NO LO BORRAMOS -->
+    <div class="player-nav" id="playerNav">
+        <button id="btnPlayPause" onclick="window.togglePlay()" tabindex="0">⏯</button>
+        <button id="btnPrev" onclick="window.prevEpisode()" tabindex="0">⏮</button>
+        <button id="btnRew" onclick="document.getElementById('video').currentTime -= 10" tabindex="0">-10s</button>
+        <button id="btnFwd" onclick="document.getElementById('video').currentTime += 10" tabindex="0">+10s</button>
+        <button id="btnNext" onclick="window.nextEpisode()" tabindex="0">⏭</button>
+        <button id="btnFull" onclick="window.toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
+    </div>
+
+    <video id="video" playsinline></video>
+
+    <!-- Botones de navegación lateral (Para Series/Anime) -->
+    <div id="playerCustomControls" class="custom-controls-overlay">
+        <button id="prevEpisodeBtn" class="nav-ep-btn left" onclick="window.prevEpisode()">❮ Anterior</button>
+        <button id="nextEpisodeBtn" class="nav-ep-btn right" onclick="window.nextEpisode()">Siguiente ❯</button>
     </div>
 </div>
 
@@ -396,42 +402,30 @@ window.openVideo = (v) => {
     const exp = localStorage.getItem("user_experience");
     const playerNav = document.getElementById("playerNav");
     const videoElement = document.getElementById("video");
+    const customOverlay = document.getElementById("playerCustomControls");
 
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
 
     if (exp === 'mobile') {
+        // PC / Celular: Barra de tiempo nativa activa y botones TV ocultos
         playerNav.style.display = "none";
         videoElement.setAttribute("controls", "controls");
+        
+        // Mostrar flechas de episodios solo si es serie/anime
+        customOverlay.style.display = currentSeries ? "flex" : "none";
     } else {
+        // Modo TV: Usamos tus botones azules y quitamos barra nativa
         playerNav.style.display = "flex";
         videoElement.removeAttribute("controls");
+        customOverlay.style.display = "none";
     }
 
     playerController.play(v); 
     window.switchFocusGroup('player');
-
-    const customOverlay = document.getElementById("playerCustomControls");
-    const prevBtn = document.getElementById("prevEpisodeBtn");
-    const nextBtn = document.getElementById("nextEpisodeBtn");
-
-    if (currentSeries && exp === 'mobile') {
-        customOverlay.style.display = "flex";
-        prevBtn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            window.prevEpisode();
-        };
-        nextBtn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            window.nextEpisode();
-        };
-    } else {
-        customOverlay.style.display = "none";
-    }
-    document.getElementById('video').focus();
-    showControls();
+    
+    videoElement.focus();
+    // Ya no llamamos a showControls() porque el navegador gestiona la barra nativa
 };
 
 window.togglePlay = () => {
