@@ -218,6 +218,9 @@ let currentSeason = 0;
 let currentEpisode = 0;
 let sessionInterval = null;
 
+// CACHÉ DE SESIÓN PARA URLS FIRMADAS
+const signedUrlsCache = new Map();
+
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
@@ -375,18 +378,6 @@ const playerController = {
         this.currentId = currentSeries ? currentSeries.titulo : v.titulo;
         const saved = getProgress()[this.currentId];
 
-        // NUEVO: Obtener URL firmada desde el Worker
-        let videoUrl = v.url;
-        if (v.fileKey) {
-            try {
-                const response = await fetch(`${WORKER_URL}?getFile=${v.fileKey}`);
-                const data = await response.json();
-                if (data.url) videoUrl = data.url;
-            } catch (err) {
-                console.error("Error obteniendo URL firmada:", err);
-            }
-        }
-
         const startVideo = () => {
             if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
                 this.video.currentTime = saved.time;
@@ -394,23 +385,25 @@ const playerController = {
             this.video.play().catch(e => console.warn("Autoplay bloqueado", e));
         };
 
-        if(videoUrl.includes(".m3u8") && Hls.isSupported()){
-            this.hls = new Hls(); this.hls.loadSource(videoUrl); this.hls.attachMedia(this.video);
+        if(v.url.includes(".m3u8") && Hls.isSupported()){
+            this.hls = new Hls(); this.hls.loadSource(v.url); this.hls.attachMedia(this.video);
             this.hls.on(Hls.Events.MANIFEST_PARSED, startVideo);
         } else {
-            this.video.src = videoUrl;
+            this.video.src = v.url;
             this.video.onloadedmetadata = startVideo;
         }
     },
     cleanup(){ if(this.hls) this.hls.destroy(); this.video.pause(); this.video.src = ""; this.hls = null; }
 };
 
-window.openVideo = (v) => {
+// LAZY SIGNING + CACHE IMPLEMENTATION
+window.openVideo = async (v) => {
     const exp = localStorage.getItem("user_experience");
     const playerNav = document.getElementById("playerNav");
     const videoElement = document.getElementById("video");
     const customOverlay = document.getElementById("playerCustomControls");
 
+    // Mostrar reproductor inmediatamente
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
 
@@ -424,7 +417,32 @@ window.openVideo = (v) => {
         customOverlay.style.display = "none";
     }
 
-    playerController.play(v); 
+    // Gestionar Lazy Signing y Cache de Sesión
+    let finalUrl = v.url;
+    if (v.fileKey) {
+        const now = Date.now();
+        const cached = signedUrlsCache.get(v.fileKey);
+
+        // Si existe en caché y no tiene más de 45 minutos (asumiendo 1h de validez)
+        if (cached && (now - cached.timestamp < 45 * 60 * 1000)) {
+            finalUrl = cached.url;
+            console.log("🚀 URL desde caché de sesión");
+        } else {
+            try {
+                console.log("☁️ Solicitando firma al Worker...");
+                const response = await fetch(`${WORKER_URL}?getFile=${v.fileKey}`);
+                const data = await response.json();
+                if (data.url) {
+                    finalUrl = data.url;
+                    signedUrlsCache.set(v.fileKey, { url: finalUrl, timestamp: now });
+                }
+            } catch (err) {
+                console.error("❌ Error en Lazy Signing:", err);
+            }
+        }
+    }
+
+    playerController.play({...v, url: finalUrl}); 
     window.switchFocusGroup('player');
     
     setTimeout(() => {
