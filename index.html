@@ -480,14 +480,14 @@ window.openSeriesModal = async (v) => {
     }
 
     const playBtn = document.getElementById("modalPlayBtn");
-    if (v.tipo === "pelicula" || v.tipo === "cine") {
+    if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
         playBtn.style.display = "block";
         playBtn.onclick = () => window.openVideo(v);
     } else {
         playBtn.style.display = "none";
     }
 
-    if (v.tipo === "pelicula" || v.tipo === "cine") {
+    if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
         const query = v.titulo.replace(/^[PS]\./, '').replace(/_/g, ' ');
         try {
             const resp = await fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=es-MX`, {
@@ -591,6 +591,7 @@ function buildUI(){
         <div class="row" id="contHeader"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
         <div class="row"><h2>🍿 Cine</h2><div class="carousel" id="cineRow"></div></div>
         <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
+        <div class="row"><h2>👶 Kids</h2><div class="carousel" id="kidsRow"></div></div>
         <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
         <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>`;
     renderAll(); setupHeroBanner(); window.switchFocusGroup('main');
@@ -618,10 +619,11 @@ function processCategoryData(data) {
 function renderAll(){
     const sections = [ 
         { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, 
-        { id: "peliculasRow", data: processCategoryData(allVideos.filter(v => v.tipo === "pelicula")) }, 
-        { id: "seriesRow", data: processCategoryData(allVideos.filter(v => v.tipo === "serie")) }, 
         { id: "cineRow", data: processCategoryData(allVideos.filter(v => v.tipo === "cine")) }, 
-        { id: "animeRow", data: processCategoryData(allVideos.filter(v => v.tipo === "anime")) } 
+        { id: "peliculasRow", data: processCategoryData(allVideos.filter(v => v.tipo === "pelicula")) }, 
+        { id: "kidsRow", data: processCategoryData(allVideos.filter(v => v.tipo === "kids")) }, 
+        { id: "seriesRow", data: processCategoryData(allVideos.filter(v => v.tipo === "serie")) }, 
+        { id: "animeRow", data: processCategoryData(allVideos.filter(v => v.tipo === "anime")) }
     ];
 
     sections.forEach(section => {
