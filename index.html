@@ -596,8 +596,34 @@ function buildUI(){
     renderAll(); setupHeroBanner(); window.switchFocusGroup('main');
 }
 
+// Función auxiliar para mezclar arrays (Shuffle)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// Función para procesar filas con lógica: últimos 15 + aleatorio
+function processCategoryData(data) {
+    const sorted = [...data].reverse(); // De más nuevo a más viejo
+    if (sorted.length <= 15) return sorted;
+    
+    const first15 = sorted.slice(0, 15);
+    const rest = shuffleArray(sorted.slice(15));
+    return first15.concat(rest);
+}
+
 function renderAll(){
-    const sections = [ { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, { id: "peliculasRow", data: allVideos.filter(v => v.pelicula).reverse() }, { id: "seriesRow", data: allVideos.filter(v => v.tipo === "serie").reverse() }, { id: "cineRow", data: allVideos.filter(v => v.tipo === "cine").reverse() }, { id: "animeRow", data: allVideos.filter(v => v.tipo === "anime").reverse() } ];
+    const sections = [ 
+        { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, 
+        { id: "peliculasRow", data: processCategoryData(allVideos.filter(v => v.tipo === "pelicula")) }, 
+        { id: "seriesRow", data: processCategoryData(allVideos.filter(v => v.tipo === "serie")) }, 
+        { id: "cineRow", data: processCategoryData(allVideos.filter(v => v.tipo === "cine")) }, 
+        { id: "animeRow", data: processCategoryData(allVideos.filter(v => v.tipo === "anime")) } 
+    ];
+
     sections.forEach(section => {
         const container = document.getElementById(section.id); if(!container) return;
         container.innerHTML = ""; loadedCounts[section.id] = 0; loadNextSegment(section.id, section.data);
