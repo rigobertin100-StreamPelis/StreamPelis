@@ -224,9 +224,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Tu Token de TMDB ya está aquí
-const TMDB_TOKEN = 
-"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZGI3MWZlYmU2ZjJlMTlkNjUzYWI4OGI4ZmY3MjliNiIsIm5iZiI6MTc3NzA5ODk2MC42NTYsInN1YiI6IjY5ZWM2MGQwODgzM2EyZDk5YjE3Y2QxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.mrFPRC5QmWKQ4lDFgAuBwwyv4U2Js5qZv7HeU3TfE6Q";
+const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZGI3MWZlYmU2ZjJlMTlkNjUzYWI4OGI4ZmY3MjliNiIsIm5iZiI6MTc3NzA5ODk2MC42NTYsInN1YiI6IjY5ZWM2MGQwODgzM2EyZDk5YjE3Y2QxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.mrFPRC5QmWKQ4lDFgAuBwwyv4U2Js5qZv7HeU3TfE6Q";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
@@ -553,6 +551,7 @@ window.nextEpisode = () => {
 
 window.prevEpisode = () => {
     if (!currentSeries) return;
+    const temp = currentSeries.temporadas[currentSeason];
     if (currentEpisode > 0) { 
         currentEpisode--; window.openVideo(temp.episodios[currentEpisode]); 
     } else if (currentSeason > 0) { 
@@ -569,20 +568,79 @@ window.closeSeriesModal = () => {
     window.switchFocusGroup('main'); 
 };
 
+let ytPlayer; 
 async function setupHeroBanner() {
     const cinePelis = allVideos.filter(v => v.tipo === "cine"); 
     if (cinePelis.length === 0) return;
-    const ultimaPeli = cinePelis[cinePelis.length - 1];
+
+    const ultimas5 = cinePelis.slice(-5);
+    const peliSeleccionada = ultimas5[Math.floor(Math.random() * ultimas5.length)];
+
     document.getElementById("heroBanner").style.display = "block";
-    document.getElementById("heroTitle").innerText = ultimaPeli.titulo;
-    document.getElementById("heroPlayBtn").onclick = () => { currentSeries = null; window.openVideo(ultimaPeli); };
-    const txtUrl = ultimaPeli.img.substring(0, ultimaPeli.img.lastIndexOf('.')) + ".txt";
-    let manualVideoId = null; 
-    try { const r = await fetch(txtUrl); if (r.ok) manualVideoId = (await r.text()).trim(); } catch (e) {}
-    let finalSrc = (manualVideoId && manualVideoId.length < 15) 
-        ? `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0` 
-        : `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer")}&autoplay=1&mute=1&controls=0`;
-    document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="autoplay"></iframe>`;
+    document.getElementById("heroTitle").innerText = peliSeleccionada.titulo;
+    document.getElementById("heroPlayBtn").onclick = () => { currentSeries = null; window.openVideo(peliSeleccionada); };
+
+    const txtUrl = peliSeleccionada.img.substring(0, peliSeleccionada.img.lastIndexOf('.')) + ".txt";
+    let videoId = ""; 
+    try { 
+        const r = await fetch(txtUrl); 
+        if (r.ok) videoId = (await r.text()).trim(); 
+    } catch (e) {}
+
+    if (!videoId) videoId = "search"; 
+
+    const playerDiv = document.getElementById("youtubePlayer");
+    playerDiv.innerHTML = `<div id="yt-frame"></div>`;
+
+    if (!window.YT) {
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    }
+
+    window.onYouTubeIframeAPIReady = () => {
+        ytPlayer = new YT.Player('yt-frame', {
+            height: '100%',
+            width: '100%',
+            videoId: videoId === "search" ? "" : videoId,
+            playerVars: { 
+                'autoplay': 1, 'mute': 1, 'controls': 0, 'rel': 0, 'modestbranding': 1 
+            },
+            events: {
+                'onReady': (event) => {
+                    if(videoId === "search") {
+                        event.target.loadPlaylist({
+                            list: peliSeleccionada.titulo + " trailer",
+                            listType: 'search'
+                        });
+                    } else {
+                        event.target.playVideo();
+                    }
+                    
+                    const checkInterval = setInterval(() => {
+                        if (ytPlayer && ytPlayer.getDuration) {
+                            const duration = ytPlayer.getDuration();
+                            const currentTime = ytPlayer.getCurrentTime();
+                            if (duration > 0 && (duration - currentTime) <= 5) {
+                                clearInterval(checkInterval);
+                                setupHeroBanner();
+                            }
+                        }
+                    }, 1000);
+                },
+                'onStateChange': (event) => {
+                    if (event.data === YT.PlayerState.ENDED) {
+                        setupHeroBanner();
+                    }
+                }
+            }
+        });
+    };
+    
+    if (window.YT && window.YT.Player) {
+        window.onYouTubeIframeAPIReady();
+    }
 }
 
 function buildUI(){
@@ -591,13 +649,14 @@ function buildUI(){
         <div class="row" id="contHeader"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
         <div class="row"><h2>🍿 Cine</h2><div class="carousel" id="cineRow"></div></div>
         <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
-        <div class="row"><h2>👶 Kids</h2><div class="carousel" id="kidsRow"></div></div>
+        <div class="row"><h2>🍭 Kids</h2><div class="carousel" id="kidsRow"></div></div>
         <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
         <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>`;
-    renderAll(); setupHeroBanner(); window.switchFocusGroup('main');
+    renderAll(); 
+    setupHeroBanner(); 
+    window.switchFocusGroup('main');
 }
 
-// Función auxiliar para mezclar arrays (Shuffle)
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -606,9 +665,8 @@ function shuffleArray(array) {
     return array;
 }
 
-// Función para procesar filas con lógica: últimos 15 + aleatorio
 function processCategoryData(data) {
-    const sorted = [...data].reverse(); // De más nuevo a más viejo
+    const sorted = [...data].reverse(); 
     if (sorted.length <= 15) return sorted;
     
     const first15 = sorted.slice(0, 15);
