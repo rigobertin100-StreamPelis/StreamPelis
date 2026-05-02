@@ -121,6 +121,10 @@
 
         .nav-ep-btn:hover { background: rgba(50, 50, 50, 0.8); transform: scale(1.05); }
 
+        /* Estilos para el contenedor de resultados de búsqueda */
+        #searchResultsRow { min-height: 0; transition: min-height 0.3s ease; }
+        .row.hidden { display: none; }
+
         /* Ajuste para móviles en el header */
         @media (max-width: 600px) {
             .btn-catalog span { display: none; }
@@ -269,14 +273,12 @@ function initTVNavigation() {
 const onFullscreenChange = () => {
             const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
             if (!isFullScreen) {
-                // Al salir de pantalla completa, forzamos que el foco regrese al contenedor
-                // Esto evita que el foco se quede atrapado en los botones internos del video
                 setTimeout(() => {
                     const playerDiv = document.getElementById("player");
                     if (playerDiv && playerDiv.style.display === "flex") {
                         playerDiv.focus(); 
                     }
-                }, 150); // El delay es clave para que el navegador termine de procesar el cambio visual
+                }, 150);
             }
         };
         document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -284,31 +286,25 @@ const onFullscreenChange = () => {
     }
 }
 
-// ESTA PARTE VA AFUERA DE initTVNavigation PARA QUE SEA SIEMPRE GLOBAL
 window.addEventListener('keydown', (e) => {
     const playerOpen = document.getElementById("player").style.display === "flex";
     const modalOpen = document.getElementById("seriesModal").style.display === "flex";
     const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
 
-    // Tecla ESC (27) o Back en TVs (8, 461, 10009)
     if ([27, 8, 461, 10009].includes(e.keyCode)) {
         if (isFullScreen) {
-            // Si está en pantalla completa, salimos al player (modo ventana)
             if (document.exitFullscreen) document.exitFullscreen();
             else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             e.preventDefault();
         } else if (playerOpen) {
-            // Si ya estamos en modo ventana, cerramos el player
             e.preventDefault();
             window.closeVideo();
         } else if (modalOpen) {
-            // Si el modal de temporadas está abierto, lo cerramos
             e.preventDefault();
             window.closeSeriesModal();
         }
     }
 
-    // Manejo de Enter
     if (e.keyCode === 13) { 
         const active = document.activeElement; 
         if (active && active.tagName !== 'INPUT' && typeof active.click === 'function') {
@@ -441,12 +437,11 @@ window.openVideo = (v) => {
     }
 
     playerController.play(v); 
-window.switchFocusGroup('player');
+    window.switchFocusGroup('player');
     
-    // Usamos un pequeño delay para asegurar que el DOM esté listo
     setTimeout(() => {
         const playerDiv = document.getElementById("player");
-        playerDiv.setAttribute('tabindex', '-1'); // Asegura que sea enfocable
+        playerDiv.setAttribute('tabindex', '-1'); 
         playerDiv.focus();
     }, 150);
 };
@@ -507,7 +502,7 @@ function renderEpisodes(idx) {
         btn.tabIndex = 0;
         btn.onclick = (e) => {
             e.preventDefault();
-            currentSeason = idx; // Asegura que la temporada sea la correcta
+            currentSeason = idx; 
             currentEpisode = i;  
             window.openVideo(ep);
         };
@@ -570,12 +565,15 @@ async function setupHeroBanner() {
 
 function buildUI(){
     document.getElementById("app").innerHTML = `
-        <div class="row"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
-        <div class="row" id="contHeader"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
-        <div class="row"><h2>🍿 Cine</h2><div class="carousel" id="cineRow"></div></div>
-        <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
-        <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
-        <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>`;
+        <div class="row hidden" id="searchRow"><h2>🔍 Resultados de búsqueda</h2><div class="carousel" id="searchResultsRow"></div></div>
+        <div id="mainCatalog">
+            <div class="row"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
+            <div class="row" id="contHeader"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
+            <div class="row"><h2>🍿 Cine</h2><div class="carousel" id="cineRow"></div></div>
+            <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
+            <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
+            <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>
+        </div>`;
     renderAll(); 
     setupHeroBanner(); 
     window.switchFocusGroup('main');
@@ -630,11 +628,46 @@ function renderContinue(limite = 5) {
 window.resetCatalog = () => {
     const searchInput = document.getElementById("search");
     searchInput.value = "";
-    document.querySelectorAll(".card").forEach(c => c.style.display = "block");
+    document.getElementById("searchRow").classList.add("hidden");
+    document.getElementById("mainCatalog").style.display = "block";
+    document.getElementById("heroBanner").style.display = "block";
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
 };
 
-document.getElementById("search").addEventListener("keydown", (e) => { if (e.key === "Enter") { const val = e.target.value.toLowerCase().trim(); document.querySelectorAll(".card").forEach(c => { c.style.display = (c.dataset.title || "").includes(val) ? "block" : "none"; }); if (val !== "") e.target.blur(); } });
+// Implementación del Buscador Predictivo (Mejora UX)
+document.getElementById("search").addEventListener("input", (e) => {
+    const val = e.target.value.toLowerCase().trim();
+    const searchRow = document.getElementById("searchRow");
+    const resultsContainer = document.getElementById("searchResultsRow");
+    const mainCatalog = document.getElementById("mainCatalog");
+    const heroBanner = document.getElementById("heroBanner");
+
+    if (val.length > 0) {
+        // Ocultar catálogo principal y hero para mostrar resultados
+        mainCatalog.style.display = "none";
+        heroBanner.style.display = "none";
+        searchRow.classList.remove("hidden");
+        
+        // Filtrar videos
+        const filtered = allVideos.filter(v => v.titulo.toLowerCase().includes(val));
+        resultsContainer.innerHTML = "";
+        
+        if (filtered.length > 0) {
+            filtered.forEach(v => {
+                resultsContainer.appendChild(createCard(v));
+            });
+        } else {
+            resultsContainer.innerHTML = "<p style='padding:20px; color:rgba(255,255,255,0.5)'>No se encontraron resultados...</p>";
+        }
+        
+        // Actualizar navegación TV si aplica
+        if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
+    } else {
+        // Si el buscador está vacío, volver al estado original
+        window.resetCatalog();
+    }
+});
 
 document.getElementById("loginBtn").onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); } catch(e) { document.getElementById("loginError").style.display = "block"; } };
 
