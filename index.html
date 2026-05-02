@@ -86,6 +86,47 @@
         
         .season-option {padding:10px 15px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;white-space:nowrap; border: 2px solid transparent;}
         .season-option.active {background:#0a84ff; border-color: white;}
+
+        /* Contenedor que envuelve los botones sobre el video */
+.custom-controls-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none; /* Se activará por JS solo en series/mobile */
+    align-items: center; /* Centra los botones verticalmente */
+    justify-content: space-between; /* Uno a la izquierda y otro a la derecha */
+    padding: 0 20px;
+    z-index: 2147483647; /* Para que siempre esté por encima del video en fullscreen */
+    pointer-events: none; /* Permite que los clicks pasen al video si no tocas un botón */
+    transition: opacity 0.5s ease;
+}
+
+/* Estilo de los botones (Estilo Amazon/Netflix) */
+.nav-ep-btn {
+    background: rgba(0, 0, 0, 0.5); /* Fondo oscuro traslúcido */
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    pointer-events: auto; /* Hace que el botón sí sea clickeable */
+    transition: background 0.3s, transform 0.2s;
+}
+
+.nav-ep-btn:hover {
+    background: rgba(50, 50, 50, 0.8);
+    transform: scale(1.05);
+}
+
+/* Clase para el efecto de desvanecimiento */
+.controls-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
     </style>
 </head>
 
@@ -141,6 +182,10 @@
             <button id="btnFull" onclick="window.toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
         </div>
         <video id="video" playsinline></video>
+        <div id="playerCustomControls" class="custom-controls-overlay">
+    <button id="prevEpisodeBtn" class="nav-ep-btn left">❮ Anterior</button>
+    <button id="nextEpisodeBtn" class="nav-ep-btn right">Siguiente ❯</button>
+</div>
     </div>
 </div>
 
@@ -376,11 +421,95 @@ window.openVideo = (v) => {
 
     playerController.play(v); 
     window.switchFocusGroup('player');
+
+    // --- NUEVO: Configurar botones de navegación ---
+    const customOverlay = document.getElementById("playerCustomControls");
+    const prevBtn = document.getElementById("prevEpisodeBtn");
+    const nextBtn = document.getElementById("nextEpisodeBtn");
+
+    if (currentSeries && exp === 'mobile') {
+        customOverlay.style.display = "flex"; // Los mostramos en celular si es serie
+        
+        // Asignamos las funciones de navegación
+        prevBtn.onclick = (e) => { e.stopPropagation(); window.navigateEpisode(-1); };
+        nextBtn.onclick = (e) => { e.stopPropagation(); window.navigateEpisode(1); };
+    } else {
+        customOverlay.style.display = "none"; // Los ocultamos en TV o si es película
+    }
 };
 
 window.togglePlay = () => {
     const v = document.getElementById("video");
     if (v.paused) v.play(); else v.pause();
+    
+};
+
+    // --- PASO 5: Lógica de Auto-ocultar ---
+let timer;
+const playerContainer = document.getElementById('player');
+const customOverlay = document.getElementById('playerCustomControls');
+
+// Detecta movimiento del mouse (PC) o toques (Móvil)
+playerContainer.addEventListener('mousemove', () => {
+    const exp = localStorage.getItem("user_experience");
+    
+    // Solo activamos si es una serie y estamos en modo móvil
+    if (currentSeries && exp === 'mobile') {
+        customOverlay.style.opacity = '1';
+        customOverlay.style.pointerEvents = 'auto';
+    }
+    
+    // Limpiamos el contador anterior y reiniciamos
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+        customOverlay.style.opacity = '0';
+        customOverlay.style.pointerEvents = 'none';
+    }, 3000); // Se oculta tras 3 segundos de inactividad
+});
+
+// Asegura que en pantallas táctiles también se muestre al tocar
+playerContainer.addEventListener('touchstart', () => {
+    const exp = localStorage.getItem("user_experience");
+    if (currentSeries && exp === 'mobile') {
+        customOverlay.style.opacity = '1';
+        customOverlay.style.pointerEvents = 'auto';
+    }
+});
+    
+    window.navigateEpisode = (direction) => {
+    if (!currentSeries) return;
+
+    let targetS = currentSeasonIndex;
+    let targetE = currentEpisodeIndex + direction;
+
+    const seasons = currentSeries.seasons;
+
+    // Lógica para retroceder de temporada
+    if (targetE < 0) {
+        if (targetS > 0) {
+            targetS--;
+            targetE = seasons[targetS].episodes.length - 1; // Último cap de la temporada anterior
+        } else {
+            return; // Ya estamos en el primer capítulo de la serie
+        }
+    }
+    // Lógica para avanzar de temporada
+    else if (targetE >= seasons[targetS].episodes.length) {
+        if (targetS < seasons.length - 1) {
+            targetS++;
+            targetE = 0; // Primer cap de la siguiente temporada
+        } else {
+            return; // Fin de la serie
+        }
+    }
+
+    // Actualizamos los índices globales
+    currentSeasonIndex = targetS;
+    currentEpisodeIndex = targetE;
+
+    // Obtenemos el objeto del nuevo episodio y lo reproducimos
+    const nextEp = seasons[targetS].episodes[targetE];
+    window.openVideo(nextEp);
 };
 
 window.closeVideo = () => {
