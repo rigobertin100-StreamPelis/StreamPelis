@@ -357,8 +357,23 @@ const playerController = {
 };
 
 window.openVideo = (v) => {
+    const exp = localStorage.getItem("user_experience");
+    const playerNav = document.getElementById("playerNav");
+    const videoElement = document.getElementById("video");
+
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
+
+    if (exp === 'mobile') {
+        // Oculta botones azules y activa controles nativos para Smartphone/PC
+        playerNav.style.display = "none";
+        videoElement.setAttribute("controls", "controls");
+    } else {
+        // Muestra botones azules y quita controles nativos para TV
+        playerNav.style.display = "flex";
+        videoElement.removeAttribute("controls");
+    }
+
     playerController.play(v); 
     window.switchFocusGroup('player');
 };
@@ -371,6 +386,10 @@ window.togglePlay = () => {
 window.closeVideo = () => {
     playerController.cleanup(); 
     document.getElementById("player").style.display = "none";
+    
+    // IMPORTANTE: Limpiamos los controles al salir
+    document.getElementById("video").removeAttribute("controls");
+
     if (currentSeries) { 
         document.getElementById("seriesModal").style.display = "flex"; 
         window.switchFocusGroup('modal'); 
