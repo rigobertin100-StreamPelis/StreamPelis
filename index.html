@@ -90,14 +90,14 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: calc(100% - 60px);
             display: none;
             align-items: center;
             justify-content: space-between;
             padding: 0 10%;
             z-index: 5000; 
             pointer-events: none; 
-            transition: opacity 0.5s ease;
+            transition: opacity 0.3s ease;
             box-sizing: border-box;
         }
 
@@ -431,6 +431,7 @@ window.openVideo = (v) => {
         customOverlay.style.display = "none";
     }
     document.getElementById('video').focus();
+    showControls();
 };
 
 window.togglePlay = () => {
@@ -438,30 +439,40 @@ window.togglePlay = () => {
     if (v.paused) v.play(); else v.pause();
 };
 
-let timer;
+// --- Lógica de Auto-ocultar Mejorada ---
+let idleTimer;
 const playerContainer = document.getElementById('player');
-const customOverlay = document.getElementById('playerCustomControls');
+const customOverlay = document.getElementById('playerCustomControls'); // Botones Siguiente/Ant
+const playerNav = document.getElementById('playerNav');               // Botones azules (X, etc)
 
-playerContainer.addEventListener('mousemove', () => {
+function showControls() {
     const exp = localStorage.getItem("user_experience");
+
+    // 1. Mostrar botones superiores (X y demás)
+    playerNav.style.opacity = '1';
+    playerNav.style.pointerEvents = 'auto';
+
+    // 2. Mostrar botones laterales (Solo si es serie/anime y experiencia mobile)
     if (currentSeries && exp === 'mobile') {
         customOverlay.style.opacity = '1';
         customOverlay.style.pointerEvents = 'auto';
     }
-    clearTimeout(timer);
-    timer = setTimeout(() => {
+    
+    // Limpiar el temporizador anterior y empezar uno nuevo de 3 segundos
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+        // Ocultar todo
+        playerNav.style.opacity = '0';
+        playerNav.style.pointerEvents = 'none';
         customOverlay.style.opacity = '0';
         customOverlay.style.pointerEvents = 'none';
-    }, 3000);
-});
+    }, 3000); 
+}
 
-playerContainer.addEventListener('touchstart', () => {
-    const exp = localStorage.getItem("user_experience");
-    if (currentSeries && exp === 'mobile') {
-        customOverlay.style.opacity = '1';
-        customOverlay.style.pointerEvents = 'auto';
-    }
-});
+// Eventos para PC (Mouse) y Celulares (Touch)
+playerContainer.addEventListener('mousemove', showControls);
+playerContainer.addEventListener('touchstart', showControls);
+playerContainer.addEventListener('mousedown', showControls); // Para que al dar click también reaccione
 
 window.closeVideo = () => {
     playerController.cleanup(); 
