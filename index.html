@@ -600,9 +600,12 @@ function buildUI(){
         <div class="row" id="contHeader"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
         <div class="row"><h2>🍿 Cine</h2><div class="carousel" id="cineRow"></div></div>
         <div class="row"><h2>🎬 Películas</h2><div class="carousel" id="peliculasRow"></div></div>
+        <div class="row"><h2>🍭 Kids</h2><div class="carousel" id="kidsRow"></div></div> <!-- Nueva Fila -->
         <div class="row"><h2>📺 Series</h2><div class="carousel" id="seriesRow"></div></div>
         <div class="row"><h2>🍥 Anime</h2><div class="carousel" id="animeRow"></div></div>`;
-    renderAll(); setupHeroBanner(); window.switchFocusGroup('main');
+    renderAll(); 
+    setupHeroBanner(); 
+    window.switchFocusGroup('main');
 }
 
 // Función auxiliar para mezclar arrays (Shuffle)
@@ -627,17 +630,28 @@ function processCategoryData(data) {
 function renderAll(){
     const sections = [ 
         { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, 
+        { id: "cineRow", data: processCategoryData(allVideos.filter(v => v.tipo === "cine")) },
         { id: "peliculasRow", data: processCategoryData(allVideos.filter(v => v.tipo === "pelicula")) }, 
+        { id: "kidsRow", data: processCategoryData(allVideos.filter(v => v.tipo === "kids")) }, // Carga de datos Kids
         { id: "seriesRow", data: processCategoryData(allVideos.filter(v => v.tipo === "serie")) }, 
-        { id: "cineRow", data: processCategoryData(allVideos.filter(v => v.tipo === "cine")) }, 
         { id: "animeRow", data: processCategoryData(allVideos.filter(v => v.tipo === "anime")) } 
     ];
 
     sections.forEach(section => {
-        const container = document.getElementById(section.id); if(!container) return;
-        container.innerHTML = ""; loadedCounts[section.id] = 0; loadNextSegment(section.id, section.data);
-        const sentinel = document.createElement("div"); sentinel.className = "loading-sentinel"; sentinel.innerText = "•••"; container.appendChild(sentinel);
-        new IntersectionObserver((entries) => { if (entries[0].isIntersecting) loadNextSegment(section.id, section.data); }, { root: container, threshold: 0.1 }).observe(sentinel);
+        const container = document.getElementById(section.id); 
+        if(!container) return;
+        container.innerHTML = ""; 
+        loadedCounts[section.id] = 0; 
+        loadNextSegment(section.id, section.data);
+        
+        const sentinel = document.createElement("div"); 
+        sentinel.className = "loading-sentinel"; 
+        sentinel.innerText = "•••"; 
+        container.appendChild(sentinel);
+        
+        new IntersectionObserver((entries) => { 
+            if (entries[0].isIntersecting) loadNextSegment(section.id, section.data); 
+        }, { root: container, threshold: 0.1 }).observe(sentinel);
     });
     renderContinue(5);
 }
