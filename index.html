@@ -29,7 +29,7 @@
         /* HEADER BASE */
         .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:1000;transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
         
-        /* GLASSMORPHISM: Solo si NO es tv-mode */
+        /* GLASSMORPHISM */
         body:not(.tv-mode) .header {
             background: rgba(28,28,30,.4);
             backdrop-filter: blur(20px);
@@ -40,7 +40,6 @@
             box-shadow: 0 10px 30px rgba(0,0,0,.5);
         }
 
-        /* MODO TV: Fondo sólido para rendimiento */
         .tv-mode .header {
             background: rgb(28,28,30) !important;
             backdrop-filter: none !important;
@@ -104,7 +103,6 @@
 
         .loading-sentinel { min-width: 100px; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #0a84ff; font-weight: bold; }
         
-        /* MODAL BASE */
         .series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:99999 !important;}
         
         body:not(.tv-mode) .series-modal {
@@ -286,6 +284,9 @@ const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
 
+// --- CONFIGURACIÓN CRÍTICA ---
+const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev/"; 
+
 let sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
 localStorage.setItem("sessionId", sessionId);
 
@@ -303,7 +304,6 @@ const setSignedCache = (key, url) => {
 
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
-const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
 
 window.setExperience = (type) => {
     localStorage.setItem("user_experience", type);
@@ -664,17 +664,6 @@ async function setupHeroBanner() {
                     } else {
                         event.target.playVideo();
                     }
-                    
-                    const checkInterval = setInterval(() => {
-                        if (ytPlayer && ytPlayer.getDuration) {
-                            const duration = ytPlayer.getDuration();
-                            const currentTime = ytPlayer.getCurrentTime();
-                            if (duration > 0 && (duration - currentTime) <= 5) {
-                                clearInterval(checkInterval);
-                                setupHeroBanner();
-                            }
-                        }
-                    }, 1000);
                 },
                 'onStateChange': (event) => {
                     if (event.data === YT.PlayerState.ENDED) {
@@ -702,16 +691,6 @@ function buildUI(){
     
     renderAll(); 
     setupHeroBanner(); 
-    window.switchFocusGroup('main');
-    
-    document.querySelectorAll('.carousel').forEach(container => {
-        container.addEventListener('wheel', (e) => {
-            if (e.deltaY !== 0) {
-                e.preventDefault();
-                container.scrollLeft += e.deltaY * 2;
-            }
-        });
-    });
 }
 
 function shuffleArray(array) {
@@ -725,7 +704,6 @@ function shuffleArray(array) {
 function processCategoryData(data) {
     const sorted = [...data].reverse(); 
     if (sorted.length <= 15) return sorted;
-    
     const first15 = sorted.slice(0, 15);
     const rest = shuffleArray(sorted.slice(15));
     return first15.concat(rest);
@@ -747,7 +725,6 @@ function renderAll(){
                 const row = entry.target;
                 const type = row.dataset.rowType;
                 const carousel = row.querySelector('.carousel');
-                
                 if (type && carousel && !carousel.dataset.loaded) {
                     const data = rowConfigs[type]();
                     renderRowData(carousel.id, data);
@@ -765,17 +742,13 @@ function renderAll(){
 function renderRowData(containerId, sourceData) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
     container.innerHTML = ""; 
     loadedCounts[containerId] = 0; 
-    
     loadNextSegment(containerId, sourceData);
-
     const sentinel = document.createElement("div"); 
     sentinel.className = "loading-sentinel"; 
     sentinel.innerText = "•••"; 
     container.appendChild(sentinel);
-
     new IntersectionObserver((entries) => { 
         if (entries[0].isIntersecting) loadNextSegment(containerId, sourceData); 
     }, { root: container, threshold: 0.1 }).observe(sentinel);
@@ -830,7 +803,6 @@ window.resetCatalog = () => {
     document.getElementById("heroBanner").style.display = "block";
     document.getElementById("searchResultsContainer").style.display = "none";
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    window.switchFocusGroup('main');
 };
 
 document.getElementById("loginBtn").onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); } catch(e) { document.getElementById("loginError").style.display = "block"; } };
@@ -844,25 +816,30 @@ onAuthStateChanged(auth, async (user) => {
         const cacheKey = 'plusultra_catalog_cache'; 
         const cachedData = localStorage.getItem(cacheKey);
         
-        // 1. Cargar rápido desde caché si existe
+        // 1. Mostrar caché primero
         if (cachedData) { 
             allVideos = JSON.parse(cachedData); 
             buildUI(); 
         }
         
+        // 2. Carga desde el Worker
         try { 
-            // 2. Siempre pedir la versión más fresca al Worker
             const r = await fetch(WORKER_URL); 
-            const newData = await r.json();
+            if (!r.ok) throw new Error("Worker Error");
+            const data = await r.json(); 
             
-            // 3. Si los datos nuevos son distintos a la caché, actualizar
-            if (JSON.stringify(newData) !== cachedData) {
-                allVideos = newData;
-                localStorage.setItem(cacheKey, JSON.stringify(newData));
+            // Actualizar solo si hay cambios reales
+            if (JSON.stringify(data) !== cachedData) {
+                allVideos = data; 
+                localStorage.setItem(cacheKey, JSON.stringify(data)); 
                 buildUI(); 
             }
         } catch (e) {
-            console.error("Error cargando catálogo fresco:", e);
+            console.error("Fetch error:", e);
+            // Si no hay caché y falló el fetch, mostrar error en pantalla
+            if (!cachedData) {
+                document.getElementById("app").innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Error al conectar con el servidor</h2>";
+            }
         }
     } else { 
         document.getElementById("loginModal").style.display = "flex"; 
@@ -873,11 +850,8 @@ window.logout = () => { localStorage.removeItem("user_experience"); signOut(auth
 
 window.addEventListener('scroll', () => {
     const header = document.querySelector('.header');
-    if (window.scrollY > 50) {
-        header.classList.add('scrolled');
-    } else {
-        header.classList.remove('scrolled');
-    }
+    if (window.scrollY > 50) header.classList.add('scrolled');
+    else header.classList.remove('scrolled');
 });
 </script>
 </body>
