@@ -221,13 +221,6 @@ let sessionInterval = null;
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 
-// MEJORA: Optimizador de imágenes para TV y móviles
-const optimizeImg = (url) => {
-    if(!url) return "";
-    // Usamos el proxy de Google para redimensionar y comprimir imágenes al vuelo
-    return `https://images1-focus-opensocial.googleusercontent.com/gadgets/proxy?container=focus&refresh=2592000&url=${encodeURIComponent(url)}&resize_w=300&quality=75`;
-};
-
 window.setExperience = (type) => {
     localStorage.setItem("user_experience", type);
     document.getElementById("expModal").style.display = "none";
@@ -555,8 +548,7 @@ function loadNextSegment(containerId, sourceData) {
 
 function createCard(v){
     const card = document.createElement("div"); card.className = "card"; card.tabIndex = 0; card.dataset.title = v.titulo.toLowerCase();
-    // Mejora: Imagen optimizada en tamaño
-    card.innerHTML = `<img src="${optimizeImg(v.img)}" loading="lazy">`;
+    card.innerHTML = `<img src="${v.img}" loading="lazy">`;
     card.onclick = (e) => { e.preventDefault(); (v.tipo === "serie" || v.tipo === "anime") ? window.openSeriesModal(v) : window.openVideo(v); };
     return card;
 }
@@ -579,7 +571,6 @@ function renderContinue(limite = 5) {
     });
 }
 
-// BUSCADOR OPTIMIZADO PARA TV (Debounce)
 let searchTimer;
 document.getElementById("search").addEventListener("input", (e) => {
     clearTimeout(searchTimer);
@@ -595,8 +586,7 @@ document.getElementById("search").addEventListener("input", (e) => {
             hero.style.display = "none";
             resultsContainer.style.display = "block";
             
-            // Limitamos a 25 resultados para no matar la memoria de la TV
-            const filtered = allVideos.filter(v => v.titulo.toLowerCase().includes(val)).slice(0, 25);
+            const filtered = allVideos.filter(v => v.titulo.toLowerCase().includes(val)).slice(0, 40);
             resultsRow.innerHTML = "";
             filtered.forEach(v => resultsRow.appendChild(createCard(v)));
             
@@ -608,7 +598,7 @@ document.getElementById("search").addEventListener("input", (e) => {
         } else {
             window.resetCatalog();
         }
-    }, 400); // 400ms de espera antes de procesar
+    }, 400);
 });
 
 window.resetCatalog = () => {
@@ -616,7 +606,7 @@ window.resetCatalog = () => {
     document.getElementById("mainCatalog").style.display = "block";
     document.getElementById("heroBanner").style.display = "block";
     document.getElementById("searchResultsContainer").style.display = "none";
-    document.getElementById("searchResultsRow").innerHTML = ""; // Limpiar memoria
+    document.getElementById("searchResultsRow").innerHTML = ""; 
     window.scrollTo({ top: 0, behavior: 'smooth' });
     window.switchFocusGroup('main');
 };
