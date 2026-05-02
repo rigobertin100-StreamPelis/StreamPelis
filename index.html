@@ -220,6 +220,7 @@ let sessionInterval = null;
 
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
+const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
 
 window.setExperience = (type) => {
     localStorage.setItem("user_experience", type);
@@ -365,7 +366,7 @@ const playerController = {
         window.addEventListener("mousemove", resetTimer);
         window.addEventListener("keydown", resetTimer);
     },
-    play(v){
+    async play(v){
         this.cleanup();
         const isSerie = currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime");
         document.getElementById("btnPrev").style.display = isSerie ? "inline-block" : "none";
@@ -374,6 +375,18 @@ const playerController = {
         this.currentId = currentSeries ? currentSeries.titulo : v.titulo;
         const saved = getProgress()[this.currentId];
 
+        // NUEVO: Obtener URL firmada desde el Worker
+        let videoUrl = v.url;
+        if (v.fileKey) {
+            try {
+                const response = await fetch(`${WORKER_URL}?getFile=${v.fileKey}`);
+                const data = await response.json();
+                if (data.url) videoUrl = data.url;
+            } catch (err) {
+                console.error("Error obteniendo URL firmada:", err);
+            }
+        }
+
         const startVideo = () => {
             if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
                 this.video.currentTime = saved.time;
@@ -381,11 +394,11 @@ const playerController = {
             this.video.play().catch(e => console.warn("Autoplay bloqueado", e));
         };
 
-        if(v.url.includes(".m3u8") && Hls.isSupported()){
-            this.hls = new Hls(); this.hls.loadSource(v.url); this.hls.attachMedia(this.video);
+        if(videoUrl.includes(".m3u8") && Hls.isSupported()){
+            this.hls = new Hls(); this.hls.loadSource(videoUrl); this.hls.attachMedia(this.video);
             this.hls.on(Hls.Events.MANIFEST_PARSED, startVideo);
         } else {
-            this.video.src = v.url;
+            this.video.src = videoUrl;
             this.video.onloadedmetadata = startVideo;
         }
     },
@@ -621,7 +634,7 @@ onAuthStateChanged(auth, async (user) => {
         const cacheKey = 'plusultra_catalog_cache'; const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
         try { 
-            const r = await fetch("https://odd-credit-e6f8.rigobertin100.workers.dev/"); 
+            const r = await fetch(WORKER_URL); 
             const data = await r.json(); allVideos = data; 
             localStorage.setItem(cacheKey, JSON.stringify(data)); 
             buildUI(); 
