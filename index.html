@@ -74,7 +74,7 @@
         #heroTitle {font-size: clamp(30px, 5vw, 60px); margin: 0; color: #fff; text-transform: uppercase; max-width: 50%; line-height: 1.1;}
         .hero-btn {width: fit-content; padding: 14px 35px; background: #fff; color: #000; border: none; border-radius: 12px; font-weight: bold; font-size: 18px; cursor: pointer; margin-top: 25px; transition: 0.2s;}
 
-        .row{margin-top:40px;padding-left:20px; min-height: 300px;} /* Min-height ayuda al observer */
+        .row{margin-top:40px;padding-left:20px; min-height: 300px;} 
         .row h2{font-size:22px;margin-bottom:14px;color:rgba(255,255,255,0.9);}
         
         .carousel{
@@ -107,7 +107,6 @@
         /* MODAL BASE */
         .series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:99999 !important;}
         
-        /* GLASSMORPHISM EN MODAL: Solo si NO es tv-mode */
         body:not(.tv-mode) .series-modal {
             background: rgba(28,28,30,0.6);
             backdrop-filter: blur(30px);
@@ -692,8 +691,6 @@ async function setupHeroBanner() {
 }
 
 function buildUI(){
-    // MEJORA PRO: Intersection Observer de Filas
-    // Creamos la estructura base pero sin inyectar las cards aún
     document.getElementById("app").innerHTML = `
         <div class="row" data-row-type="recent"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
         <div class="row" id="contHeader"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
@@ -707,7 +704,6 @@ function buildUI(){
     setupHeroBanner(); 
     window.switchFocusGroup('main');
     
-    // MEJORA: HABILITAR SCROLL HORIZONTAL CON RUEDA DEL RATÓN
     document.querySelectorAll('.carousel').forEach(container => {
         container.addEventListener('wheel', (e) => {
             if (e.deltaY !== 0) {
@@ -756,16 +752,13 @@ function renderAll(){
                     const data = rowConfigs[type]();
                     renderRowData(carousel.id, data);
                     carousel.dataset.loaded = "true";
-                    // Una vez cargada, podemos dejar de observar esta fila
                     rowObserver.unobserve(row);
                 }
             }
         });
-    }, { rootMargin: "200px" }); // Empieza a cargar 200px antes de llegar
+    }, { rootMargin: "200px" }); 
 
     document.querySelectorAll('.row[data-row-type]').forEach(row => rowObserver.observe(row));
-    
-    // El "Continuar viendo" se carga siempre directo por ser prioritario y pequeño
     renderContinue(5);
 }
 
@@ -847,16 +840,33 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById("loginModal").style.display = "none"; 
         if (!initExperience()) return;
         playerController.init();
+        
         const cacheKey = 'plusultra_catalog_cache'; 
         const cachedData = localStorage.getItem(cacheKey);
-        if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
-        try { 
-            const r = await fetch(WORKER_URL); 
-            const data = await r.json(); allVideos = data; 
-            localStorage.setItem(cacheKey, JSON.stringify(data)); 
+        
+        // 1. Cargar rápido desde caché si existe
+        if (cachedData) { 
+            allVideos = JSON.parse(cachedData); 
             buildUI(); 
-        } catch (e) {}
-    } else { document.getElementById("loginModal").style.display = "flex"; }
+        }
+        
+        try { 
+            // 2. Siempre pedir la versión más fresca al Worker
+            const r = await fetch(WORKER_URL); 
+            const newData = await r.json();
+            
+            // 3. Si los datos nuevos son distintos a la caché, actualizar
+            if (JSON.stringify(newData) !== cachedData) {
+                allVideos = newData;
+                localStorage.setItem(cacheKey, JSON.stringify(newData));
+                buildUI(); 
+            }
+        } catch (e) {
+            console.error("Error cargando catálogo fresco:", e);
+        }
+    } else { 
+        document.getElementById("loginModal").style.display = "flex"; 
+    }
 });
 
 window.logout = () => { localStorage.removeItem("user_experience"); signOut(auth); };
