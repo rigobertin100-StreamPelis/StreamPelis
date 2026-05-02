@@ -815,9 +815,9 @@ onAuthStateChanged(auth, async (user) => {
         const cacheKey = 'plusultra_catalog_cache'; 
         const cachedData = localStorage.getItem(cacheKey);
         
+        // 1. Cargar desde caché si existe
         if (cachedData) { 
             try {
-                // Validación robusta para la caché
                 const parsed = JSON.parse(cachedData);
                 allVideos = Array.isArray(parsed) ? parsed : [];
                 if(allVideos.length > 0) buildUI(); 
@@ -825,24 +825,33 @@ onAuthStateChanged(auth, async (user) => {
         }
         
         try { 
+            // 2. Pedir datos al Worker
             const r = await fetch(WORKER_URL); 
-            // LEER COMO TEXTO PRIMERO PARA EVITAR ERROR DE TOKEN "o"
-            const textResponse = await r.text();
-            let newData;
-
-            try {
-                // Intentamos parsear el texto
-                newData = JSON.parse(textResponse);
-            } catch(e) {
-                // Si el Worker devolvió "[object Object]", es un error del Worker pero lo manejamos
-                console.warn("Respuesta del Worker no es JSON válido:", textResponse);
-                return;
-            }
             
-            if (newData && Array.isArray(newData) && JSON.stringify(newData) !== cachedData) {
-                allVideos = newData;
-                localStorage.setItem(cacheKey, JSON.stringify(newData));
-                buildUI(); 
+            // AQUÍ ESTÁ EL TRUCO: Leemos la respuesta de forma inteligente
+            let data;
+            const contentType = r.headers.get("content-type");
+            
+            if (contentType && contentType.includes("application/json")) {
+                data = await r.json(); // Si el worker envía JSON correcto
+            } else {
+                const text = await r.text();
+                // Si el worker envió accidentalmente "[object Object]"
+                if (text.includes("[object Object]")) {
+                    console.error("El Worker está devolviendo un objeto mal formateado.");
+                    return;
+                }
+                data = JSON.parse(text);
+            }
+
+            // 3. Validar que sea un array y actualizar
+            if (data && Array.isArray(data)) {
+                const dataString = JSON.stringify(data);
+                if (dataString !== cachedData) {
+                    allVideos = data;
+                    localStorage.setItem(cacheKey, dataString);
+                    buildUI(); 
+                }
             }
         } catch (e) {
             console.error("Error cargando catálogo:", e);
