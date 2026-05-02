@@ -284,7 +284,6 @@ const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
 
-// --- CONFIGURACIÓN CRÍTICA ---
 const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev/"; 
 
 let sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
@@ -816,34 +815,37 @@ onAuthStateChanged(auth, async (user) => {
         const cacheKey = 'plusultra_catalog_cache'; 
         const cachedData = localStorage.getItem(cacheKey);
         
-        // 1. Cargar rápido desde caché si existe
         if (cachedData) { 
             try {
-                allVideos = JSON.parse(cachedData); 
-                buildUI(); 
-            } catch(e) { 
-                // Si el JSON de caché está corrupto, lo limpiamos
-                localStorage.removeItem(cacheKey); 
-            }
+                // Validación robusta para la caché
+                const parsed = JSON.parse(cachedData);
+                allVideos = Array.isArray(parsed) ? parsed : [];
+                if(allVideos.length > 0) buildUI(); 
+            } catch(e) { localStorage.removeItem(cacheKey); }
         }
         
         try { 
-            // 2. Siempre pedir la versión más fresca al Worker
             const r = await fetch(WORKER_URL); 
-            const newData = await r.json(); // Si el JSON del Worker viene cortado, saltará al catch
+            // LEER COMO TEXTO PRIMERO PARA EVITAR ERROR DE TOKEN "o"
+            const textResponse = await r.text();
+            let newData;
+
+            try {
+                // Intentamos parsear el texto
+                newData = JSON.parse(textResponse);
+            } catch(e) {
+                // Si el Worker devolvió "[object Object]", es un error del Worker pero lo manejamos
+                console.warn("Respuesta del Worker no es JSON válido:", textResponse);
+                return;
+            }
             
-            // 3. Si los datos nuevos son distintos a la caché, actualizar
-            if (JSON.stringify(newData) !== cachedData) {
+            if (newData && Array.isArray(newData) && JSON.stringify(newData) !== cachedData) {
                 allVideos = newData;
                 localStorage.setItem(cacheKey, JSON.stringify(newData));
                 buildUI(); 
             }
         } catch (e) {
-            console.error("Error cargando catálogo fresco:", e);
-            // Si no hay nada en caché y el fetch falló, avisar al usuario
-            if (!cachedData) {
-                document.getElementById("app").innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Error al conectar con el catálogo. Intente recargar.</h2>";
-            }
+            console.error("Error cargando catálogo:", e);
         }
     } else { 
         document.getElementById("loginModal").style.display = "flex"; 
