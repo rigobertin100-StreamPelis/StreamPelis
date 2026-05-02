@@ -113,15 +113,7 @@
             font-weight: bold;
         }
 
-        .nav-ep-btn:hover {
-            background: rgba(50, 50, 50, 0.8);
-            transform: scale(1.05);
-        }
-
-        .controls-hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
+        .nav-ep-btn:hover { background: rgba(50, 50, 50, 0.8); transform: scale(1.05); }
     </style>
 </head>
 
@@ -165,27 +157,25 @@
 <div id="app"></div>
 
 <div class="player" id="player">
-<div class="player-inner">
-    <!-- Iconos de control superior (Siempre funcionales) -->
-    <span class="fullscreen-icon" onclick="window.toggleFullScreen()" style="position:absolute; top:20px; right:70px; font-size:24px; cursor:pointer; color:white; z-index:10001;">⛶</span>
-    <span class="close" onclick="window.closeVideo()" tabindex="0" style="z-index:10001;">✕</span>
+    <div class="player-inner">
+        <span class="fullscreen-icon" onclick="window.toggleFullScreen()" style="position:absolute; top:20px; right:70px; font-size:24px; cursor:pointer; color:white; z-index:10001;">⛶</span>
+        <span class="close" onclick="window.closeVideo()" tabindex="0" style="z-index:10001;">✕</span>
 
-    <!-- ESTE ES TU BLOQUE DE TV: NO LO BORRAMOS -->
-    <div class="player-nav" id="playerNav">
-        <button id="btnPlayPause" onclick="window.togglePlay()" tabindex="0">⏯</button>
-        <button id="btnPrev" onclick="window.prevEpisode()" tabindex="0">⏮</button>
-        <button id="btnRew" onclick="document.getElementById('video').currentTime -= 10" tabindex="0">-10s</button>
-        <button id="btnFwd" onclick="document.getElementById('video').currentTime += 10" tabindex="0">+10s</button>
-        <button id="btnNext" onclick="window.nextEpisode()" tabindex="0">⏭</button>
-        <button id="btnFull" onclick="window.toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
-    </div>
+        <div class="player-nav" id="playerNav">
+            <button id="btnPlayPause" onclick="window.togglePlay()" tabindex="0">⏯</button>
+            <button id="btnPrev" onclick="window.prevEpisode()" tabindex="0">⏮</button>
+            <button id="btnRew" onclick="document.getElementById('video').currentTime -= 10" tabindex="0">-10s</button>
+            <button id="btnFwd" onclick="document.getElementById('video').currentTime += 10" tabindex="0">+10s</button>
+            <button id="btnNext" onclick="window.nextEpisode()" tabindex="0">⏭</button>
+            <button id="btnFull" onclick="window.toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
+        </div>
 
-    <video id="video" playsinline></video>
+        <video id="video" playsinline></video>
 
-    <!-- Botones de navegación lateral (Para Series/Anime) -->
-    <div id="playerCustomControls" class="custom-controls-overlay">
-        <button id="prevEpisodeBtn" class="nav-ep-btn left" onclick="window.prevEpisode()">❮ Anterior</button>
-        <button id="nextEpisodeBtn" class="nav-ep-btn right" onclick="window.nextEpisode()">Siguiente ❯</button>
+        <div id="playerCustomControls" class="custom-controls-overlay">
+            <button id="prevEpisodeBtn" class="nav-ep-btn left" onclick="window.prevEpisode()">❮ Anterior</button>
+            <button id="nextEpisodeBtn" class="nav-ep-btn right" onclick="window.nextEpisode()">Siguiente ❯</button>
+        </div>
     </div>
 </div>
 
@@ -274,14 +264,12 @@ function initTVNavigation() {
                 const active = document.activeElement; 
                 if (active && typeof active.click === 'function') {
                     e.preventDefault();
-                    e.stopImmediatePropagation();
                     active.click(); 
                 }
             }
             
             if ([27, 8, 461, 10009].includes(e.keyCode)) {
                 e.preventDefault();
-                e.stopImmediatePropagation();
                 if (isFullScreen) {
                     if (document.exitFullscreen) document.exitFullscreen();
                     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
@@ -384,7 +372,7 @@ const playerController = {
             if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
                 this.video.currentTime = saved.time;
             }
-            this.video.play();
+            this.video.play().catch(e => console.warn("Autoplay bloqueado", e));
         };
 
         if(v.url.includes(".m3u8") && Hls.isSupported()){
@@ -408,14 +396,10 @@ window.openVideo = (v) => {
     document.getElementById("player").style.display = "flex";
 
     if (exp === 'mobile') {
-        // PC / Celular: Barra de tiempo nativa activa y botones TV ocultos
         playerNav.style.display = "none";
         videoElement.setAttribute("controls", "controls");
-        
-        // Mostrar flechas de episodios solo si es serie/anime
         customOverlay.style.display = currentSeries ? "flex" : "none";
     } else {
-        // Modo TV: Usamos tus botones azules y quitamos barra nativa
         playerNav.style.display = "flex";
         videoElement.removeAttribute("controls");
         customOverlay.style.display = "none";
@@ -423,50 +407,13 @@ window.openVideo = (v) => {
 
     playerController.play(v); 
     window.switchFocusGroup('player');
-    
     videoElement.focus();
-    // Ya no llamamos a showControls() porque el navegador gestiona la barra nativa
 };
 
 window.togglePlay = () => {
     const v = document.getElementById("video");
     if (v.paused) v.play(); else v.pause();
 };
-
-// --- Lógica de Auto-ocultar Mejorada ---
-let idleTimer;
-const playerContainer = document.getElementById('player');
-const customOverlay = document.getElementById('playerCustomControls'); // Botones Siguiente/Ant
-const playerNav = document.getElementById('playerNav');               // Botones azules (X, etc)
-
-function showControls() {
-    const exp = localStorage.getItem("user_experience");
-
-    // 1. Mostrar botones superiores (X y demás)
-    playerNav.style.opacity = '1';
-    playerNav.style.pointerEvents = 'auto';
-
-    // 2. Mostrar botones laterales (Solo si es serie/anime y experiencia mobile)
-    if (currentSeries && exp === 'mobile') {
-        customOverlay.style.opacity = '1';
-        customOverlay.style.pointerEvents = 'auto';
-    }
-    
-    // Limpiar el temporizador anterior y empezar uno nuevo de 3 segundos
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-        // Ocultar todo
-        playerNav.style.opacity = '0';
-        playerNav.style.pointerEvents = 'none';
-        customOverlay.style.opacity = '0';
-        customOverlay.style.pointerEvents = 'none';
-    }, 3000); 
-}
-
-// Eventos para PC (Mouse) y Celulares (Touch)
-playerContainer.addEventListener('mousemove', showControls);
-playerContainer.addEventListener('touchstart', showControls);
-playerContainer.addEventListener('mousedown', showControls); // Para que al dar click también reaccione
 
 window.closeVideo = () => {
     playerController.cleanup(); 
@@ -519,7 +466,7 @@ function renderEpisodes(idx) {
         btn.tabIndex = 0;
         btn.onclick = (e) => {
             e.preventDefault();
-            currentSeason = idx; 
+            currentSeason = idx; // Asegura que la temporada sea la correcta
             currentEpisode = i;  
             window.openVideo(ep);
         };
