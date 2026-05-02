@@ -266,59 +266,51 @@ function initTVNavigation() {
         SpatialNavigation.add({ id: 'player', selector: '.player .player-nav button, .player .close' });
         SpatialNavigation.makeFocusable();
         
-        // Listener para detectar cuando se sale de pantalla completa (incluyendo la tecla ESC nativa)
         const onFullscreenChange = () => {
             const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
             if (!isFullScreen) {
-                // Si salimos de pantalla completa, nos aseguramos de que el reproductor recupere el foco
                 const player = document.getElementById("player");
-                if (player.style.display === "flex") {
-                    player.focus(); 
-                }
+                if (player.style.display === "flex") player.focus(); 
             }
         };
-
         document.addEventListener('fullscreenchange', onFullscreenChange);
         document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-        window.addEventListener('keydown', (e) => {
-            const playerOpen = document.getElementById("player").style.display === "flex";
-            const modalOpen = document.getElementById("seriesModal").style.display === "flex";
-            const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
-
-            // Si presionas ESC (o Back en TV)
-            if ([27, 8, 461, 10009].includes(e.keyCode)) {
-                if (isFullScreen) {
-                    // Si está en pantalla completa, primero salimos de ella
-                    e.preventDefault();
-                    if (document.exitFullscreen) document.exitFullscreen();
-                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                } else if (playerOpen) {
-                    // Si no está en pantalla completa pero el reproductor está abierto, lo cerramos
-                    e.preventDefault();
-                    window.closeVideo();
-                } else if (modalOpen) {
-                    // Si el modal de series está abierto, lo cerramos
-                    e.preventDefault();
-                    window.closeSeriesModal();
-                }
-            }
-
-            // Manejo de Enter
-            if (e.keyCode === 13) { 
-                const active = document.activeElement; 
-                if (active && typeof active.click === 'function') {
-                    // No prevenimos default aquí para que los inputs funcionen, 
-                    // pero ejecutamos el click para botones y cards
-                    if (active.tagName !== 'INPUT') {
-                        e.preventDefault();
-                        active.click(); 
-                    }
-                }
-            }
-        }, true);
     }
 }
+
+// ESTA PARTE VA AFUERA DE initTVNavigation PARA QUE SEA SIEMPRE GLOBAL
+window.addEventListener('keydown', (e) => {
+    const playerOpen = document.getElementById("player").style.display === "flex";
+    const modalOpen = document.getElementById("seriesModal").style.display === "flex";
+    const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+
+    // Tecla ESC (27) o Back en TVs (8, 461, 10009)
+    if ([27, 8, 461, 10009].includes(e.keyCode)) {
+        if (isFullScreen) {
+            // Si está en pantalla completa, salimos al player (modo ventana)
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            e.preventDefault();
+        } else if (playerOpen) {
+            // Si ya estamos en modo ventana, cerramos el player
+            e.preventDefault();
+            window.closeVideo();
+        } else if (modalOpen) {
+            // Si el modal de temporadas está abierto, lo cerramos
+            e.preventDefault();
+            window.closeSeriesModal();
+        }
+    }
+
+    // Manejo de Enter
+    if (e.keyCode === 13) { 
+        const active = document.activeElement; 
+        if (active && active.tagName !== 'INPUT' && typeof active.click === 'function') {
+            e.preventDefault();
+            active.click(); 
+        }
+    }
+}, true);
 
 window.switchFocusGroup = (groupId) => {
     if (localStorage.getItem("user_experience") !== 'tv') return;
