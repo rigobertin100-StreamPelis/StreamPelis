@@ -266,11 +266,17 @@ function initTVNavigation() {
         SpatialNavigation.add({ id: 'player', selector: '.player .player-nav button, .player .close' });
         SpatialNavigation.makeFocusable();
         
-        const onFullscreenChange = () => {
+const onFullscreenChange = () => {
             const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
             if (!isFullScreen) {
-                const player = document.getElementById("player");
-                if (player.style.display === "flex") player.focus(); 
+                // Al salir de pantalla completa, forzamos que el foco regrese al contenedor
+                // Esto evita que el foco se quede atrapado en los botones internos del video
+                setTimeout(() => {
+                    const playerDiv = document.getElementById("player");
+                    if (playerDiv && playerDiv.style.display === "flex") {
+                        playerDiv.focus(); 
+                    }
+                }, 150); // El delay es clave para que el navegador termine de procesar el cambio visual
             }
         };
         document.addEventListener('fullscreenchange', onFullscreenChange);
