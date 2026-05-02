@@ -526,14 +526,16 @@ window.openSeriesModal = async (v) => {
     }
 
     const playBtn = document.getElementById("modalPlayBtn");
-    if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
+    // AJUSTE A: Incluir 'kids' en la condición de reproducción directa de película
+    if (v.pelicula || v.tipo === 'kids' || v.tipo === 'cine' || v.tipo === 'pelicula') {
         playBtn.style.display = "block";
         playBtn.onclick = () => window.openVideo(v);
     } else {
         playBtn.style.display = "none";
     }
 
-    if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
+    // AJUSTE A: Incluir 'kids' para que TMDB busque el resumen
+    if (v.pelicula || v.tipo === 'kids' || v.tipo === 'cine' || v.tipo === 'pelicula') {
         const query = v.titulo.replace(/^[PS]\./, '').replace(/_/g, ' ');
         try {
             const resp = await fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=es-MX`, {
@@ -575,12 +577,34 @@ window.openSeriesModal = async (v) => {
     window.switchFocusGroup('modal');
 };
 
+// AJUSTE B: Función playEpisode integrada en el render de episodios para que funcionen correctamente
 function renderEpisodes(idx) {
     const list = document.getElementById("episodeList"); list.innerHTML = "";
     currentSeries.temporadas[idx].episodios.forEach((ep, i) => {
         const btn = document.createElement("button"); 
         btn.innerText = ep.titulo; btn.tabIndex = 0;
-        btn.onclick = (e) => { e.preventDefault(); currentSeason = idx; currentEpisode = i; window.openVideo(ep); };
+        btn.onclick = async (e) => { 
+            e.preventDefault(); 
+            currentSeason = idx; 
+            currentEpisode = i; 
+            
+            // Cerramos modal de serie antes de abrir player
+            document.getElementById("seriesModal").style.display = "none";
+            
+            if (ep.fileKey) {
+                try {
+                    const r = await fetch(`${WORKER_URL}?getFile=${encodeURIComponent(ep.fileKey)}`);
+                    const data = await r.json();
+                    if (data.url) {
+                        window.openVideo({...ep, url: data.url});
+                    }
+                } catch (err) {
+                    console.error("Error al obtener enlace del episodio:", err);
+                }
+            } else {
+                window.openVideo(ep);
+            }
+        };
         list.appendChild(btn);
     });
     if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
@@ -692,8 +716,6 @@ async function setupHeroBanner() {
 }
 
 function buildUI(){
-    // MEJORA PRO: Intersection Observer de Filas
-    // Creamos la estructura base pero sin inyectar las cards aún
     document.getElementById("app").innerHTML = `
         <div class="row" data-row-type="recent"><h2>🆕 Recién agregadas</h2><div class="carousel" id="recentRow"></div></div>
         <div class="row" id="contHeader"><h2>🔄 Continuar viendo</h2><div class="carousel" id="continueRow"></div></div>
@@ -707,7 +729,6 @@ function buildUI(){
     setupHeroBanner(); 
     window.switchFocusGroup('main');
     
-    // MEJORA: HABILITAR SCROLL HORIZONTAL CON RUEDA DEL RATÓN
     document.querySelectorAll('.carousel').forEach(container => {
         container.addEventListener('wheel', (e) => {
             if (e.deltaY !== 0) {
@@ -756,16 +777,14 @@ function renderAll(){
                     const data = rowConfigs[type]();
                     renderRowData(carousel.id, data);
                     carousel.dataset.loaded = "true";
-                    // Una vez cargada, podemos dejar de observar esta fila
                     rowObserver.unobserve(row);
                 }
             }
         });
-    }, { rootMargin: "200px" }); // Empieza a cargar 200px antes de llegar
+    }, { rootMargin: "200px" });
 
     document.querySelectorAll('.row[data-row-type]').forEach(row => rowObserver.observe(row));
     
-    // El "Continuar viendo" se carga siempre directo por ser prioritario y pequeño
     renderContinue(5);
 }
 
