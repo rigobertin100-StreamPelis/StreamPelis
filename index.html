@@ -435,8 +435,14 @@ window.openVideo = (v) => {
     }
 
     playerController.play(v); 
-    window.switchFocusGroup('player');
-    videoElement.focus();
+window.switchFocusGroup('player');
+    
+    // Usamos un pequeño delay para asegurar que el DOM esté listo
+    setTimeout(() => {
+        const playerDiv = document.getElementById("player");
+        playerDiv.setAttribute('tabindex', '-1'); // Asegura que sea enfocable
+        playerDiv.focus();
+    }, 150);
 };
 
 window.togglePlay = () => {
