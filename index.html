@@ -516,11 +516,13 @@ window.openSeriesModal = async (v) => {
             const opt = document.createElement("div"); 
             opt.className = `season-option ${i === currentSeason ? 'active' : ''}`; 
             opt.innerText = t.numero; opt.tabIndex = 0;
-            opt.onclick = () => { 
-                currentSeason = i; 
-                document.querySelectorAll(".season-option").forEach(el => el.classList.remove("active")); 
-                opt.classList.add("active"); renderEpisodes(i); 
-            };
+opt.onclick = () => { 
+    currentSeason = i; 
+    currentEpisode = 0; // <--- Asegúrate de añadir esto para resetear al cap 1 de esa temporada
+    document.querySelectorAll(".season-option").forEach(el => el.classList.remove("active")); 
+    opt.classList.add("active"); 
+    renderEpisodes(i); 
+};
             document.getElementById("seasonSelect").appendChild(opt);
         });
         renderEpisodes(0);
@@ -530,11 +532,18 @@ window.openSeriesModal = async (v) => {
 };
 
 function renderEpisodes(idx) {
-    const list = document.getElementById("episodeList"); list.innerHTML = "";
-    currentSeries.temporadas[idx].episodios.forEach((ep, i) => {
+    const list = document.getElementById("episodeList"); 
+    list.innerHTML = "";
+    currentSeries.temporadas[idx].episodios.forEach((ep, i) => { // 'i' es el índice del episodio
         const btn = document.createElement("button"); 
-        btn.innerText = ep.titulo; btn.tabIndex = 0;
-        btn.onclick = (e) => { e.preventDefault(); currentSeason = idx; currentEpisode = i; window.openVideo(ep); };
+        btn.innerText = ep.titulo; 
+        btn.tabIndex = 0;
+        btn.onclick = (e) => { 
+            e.preventDefault(); 
+            currentSeason = idx; // Se queda con el índice de la temporada
+            currentEpisode = i;   // <--- CAMBIA 'idx' POR 'i' AQUÍ
+            window.openVideo(ep); 
+        };
         list.appendChild(btn);
     });
     if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
