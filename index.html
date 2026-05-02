@@ -40,7 +40,13 @@
 
         .logo{font-size:34px;font-weight:700;color:#0a84ff;}
         .header-right{display:flex;align-items:center;gap:12px;}
-        .search{padding:10px 18px;border-radius:24px;border:none;width:260px;font-size:16px;background:rgba(255,255,255,.1);color:white;outline:none;}
+        
+        /* Estilo compartido para buscador y botón de catálogo */
+        .search, .btn-catalog{padding:10px 18px;border-radius:24px;border:none;font-size:16px;background:rgba(255,255,255,.1);color:rgba(255,255,255,0.7);outline:none;transition:0.3s;}
+        .search{width:200px; color:white;}
+        .btn-catalog{cursor:pointer; display:flex; align-items:center; gap:8px; text-decoration:none;}
+        .btn-catalog:hover{background:rgba(255,255,255,.2); color:white;}
+
         .logout{white-space:nowrap;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer;font-weight:bold;}
         
         .hero-banner {position: relative; width: 100%; height: 70vh; background: #000; overflow: hidden; margin-top: -90px; display: none;}
@@ -114,6 +120,12 @@
         }
 
         .nav-ep-btn:hover { background: rgba(50, 50, 50, 0.8); transform: scale(1.05); }
+
+        /* Ajuste para móviles en el header */
+        @media (max-width: 600px) {
+            .btn-catalog span { display: none; }
+            .search { width: 120px; }
+        }
     </style>
 </head>
 
@@ -140,6 +152,9 @@
 <div class="header">
     <div class="logo">PlusUltra</div>
     <div class="header-right">
+        <button class="btn-catalog" onclick="window.resetCatalog()" tabindex="0">
+            🏠 <span>Regresar al catálogo</span>
+        </button>
         <input id="search" class="search" placeholder="Buscar..." tabindex="0">
         <button class="logout" onclick="logout()" tabindex="0">Salir</button>
     </div>
@@ -246,7 +261,7 @@ function initExperience() {
 function initTVNavigation() {
     if (window.SpatialNavigation) {
         SpatialNavigation.init();
-        SpatialNavigation.add({ id: 'main', selector: '.card, .hero-btn, .logout, .search, #loginBtn, #loginBox input' });
+        SpatialNavigation.add({ id: 'main', selector: '.card, .hero-btn, .logout, .search, .btn-catalog, #loginBtn, #loginBox input' });
         SpatialNavigation.add({ id: 'modal', selector: '.series-modal .season-option, .series-modal .episode-list button, .series-modal .close' });
         SpatialNavigation.add({ id: 'player', selector: '.player .player-nav button, .player .close' });
         SpatialNavigation.makeFocusable();
@@ -584,6 +599,14 @@ function renderContinue(limite = 5) {
         row.appendChild(card);
     });
 }
+
+// Función para restablecer el catálogo
+window.resetCatalog = () => {
+    const searchInput = document.getElementById("search");
+    searchInput.value = "";
+    document.querySelectorAll(".card").forEach(c => c.style.display = "block");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 document.getElementById("search").addEventListener("keydown", (e) => { if (e.key === "Enter") { const val = e.target.value.toLowerCase().trim(); document.querySelectorAll(".card").forEach(c => { c.style.display = (c.dataset.title || "").includes(val) ? "block" : "none"; }); if (val !== "") e.target.blur(); } });
 
