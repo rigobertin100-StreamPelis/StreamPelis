@@ -30,11 +30,13 @@
         
         .tv-mode { cursor: none; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
+        
+        /* CORRECCIÓN Z-INDEX FOCO TV */
         .tv-mode :focus {
             outline: 6px solid #ccff00 !important;
             outline-offset: 3px;
             transform: scale(1.05);
-            z-index: 9999 !important;
+            z-index: 10 !important; 
             box-shadow: 0 0 25px rgba(204, 255, 0, 0.7);
         }
 
@@ -65,10 +67,12 @@
 
         .loading-sentinel { min-width: 100px; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #0a84ff; font-weight: bold; }
         
-        .series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:5000; background:rgba(28,28,30,0.98);backdrop-filter:blur(20px);}
-        .player{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:9000; background:#000;}
+        /* CORRECCIÓN Z-INDEX MODAL */
+        .series-modal{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:99999 !important; background:rgba(28,28,30,0.98);backdrop-filter:blur(20px);}
+        
+        /* CORRECCIÓN Z-INDEX REPRODUCTOR */
+        .player{position:fixed;inset:0;display:none;justify-content:center;align-items:center;z-index:100000 !important; background:#000;}
 
-        /* ESTILOS MODAL APPLE */
         .series-inner{width:95vw;height:90vh;background:#1c1c1e;border-radius:24px;overflow-y:auto;position:relative;display:block;padding:0;}
         .modal-hero {width:100%; height:50vh; position:relative; background:#000;}
         .modal-info-content {padding: 30px 50px; display: flex; justify-content: space-between; gap: 40px;}
@@ -196,7 +200,6 @@
     </div>
 </div>
 
-<!-- MODAL REDISEÑADO -->
 <div class="series-modal" id="seriesModal">
     <div class="series-inner" id="modalScroll">
         <span class="close" onclick="window.closeSeriesModal()" tabindex="0">✕</span>
@@ -225,8 +228,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// CONFIGURACIÓN TMDB (AGREGA TU TOKEN AQUÍ)[cite: 1]
-const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZGI3MWZlYmU2ZjJlMTlkNjUzYWI4OGI4ZmY3MjliNiIsIm5iZiI6MTc3NzA5ODk2MC42NTYsInN1YiI6IjY5ZWM2MGQwODgzM2EyZDk5YjE3Y2QxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.mrFPRC5QmWKQ4lDFgAuBwwyv4U2Js5qZv7HeU3TfE6Q"; 
+// Tu Token de TMDB ya está aquí[cite: 1]
+const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI1ZGI3MWZlM2U2ZjJlMTlkNjUzYWI4OGI4ZmY3MjliIiwiInN1YiI6MTc3NzA5Dk2MC42NTYsInN1YmIi6IjY5ZWM2MGQwOgzM2EyZk5Yje3Y2QxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCI2ZXJzaW9uIjoxfQ.mrFPRC5QmWKQ4lDFgAuBwwyv4U2Js5sQZv7HeU3TfE6Q"; 
 
 const firebaseConfig = {
     apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
@@ -248,7 +251,6 @@ let allVideos = [];
 let currentSeries = null;
 let currentSeason = 0;
 let currentEpisode = 0;
-let sessionInterval = null;
 
 const getSignedCache = () => JSON.parse(sessionStorage.getItem("plusultra_signed_links") || "{}");
 const setSignedCache = (key, url) => {
@@ -453,19 +455,16 @@ window.closeVideo = () => {
     renderContinue(5);
 };
 
-// LÓGICA TMDB Y NUEVO MODAL[cite: 1]
 window.openSeriesModal = async (v) => {
     currentSeries = v; 
     currentSeason = 0;
     
-    // 1. Detener el trailer del Hero Banner principal[cite: 1]
     document.getElementById("youtubePlayer").innerHTML = "";
 
     const modal = document.getElementById("seriesModal");
     modal.style.display = "flex";
     document.getElementById("modalScroll").scrollTop = 0;
 
-    // 2. Limpiar UI previa
     document.getElementById("seriesTitle").innerText = v.titulo;
     document.getElementById("tmdbMeta").innerText = "Cargando info...";
     document.getElementById("tmdbOverview").innerText = "";
@@ -473,7 +472,6 @@ window.openSeriesModal = async (v) => {
     document.getElementById("seasonSelect").innerHTML = "";
     document.getElementById("episodeList").innerHTML = "";
 
-    // 3. Obtener Trailer (txt de R2)[cite: 1]
     const txtUrl = v.img.substring(0, v.img.lastIndexOf('.')) + ".txt";
     let videoId = "";
     try { const r = await fetch(txtUrl); if (r.ok) videoId = (await r.text()).trim(); } catch(e){}
@@ -484,7 +482,6 @@ window.openSeriesModal = async (v) => {
         document.getElementById("modalHero").innerHTML = `<img src="${v.img}" style="width:100%; height:100%; object-fit:cover; opacity:0.3;">`;
     }
 
-    // 4. Configurar botón Iniciar[cite: 1]
     const playBtn = document.getElementById("modalPlayBtn");
     if (v.tipo === "pelicula" || v.tipo === "cine") {
         playBtn.style.display = "block";
@@ -493,7 +490,6 @@ window.openSeriesModal = async (v) => {
         playBtn.style.display = "none";
     }
 
-    // 5. Consulta TMDB (Solo para P. y C.)[cite: 1]
     if (v.tipo === "pelicula" || v.tipo === "cine") {
         const query = v.titulo.replace(/^[PS]\./, '').replace(/_/g, ' ');
         try {
@@ -508,7 +504,6 @@ window.openSeriesModal = async (v) => {
                 document.getElementById("tmdbOverview").innerText = info.overview;
                 document.getElementById("tmdbMeta").innerText = `⭐ ${info.vote_average.toFixed(1)} | Estreno: ${info.release_date}`;
                 
-                // Obtener créditos (Directores)
                 const cResp = await fetch(`https://api.themoviedb.org/3/movie/${info.id}/credits?language=es-MX`, {
                     headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
                 });
@@ -519,7 +514,6 @@ window.openSeriesModal = async (v) => {
         } catch(e) { console.error("Error TMDB:", e); }
     }
 
-    // 6. Renderizar temporadas si es serie
     if(v.tipo === "serie" || v.tipo === "anime") {
         v.temporadas.forEach((t, i) => {
             const opt = document.createElement("div"); 
@@ -563,7 +557,7 @@ window.nextEpisode = () => {
 window.prevEpisode = () => {
     if (!currentSeries) return;
     if (currentEpisode > 0) { 
-        currentEpisode--; window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
+        currentEpisode--; window.openVideo(temp.episodios[currentEpisode]); 
     } else if (currentSeason > 0) { 
         currentSeason--; currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1; 
         window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
@@ -574,7 +568,7 @@ window.closeSeriesModal = () => {
     document.getElementById("seriesModal").style.display = "none"; 
     document.getElementById("modalHero").innerHTML = "";
     currentSeries = null; 
-    setupHeroBanner(); // Reiniciar trailer del hero[cite: 1]
+    setupHeroBanner(); 
     window.switchFocusGroup('main'); 
 };
 
