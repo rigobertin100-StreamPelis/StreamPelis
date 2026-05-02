@@ -480,19 +480,19 @@ window.openSeriesModal = async (v) => {
     }
 
     const playBtn = document.getElementById("modalPlayBtn");
-    if (v.tipo === "pelicula" || v.tipo === "cine") {
-        playBtn.style.display = "block";
-        playBtn.onclick = () => window.openVideo(v);
-    } else {
-        playBtn.style.display = "none";
-    }
+if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
+    playBtn.style.display = "block";
+    playBtn.onclick = () => window.openVideo(v);
+} else {
+    playBtn.style.display = "none";
+}
 
-    if (v.tipo === "pelicula" || v.tipo === "cine") {
-        const query = v.titulo.replace(/^[PS]\./, '').replace(/_/g, ' ');
-        try {
-            const resp = await fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=es-MX`, {
-                headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
-            });
+if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
+    const query = v.titulo.replace(/^[PSCK]\./, '').replace(/_/g, ' ');
+    try {
+        const resp = await fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=es-MX`, {
+            headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
+        });
             const data = await resp.json();
             if (data.results && data.results.length > 0) {
                 const info = data.results[0];
