@@ -28,7 +28,6 @@
         .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:1000;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
         
-        /* Estilos condicionales para TV */
         .tv-mode { cursor: none; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
         .tv-mode :focus {
@@ -67,13 +66,12 @@
         .player-inner,.series-inner{width:92vw;height:88vh;background:#1c1c1e;border-radius:24px;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;padding:20px;}
         video{width:100%;height:100%;border-radius:15px;background:#000;}
         
-        .close{position:absolute;top:20px;right:25px;font-size:30px;cursor:pointer;color:white;z-index:1000;}
+        .close{position:absolute;top:20px;right:25px;font-size:30px;cursor:pointer;color:white;z-index:10000;}
         .player-nav{position:absolute;top:20px;left:25px;z-index:100;display:flex;gap:10px;transition: 0.3s;}
         .player-nav button, .episode-list button, .continue-btn{padding:10px 16px;border:none;border-radius:12px;background:#0a84ff;color:#fff;cursor:pointer;font-weight:600;}
         
         .episode-list{width:100%;display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;overflow-y:auto;}
         
-        /* Modales de Inicio */
         #loginModal, #expModal {position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:9999999;}
         #loginBox, #expBox {background:#1c1c1e;padding:40px;border-radius:28px;display:flex;flex-direction:column;gap:16px;width:320px;}
         #loginBox input, #expBox button {padding:14px;border-radius:12px;border:none;background:#2c2c2e;color:white;font-size:16px;}
@@ -87,48 +85,43 @@
         .season-option {padding:10px 15px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;white-space:nowrap; border: 2px solid transparent;}
         .season-option.active {background:#0a84ff; border-color: white;}
 
-        /* Contenedor que envuelve los botones sobre el video */
-.custom-controls-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 10%;
-    /* Bajamos el z-index para que no tape el botón X de cerrar */
-    z-index: 5000; 
-    /* ESTO ES LO MÁS IMPORTANTE */
-    pointer-events: none; 
-    transition: opacity 0.5s ease;
-    box-sizing: border-box;
-}
+        .custom-controls-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10%;
+            z-index: 5000; 
+            pointer-events: none; 
+            transition: opacity 0.5s ease;
+            box-sizing: border-box;
+        }
 
-.nav-ep-btn {
-    /* El botón sí debe recibir clics */
-    pointer-events: auto; 
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 12px 20px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-}
+        .nav-ep-btn {
+            pointer-events: auto; 
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
 
-.nav-ep-btn:hover {
-    background: rgba(50, 50, 50, 0.8);
-    transform: scale(1.05);
-}
+        .nav-ep-btn:hover {
+            background: rgba(50, 50, 50, 0.8);
+            transform: scale(1.05);
+        }
 
-/* Clase para el efecto de desvanecimiento */
-.controls-hidden {
-    opacity: 0;
-    pointer-events: none;
-}
+        .controls-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 
@@ -144,7 +137,6 @@
     </div>
 </div>
 
-<!-- Nuevo Modal de Selección de Experiencia -->
 <div id="expModal" style="display:none;">
     <div id="expBox">
         <h2 style="text-align:center">Elegir Experiencia</h2>
@@ -185,9 +177,9 @@
         </div>
         <video id="video" playsinline></video>
         <div id="playerCustomControls" class="custom-controls-overlay">
-    <button id="prevEpisodeBtn" class="nav-ep-btn left">❮ Anterior</button>
-    <button id="nextEpisodeBtn" class="nav-ep-btn right">Siguiente ❯</button>
-</div>
+            <button id="prevEpisodeBtn" class="nav-ep-btn left">❮ Anterior</button>
+            <button id="nextEpisodeBtn" class="nav-ep-btn right">Siguiente ❯</button>
+        </div>
     </div>
 </div>
 
@@ -230,18 +222,16 @@ let sessionInterval = null;
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 
-// --- Lógica de Experiencia ---
 window.setExperience = (type) => {
     localStorage.setItem("user_experience", type);
     document.getElementById("expModal").style.display = "none";
-    location.reload(); // Recargamos para aplicar la configuración limpia
+    location.reload();
 };
 
 function initExperience() {
     const exp = localStorage.getItem("user_experience");
     if (!exp) {
         document.getElementById("expModal").style.display = "flex";
-        // Si no hay experiencia, forzamos navegación básica para el modal
         if (window.SpatialNavigation) {
             SpatialNavigation.init();
             SpatialNavigation.add({ id: 'exp', selector: '#expBox button' });
@@ -250,7 +240,6 @@ function initExperience() {
         }
         return false;
     }
-
     if (exp === 'tv') {
         document.body.classList.add("tv-mode");
         initTVNavigation();
@@ -412,11 +401,9 @@ window.openVideo = (v) => {
     document.getElementById("player").style.display = "flex";
 
     if (exp === 'mobile') {
-        // Oculta botones azules y activa controles nativos para Smartphone/PC
         playerNav.style.display = "none";
         videoElement.setAttribute("controls", "controls");
     } else {
-        // Muestra botones azules y quita controles nativos para TV
         playerNav.style.display = "flex";
         videoElement.removeAttribute("controls");
     }
@@ -424,65 +411,50 @@ window.openVideo = (v) => {
     playerController.play(v); 
     window.switchFocusGroup('player');
 
-// --- NUEVO: Configurar botones de navegación ---
     const customOverlay = document.getElementById("playerCustomControls");
     const prevBtn = document.getElementById("prevEpisodeBtn");
     const nextBtn = document.getElementById("nextEpisodeBtn");
 
-    // Verificamos si existe la serie para mostrar los botones
-    if (typeof currentSeries !== 'undefined' && currentSeries && exp === 'mobile') {
+    if (currentSeries && exp === 'mobile') {
         customOverlay.style.display = "flex";
-        
-        // Limpiamos y asignamos eventos nuevos
         prevBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log("Navegando al anterior...");
-            window.navigateEpisode(-1);
+            window.prevEpisode();
         };
-
         nextBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log("Navegando al siguiente...");
-            window.navigateEpisode(1);
+            window.nextEpisode();
         };
     } else {
         customOverlay.style.display = "none";
     }
-document.getElementById('video').focus();
+    document.getElementById('video').focus();
 };
 
 window.togglePlay = () => {
     const v = document.getElementById("video");
     if (v.paused) v.play(); else v.pause();
-    
 };
 
-    // --- PASO 5: Lógica de Auto-ocultar ---
 let timer;
 const playerContainer = document.getElementById('player');
 const customOverlay = document.getElementById('playerCustomControls');
 
-// Detecta movimiento del mouse (PC) o toques (Móvil)
 playerContainer.addEventListener('mousemove', () => {
     const exp = localStorage.getItem("user_experience");
-    
-    // Solo activamos si es una serie y estamos en modo móvil
     if (currentSeries && exp === 'mobile') {
         customOverlay.style.opacity = '1';
         customOverlay.style.pointerEvents = 'auto';
     }
-    
-    // Limpiamos el contador anterior y reiniciamos
     clearTimeout(timer);
     timer = setTimeout(() => {
         customOverlay.style.opacity = '0';
         customOverlay.style.pointerEvents = 'none';
-    }, 3000); // Se oculta tras 3 segundos de inactividad
+    }, 3000);
 });
 
-// Asegura que en pantallas táctiles también se muestre al tocar
 playerContainer.addEventListener('touchstart', () => {
     const exp = localStorage.getItem("user_experience");
     if (currentSeries && exp === 'mobile') {
@@ -490,50 +462,11 @@ playerContainer.addEventListener('touchstart', () => {
         customOverlay.style.pointerEvents = 'auto';
     }
 });
-    
-    window.navigateEpisode = (direction) => {
-    if (!currentSeries) return;
-
-    let targetS = currentSeasonIndex;
-    let targetE = currentEpisodeIndex + direction;
-
-    const seasons = currentSeries.seasons;
-
-    // Lógica para retroceder de temporada
-    if (targetE < 0) {
-        if (targetS > 0) {
-            targetS--;
-            targetE = seasons[targetS].episodes.length - 1; // Último cap de la temporada anterior
-        } else {
-            return; // Ya estamos en el primer capítulo de la serie
-        }
-    }
-    // Lógica para avanzar de temporada
-    else if (targetE >= seasons[targetS].episodes.length) {
-        if (targetS < seasons.length - 1) {
-            targetS++;
-            targetE = 0; // Primer cap de la siguiente temporada
-        } else {
-            return; // Fin de la serie
-        }
-    }
-
-    // Actualizamos los índices globales
-    currentSeasonIndex = targetS;
-    currentEpisodeIndex = targetE;
-
-    // Obtenemos el objeto del nuevo episodio y lo reproducimos
-    const nextEp = seasons[targetS].episodes[targetE];
-    window.openVideo(nextEp);
-};
 
 window.closeVideo = () => {
     playerController.cleanup(); 
     document.getElementById("player").style.display = "none";
-    
-    // IMPORTANTE: Limpiamos los controles al salir
     document.getElementById("video").removeAttribute("controls");
-
     if (currentSeries) { 
         document.getElementById("seriesModal").style.display = "flex"; 
         window.switchFocusGroup('modal'); 
@@ -579,10 +512,11 @@ function renderEpisodes(idx) {
         const btn = document.createElement("button"); 
         btn.innerText = ep.titulo; 
         btn.tabIndex = 0;
-        btn.onclick = (e) => { 
+        btn.onclick = (e) => {
             e.preventDefault();
-            currentEpisode = i; 
-            window.openVideo(ep); 
+            currentSeason = idx; 
+            currentEpisode = i;  
+            window.openVideo(ep);
         };
         list.appendChild(btn);
     });
@@ -706,20 +640,15 @@ document.getElementById("loginBtn").onclick = async () => { try { await signInWi
 onAuthStateChanged(auth, async (user) => {
     if(user){
         document.getElementById("loginModal").style.display = "none"; 
-        
-        // Ejecutar selector de experiencia si no existe
         if (!initExperience()) return;
-
         playerController.init(); 
         registerSession(user); 
         startSessionWatcher(user);
-        
         const cacheKey = 'plusultra_catalog_cache'; const cachedData = localStorage.getItem(cacheKey);
         if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
         try { const r = await fetch("https://odd-credit-e6f8.rigobertin100.workers.dev/"); const data = await r.json(); allVideos = data; localStorage.setItem(cacheKey, JSON.stringify(data)); buildUI(); } catch (e) {}
     } else { 
         document.getElementById("loginModal").style.display = "flex"; 
-        // Navegación TV para el login si es necesario
         if (window.SpatialNavigation) {
             SpatialNavigation.init();
             SpatialNavigation.add({ id: 'login', selector: '#loginBox input, #loginBtn' });
@@ -729,7 +658,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 window.logout = () => {
-    localStorage.removeItem("user_experience"); // Borrar preferencia al salir
+    localStorage.removeItem("user_experience");
     signOut(auth);
 };
 </script>
