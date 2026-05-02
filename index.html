@@ -151,9 +151,6 @@
 <div class="header">
     <div class="logo">PlusUltra</div>
     <div class="header-right">
-        <button class="btn-catalog" onclick="window.resetCatalog()" tabindex="0">
-            🏠 <span>Regresar al catálogo</span>
-        </button>
         <input id="search" class="search" placeholder="Buscar..." tabindex="0">
         <button class="logout" onclick="logout()" tabindex="0">Salir</button>
     </div>
@@ -179,7 +176,6 @@
 
 <div class="player" id="player">
     <div class="player-inner">
-        <span class="fullscreen-icon" onclick="window.toggleFullScreen()" style="position:absolute; top:20px; right:70px; font-size:24px; cursor:pointer; color:white; z-index:10001;">⛶</span>
         <span class="close" onclick="window.closeVideo()" tabindex="0" style="z-index:10001;">✕</span>
 
         <div class="player-nav" id="playerNav">
@@ -228,7 +224,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Tu Token de TMDB ya está aquí[cite: 1]
+// Tu Token de TMDB ya está aquí
 const TMDB_TOKEN = 
 "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZGI3MWZlYmU2ZjJlMTlkNjUzYWI4OGI4ZmY3MjliNiIsIm5iZiI6MTc3NzA5ODk2MC42NTYsInN1YiI6IjY5ZWM2MGQwODgzM2EyZDk5YjE3Y2QxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.mrFPRC5QmWKQ4lDFgAuBwwyv4U2Js5qZv7HeU3TfE6Q";
 
@@ -601,7 +597,7 @@ function buildUI(){
 }
 
 function renderAll(){
-    const sections = [ { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, { id: "peliculasRow", data: allVideos.filter(v => v.tipo === "pelicula").reverse() }, { id: "seriesRow", data: allVideos.filter(v => v.tipo === "serie").reverse() }, { id: "cineRow", data: allVideos.filter(v => v.tipo === "cine").reverse() }, { id: "animeRow", data: allVideos.filter(v => v.tipo === "anime").reverse() } ];
+    const sections = [ { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, { id: "peliculasRow", data: allVideos.filter(v => v.pelicula).reverse() }, { id: "seriesRow", data: allVideos.filter(v => v.tipo === "serie").reverse() }, { id: "cineRow", data: allVideos.filter(v => v.tipo === "cine").reverse() }, { id: "animeRow", data: allVideos.filter(v => v.tipo === "anime").reverse() } ];
     sections.forEach(section => {
         const container = document.getElementById(section.id); if(!container) return;
         container.innerHTML = ""; loadedCounts[section.id] = 0; loadNextSegment(section.id, section.data);
