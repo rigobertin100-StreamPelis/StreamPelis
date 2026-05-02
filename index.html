@@ -218,8 +218,13 @@ let currentSeason = 0;
 let currentEpisode = 0;
 let sessionInterval = null;
 
-// CACHÉ DE SESIÓN PARA URLS FIRMADAS
-const signedUrlsCache = new Map();
+// GESTIÓN DE CACHÉ DE SESIÓN (Reforzada con sessionStorage)[cite: 1]
+const getSignedCache = () => JSON.parse(sessionStorage.getItem("plusultra_signed_links") || "{}");
+const setSignedCache = (key, url) => {
+    const cache = getSignedCache();
+    cache[key] = { url, timestamp: Date.now() };
+    sessionStorage.setItem("plusultra_signed_links", JSON.stringify(cache));
+};
 
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
@@ -396,14 +401,13 @@ const playerController = {
     cleanup(){ if(this.hls) this.hls.destroy(); this.video.pause(); this.video.src = ""; this.hls = null; }
 };
 
-// LAZY SIGNING + CACHE IMPLEMENTATION
+// PERSISTENCIA DE LA URL FIRMADA (SESSION CACHE)[cite: 1]
 window.openVideo = async (v) => {
     const exp = localStorage.getItem("user_experience");
     const playerNav = document.getElementById("playerNav");
     const videoElement = document.getElementById("video");
     const customOverlay = document.getElementById("playerCustomControls");
 
-    // Mostrar reproductor inmediatamente
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
 
@@ -417,27 +421,27 @@ window.openVideo = async (v) => {
         customOverlay.style.display = "none";
     }
 
-    // Gestionar Lazy Signing y Cache de Sesión
     let finalUrl = v.url;
     if (v.fileKey) {
         const now = Date.now();
-        const cached = signedUrlsCache.get(v.fileKey);
+        const cache = getSignedCache();
+        const cachedItem = cache[v.fileKey];
 
-        // Si existe en caché y no tiene más de 45 minutos (asumiendo 1h de validez)
-        if (cached && (now - cached.timestamp < 45 * 60 * 1000)) {
-            finalUrl = cached.url;
-            console.log("🚀 URL desde caché de sesión");
+        // Verificamos si la URL existe en sessionStorage y si tiene menos de 45 minutos[cite: 1]
+        if (cachedItem && (now - cachedItem.timestamp < 45 * 60 * 1000)) {
+            finalUrl = cachedItem.url;
+            console.log("⚡ Recuperada URL persistente de la sesión");
         } else {
             try {
-                console.log("☁️ Solicitando firma al Worker...");
+                console.log("☁️ Obteniendo nueva firma...");
                 const response = await fetch(`${WORKER_URL}?getFile=${v.fileKey}`);
                 const data = await response.json();
                 if (data.url) {
                     finalUrl = data.url;
-                    signedUrlsCache.set(v.fileKey, { url: finalUrl, timestamp: now });
+                    setSignedCache(v.fileKey, finalUrl); // Guardamos en sessionStorage[cite: 1]
                 }
             } catch (err) {
-                console.error("❌ Error en Lazy Signing:", err);
+                console.error("❌ Error en persistencia:", err);
             }
         }
     }
