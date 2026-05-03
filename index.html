@@ -575,18 +575,13 @@ window.nextEpisode = () => {
 };
 
 window.prevEpisode = () => {
-    if (currentSeason === 0 && currentEpisode === 0) return;
-    if (currentEpisode > 0) {
-        currentEpisode--;
-    } else {
-        currentSeason--;
-        const temporadaPrevia = currentSeries.temporadas[currentSeason];
-        currentEpisode = temporadaPrevia.episodios.length - 1;
+    if (!currentSeries) return;
+    if (currentEpisode > 0) { 
+        currentEpisode--; window.openVideo(temp.episodios[currentEpisode]); 
+    } else if (currentSeason > 0) { 
+        currentSeason--; currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1; 
+        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
     }
-    const ep = currentSeries.temporadas[currentSeason].episodios[currentEpisode];
-    renderEpisodes(currentSeason);
-    // Nota: Asegúrate de que playEpisode exista o cámbialo por openVideo si es lo que usas
-    window.openVideo(ep); 
 };
 
 window.closeSeriesModal = () => { 
