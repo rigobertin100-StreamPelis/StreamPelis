@@ -26,35 +26,33 @@
     <style>
         /* BASE & LAYOUT */
         body {
-    margin: 0; 
-    /* Añadimos "SF Pro Display" y un ajuste de espaciado para verse más pro */
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-    letter-spacing: -0.022em; 
-    background: #000000; /* Fondo negro puro hace que los colores de las cards resalten más */
-    color: white; 
-    padding-top: 90px; 
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-}
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            letter-spacing: -0.022em; 
+            background: #000000; 
+            color: white; 
+            padding-top: 90px; 
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
         
-        /* MEJORA 2: Glassmorphism Refinado */
-.header {
-    position: fixed; top: 0; left: 0; width: 100%; 
-    display: flex; align-items: center; justify-content: space-between; 
-    padding: 14px 28px; z-index: 1000;
-    background: rgba(18, 18, 18, 0.6); 
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%); 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    transition: background 0.4s ease, padding 0.4s ease;
-    box-sizing: border-box;
-}
+        .header {
+            position: fixed; top: 0; left: 0; width: 100%; 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 14px 28px; z-index: 1000;
+            background: rgba(18, 18, 18, 0.6); 
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%); 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.4s ease, padding 0.4s ease;
+            box-sizing: border-box;
+        }
 
-.header.scrolled {
-    background: rgba(10, 10, 10, 0.95);
-    padding: 10px 28px; 
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
-}
+        .header.scrolled {
+            background: rgba(10, 10, 10, 0.95);
+            padding: 10px 28px; 
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+        }
         
         .tv-mode { cursor: none; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
@@ -92,7 +90,6 @@
         .row{margin-top:40px;padding-left:20px;}
         .row h2{font-size:22px;margin-bottom:14px;color:rgba(255,255,255,0.9);}
         
-        /* MEJORA 7: Scroll con inercia */
         .carousel{
             display:flex;gap:18px;overflow-x:auto;padding-bottom:20px;
             scroll-behavior:smooth;
@@ -101,15 +98,12 @@
         .carousel::-webkit-scrollbar{height:6px;}
         .carousel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:10px;}
         
-        /* MEJORA 1, 3 y 4: Premium Cards + Animación + UX Táctil */
         .card {
             width:220px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:20px;overflow:hidden;cursor:pointer;
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s, opacity 0.6s; 
             background: #2c2c2e;
             scroll-snap-align: start;
-            /* Efecto Profundidad */
             transform: perspective(1000px) translateZ(0);
-            /* Animación de entrada */
             opacity: 0;
             transform: translateY(20px);
             animation: fadeUp 0.6s ease forwards;
@@ -125,7 +119,6 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.6);
         }
 
-        /* Capa viva de gradiente */
         .card::after {
             content: "";
             position: absolute;
@@ -137,12 +130,10 @@
 
         .card:hover::after { opacity: 1; }
 
-        /* Feedback Táctil */
         .card:active {
             transform: scale(0.96);
         }
 
-        /* MEJORA 6: Skeleton Loading */
         .skeleton {
             background: linear-gradient(90deg, #2c2c2e 25%, #3a3a3c 50%, #2c2c2e 75%);
             background-size: 200% 100%;
@@ -193,10 +184,9 @@
         
         #loginModal, #expModal {position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:9999999;}
         #loginBox, #expBox {background:#1c1c1e;padding:40px;border-radius:28px;display:flex;flex-direction:column;gap:16px;width:320px;}
-#loginBox input {padding:14px;border-radius:12px;border:none;background:#2c2c2e;color:white;font-size:16px;}
+        #loginBox input {padding:14px;border-radius:12px;border:none;background:#2c2c2e;color:white;font-size:16px;}
         #loginBox button {padding:14px;border:none;border-radius:12px;background:#0a84ff;color:#fff;font-weight:bold;cursor:pointer;}
 
-        /* NUEVO ESTILO MODAL EXPERIENCIA */
         .ios-menu-container { width: 450px !important; padding: 30px !important; }
         .ios-title { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 25px; letter-spacing: -0.5px; }
         .ios-options-grid { display: flex; flex-direction: column; gap: 15px; }
@@ -220,11 +210,11 @@
         .season-option {padding:10px 15px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;white-space:nowrap; border: 2px solid transparent;}
         .season-option.active {background:#0a84ff; border-color: white;}
 
-.custom-controls-overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 70%; /* <--- Reducimos altura para dejar espacio a la barra de progreso nativa */
-    display: none; align-items: center; justify-content: space-between;
-    padding: 0 10%; z-index: 4000; pointer-events: none; transition: opacity 0.3s ease; box-sizing: border-box;
-}
+        .custom-controls-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 70%; 
+            display: none; align-items: center; justify-content: space-between;
+            padding: 0 10%; z-index: 4000; pointer-events: none; transition: opacity 0.3s ease; box-sizing: border-box;
+        }
         .nav-ep-btn {
             pointer-events: auto; background: rgba(0, 0, 0, 0.7); color: white;
             border: 1px solid rgba(255, 255, 255, 0.3); padding: 12px 20px;
@@ -257,7 +247,6 @@
 <div id="expModal" style="display:none;">
     <div id="expBox" class="ios-menu-container">
         <h2 class="ios-title">Experiencia</h2>
-        
         <div class="ios-options-grid">
             <button class="ios-card" onclick="setExperience('tv')" tabindex="1">
                 <div class="ios-icon">📺</div>
@@ -266,7 +255,6 @@
                     <span class="ios-sub-text">Optimizado para control remoto</span>
                 </div>
             </button>
-
             <button class="ios-card" onclick="setExperience('mobile')" tabindex="2">
                 <div class="ios-icon">📱</div>
                 <div class="ios-text">
@@ -307,7 +295,6 @@
 <div class="player" id="player">
     <div class="player-inner">
         <span class="close" onclick="window.closeVideo()" tabindex="0" style="z-index:10001;">✕</span>
-
         <div class="player-nav" id="playerNav">
             <button id="btnPlayPause" onclick="window.togglePlay()" tabindex="0">⏯</button>
             <button id="btnPrev" onclick="window.prevEpisode()" tabindex="0">⏮</button>
@@ -316,9 +303,7 @@
             <button id="btnNext" onclick="window.nextEpisode()" tabindex="0">⏭</button>
             <button id="btnFull" onclick="window.toggleFullScreen()" tabindex="0">⛶ Fullscreen</button>
         </div>
-
         <video id="video" playsinline></video>
-
         <div id="playerCustomControls" class="custom-controls-overlay">
             <button id="prevEpisodeBtn" class="nav-ep-btn left" onclick="window.prevEpisode()">❮ Anterior</button>
             <button id="nextEpisodeBtn" class="nav-ep-btn right" onclick="window.nextEpisode()">Siguiente ❯</button>
@@ -329,9 +314,7 @@
 <div class="series-modal" id="seriesModal">
     <div class="series-inner" id="modalScroll">
         <span class="close" onclick="window.closeSeriesModal()" tabindex="0">✕</span>
-        
         <div class="modal-hero" id="modalHero"></div>
-
         <div class="modal-info-content">
             <div class="info-left">
                 <h1 class="tmdb-title" id="seriesTitle"></h1>
@@ -344,7 +327,6 @@
                 <button class="btn-play-now" id="modalPlayBtn">Iniciar Película</button>
             </div>
         </div>
-
         <div id="seasonSelect" style="display:flex; gap:10px; overflow-x:auto; width:100%; padding:0 50px; margin-bottom:10px;"></div>
         <div class="episode-list" id="episodeList"></div>
     </div>
@@ -353,9 +335,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5ZGI3MWZlYmU2ZjJlMTlkNjUzYWI4OGI4ZmY3MjliNiIsIm5iZiI6MTc3NzA5ODk2MC42NTYsInN1YiI6IjY5ZWM2MGQwODgzM2EyZDk5YjE3Y2QxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.mrFPRC5QmWKQ4lDFgAuBwwyv4U2Js5qZv7HeU3TfE6Q";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
@@ -369,9 +349,6 @@ const firebaseConfig = {
 const appFirebase = initializeApp(firebaseConfig);
 const auth = getAuth(appFirebase);
 const db = getFirestore(appFirebase);
-
-let sessionId = localStorage.getItem("sessionId") || crypto.randomUUID();
-localStorage.setItem("sessionId", sessionId);
 
 let allVideos = [];
 let currentSeries = null;
@@ -522,7 +499,6 @@ const playerController = {
         const data = getProgress()[this.currentId];
         if (data) {
             try {
-                const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
                 const userRef = doc(db, "users", auth.currentUser.uid, "progress", this.currentId);
                 await setDoc(userRef, data);
                 this.lastSyncTime = this.video.currentTime;
@@ -545,8 +521,7 @@ const playerController = {
                 };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
-                // Sincroniza cada 30 segundos (30, no 300)
-                if (Math.abs(this.video.currentTime - this.lastSyncTime) > 300) {
+                if (Math.abs(this.video.currentTime - this.lastSyncTime) > 30) {
                     this.syncToFirebase();
                 }
             }
@@ -568,12 +543,7 @@ const playerController = {
     },
 
     async play(v) {
-        this.cleanup(); // Llama a la limpieza antes de empezar un video nuevo
-        
-        const isSerie = currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime");
-        document.getElementById("btnPrev").style.display = isSerie ? "inline-block" : "none";
-        document.getElementById("btnNext").style.display = isSerie ? "inline-block" : "none";
-
+        this.cleanup();
         this.currentId = currentSeries ? currentSeries.titulo : v.titulo;
         const saved = getProgress()[this.currentId];
 
@@ -596,7 +566,7 @@ const playerController = {
     },
 
     cleanup() { 
-        this.syncToFirebase(); // Sincroniza el progreso final antes de cerrar
+        this.syncToFirebase();
         if (this.hls) {
             this.hls.destroy();
             this.hls = null;
@@ -604,16 +574,6 @@ const playerController = {
         this.video.pause(); 
         this.video.src = ""; 
     }
-};
-        if(v.url.includes(".m3u8") && Hls.isSupported()){
-            this.hls = new Hls(); this.hls.loadSource(v.url); this.hls.attachMedia(this.video);
-            this.hls.on(Hls.Events.MANIFEST_PARSED, startVideo);
-        } else {
-            this.video.src = v.url;
-            this.video.onloadedmetadata = startVideo;
-        }
-    },
-    cleanup(){ if(this.hls) this.hls.destroy(); this.video.pause(); this.video.src = ""; this.hls = null; }
 };
 
 window.openVideo = async (v) => {
@@ -625,29 +585,25 @@ window.openVideo = async (v) => {
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
 
-// Configuración de controles según tipo de contenido y experiencia
     const isMultiEpisode = currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime");
 
     if (exp === 'mobile') {
         playerNav.style.display = "none";
-        // Si es película, usamos controles nativos; si es serie, usamos los personalizados para navegar episodios
         videoElement.controls = !isMultiEpisode; 
         customOverlay.style.display = isMultiEpisode ? "flex" : "none";
     } else {
         playerNav.style.display = "flex";
         videoElement.controls = true;
         customOverlay.style.display = "none";
-        // En TV, ocultamos botones de episodio si es película
         document.getElementById("btnPrev").style.display = isMultiEpisode ? "inline-block" : "none";
         document.getElementById("btnNext").style.display = isMultiEpisode ? "inline-block" : "none";
     }
 
     let finalUrl = v.url;
     if (v.fileKey) {
-        const now = Date.now();
         const cache = getSignedCache();
         const cachedItem = cache[v.fileKey];
-        if (cachedItem && (now - cachedItem.timestamp < 45 * 60 * 1000)) {
+        if (cachedItem && (Date.now() - cachedItem.timestamp < 45 * 60 * 1000)) {
             finalUrl = cachedItem.url;
         } else {
             try {
@@ -704,7 +660,6 @@ window.toggleWatchLater = (v) => {
 window.openSeriesModal = async (v) => {
     currentSeries = v; 
     currentSeason = currentSeason || 0;
-    console.log("Datos del objeto seleccionado:", v);
     
     document.getElementById("youtubePlayer").innerHTML = "";
     const modal = document.getElementById("seriesModal");
@@ -714,7 +669,6 @@ window.openSeriesModal = async (v) => {
     document.getElementById("seriesTitle").innerText = v.titulo;
     document.getElementById("tmdbMeta").innerText = "Cargando info...";
     document.getElementById("tmdbOverview").innerText = "";
-    document.getElementById("tmdbCredits").innerText = "";
     document.getElementById("seasonSelect").innerHTML = "";
     document.getElementById("episodeList").innerHTML = "";
 
@@ -724,14 +678,17 @@ window.openSeriesModal = async (v) => {
     wlBtn.innerText = isWL ? "✓" : "+";
     wlBtn.onclick = () => window.toggleWatchLater(v);
 
-    const txtUrl = v.img.substring(0, v.img.lastIndexOf('.')) + ".txt";
-    let videoId = "";
-    try { const r = await fetch(txtUrl); if (r.ok) videoId = (await r.text()).trim(); } catch(e){}
-    
-    if (videoId) {
-        document.getElementById("modalHero").innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}" frameborder="0" allow="autoplay"></iframe>`;
-    } else {
-        document.getElementById("modalHero").innerHTML = `<img src="${v.img}" style="width:100%; height:100%; object-fit:cover; opacity:0.3;">`;
+    if (v.trailerID) {
+        document.getElementById("modalHero").innerHTML = `
+            <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent); z-index:1;"></div>
+            <iframe style="width:100%; height:100%; border:none; position:relative; z-index:0;" 
+                src="https://www.youtube.com/embed/${v.trailerID}?autoplay=1&mute=1&loop=1&playlist=${v.trailerID}" 
+                allow="autoplay; encrypted-media" allowfullscreen>
+            </iframe>`;
+    } else if (v.backdrop) {
+        document.getElementById("modalHero").innerHTML = `
+            <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>
+            <img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.6;">`;
     }
 
     const playBtn = document.getElementById("modalPlayBtn");
@@ -742,25 +699,8 @@ window.openSeriesModal = async (v) => {
     } else {
         playBtn.style.display = "none";
     }
-    
-// Si hay un trailerID, inyectamos el reproductor de YouTube en el Hero del modal
-    if (v.trailerID) {
-        document.getElementById("modalHero").innerHTML = `
-            <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent); z-index:1;"></div>
-            <iframe style="width:100%; height:100%; border:none; position:relative; z-index:0;" 
-                src="https://www.youtube.com/embed/${v.trailerID}?autoplay=1&mute=1&loop=1&playlist=${v.trailerID}" 
-                allow="autoplay; encrypted-media" allowfullscreen>
-            </iframe>`;
-} else if (v.backdrop) {
-        // Si no hay tráiler, volvemos a la imagen de fondo
-        document.getElementById("modalHero").innerHTML = `
-            <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>
-            <img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.6;">`;
-    }
 
-
-// Si el resumen viene vacío, intentamos buscarlo en TMDB en tiempo real
-    if (!v.resumen || v.resumen === '') {
+    if (!v.resumen) {
         const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=9db71febe6f2e19d653ab88b8ff729b6&query=${encodeURIComponent(v.titulo)}&language=es-MX`;
         try {
             const res = await fetch(searchUrl);
@@ -770,25 +710,14 @@ window.openSeriesModal = async (v) => {
                 v.resumen = info.overview;
                 v.estreno = info.release_date;
                 v.rating = info.vote_average;
-                v.backdrop = `https://image.tmdb.org/t/p/w1280${info.backdrop_path}`;
+                v.backdrop = v.backdrop || `https://image.tmdb.org/t/p/w1280${info.backdrop_path}`;
             }
-        } catch (err) { console.error("Error buscando info extra:", err); }
+        } catch (err) { console.error(err); }
     }
 
-    // Ahora sí mostramos lo que tengamos
-    if (v.resumen) {
-        document.getElementById("tmdbMeta").innerText = `${v.estreno || ''} • ${v.rating || '0.0'} ★`;
-        document.getElementById("tmdbOverview").innerText = v.resumen;
-        // Si no hay trailer y hay backdrop de TMDB, lo ponemos de fondo
-        if (v.backdrop && !document.getElementById("modalHero").querySelector('iframe')) {
-            document.getElementById("modalHero").innerHTML = `<img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.5;">`;
-        }
-    } else {
-        document.getElementById("tmdbMeta").innerText = "Información no disponible";
-        document.getElementById("tmdbOverview").innerText = "Sin descripción disponible actualmente.";
-    }
+    document.getElementById("tmdbMeta").innerText = `${v.estreno || ''} • ${v.rating || '0.0'} ★`;
+    document.getElementById("tmdbOverview").innerText = v.resumen || "Sin descripción disponible.";
 
-    // Ahora el código de abajo sí se ejecutará correctamente
     if(v.tipo === "serie" || v.tipo === "anime") {
         v.temporadas.forEach((t, i) => {
             const opt = document.createElement("div"); 
@@ -868,12 +797,7 @@ async function setupHeroBanner() {
         document.getElementById("heroDesc").innerText = ultimaPeli.resumen.substring(0, 150) + "...";
     }
     document.getElementById("heroPlayBtn").onclick = () => { currentSeries = null; window.openVideo(ultimaPeli); };
-    const txtUrl = ultimaPeli.img.substring(0, ultimaPeli.img.lastIndexOf('.')) + ".txt";
-    let manualVideoId = null; 
-    try { const r = await fetch(txtUrl); if (r.ok) manualVideoId = (await r.text()).trim(); } catch (e) {}
-    let finalSrc = (manualVideoId && manualVideoId.length < 15) 
-        ? `https://www.youtube.com/embed/${manualVideoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${manualVideoId}&rel=0` 
-        : `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer")}&autoplay=1&mute=1&controls=0`;
+    let finalSrc = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer")}&autoplay=1&mute=1&controls=0`;
     document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="autoplay"></iframe>`;
 }
 
@@ -945,32 +869,23 @@ function loadNextSegment(containerId, sourceData) {
 function createCard(v, isContinue = false) {
     const exp = localStorage.getItem("user_experience");
     const card = document.createElement("div"); 
-    card.className = "card skeleton"; // MEJORA 6: Skeleton por defecto
+    card.className = "card skeleton"; 
     card.tabIndex = 0; 
     card.dataset.title = v.titulo.toLowerCase();
-    
-    // MEJORA 3: Animación fluida con delay aleatorio
     card.style.animationDelay = `${Math.random() * 0.2}s`;
 
     if (isContinue) card.classList.add("is-continue-card");
 
     const img = document.createElement("img");
-    
-    // Lazy Loader para TV y Mobile
-img.classList.add("lazy-hidden");
+    img.classList.add("lazy-hidden");
     img.dataset.src = v.img; 
-    if(v.img.includes('tmdb.org')) {
-        img.style.objectFit = "cover";
-    }
     img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
     
     img.onload = () => {
         card.classList.remove("skeleton");
         img.classList.remove("lazy-hidden");
     };
-
     lazyLoader.observe(img);
-
     card.appendChild(img);
     
     if (exp !== 'tv') {
@@ -1000,7 +915,6 @@ function renderContinue(limite = 5) {
     const row = document.getElementById("continueRow"); 
     const container = document.getElementById("contHeader"); 
     if (!row || !container) return;
-    
     row.innerHTML = "";
     
     let list = Object.keys(data).map(id => { 
@@ -1017,27 +931,18 @@ function renderContinue(limite = 5) {
         const pct = (p.time / p.duration) * 100;
         let info = (v.tipo === "serie" || v.tipo === "anime") ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1}` : `Faltan ${Math.ceil((p.duration - p.time)/60)} min`;
         
-        // Creamos la tarjeta base (usando createCard para heredar la lógica de imagen)
         const card = createCard(v, true); 
-        
-        // FIX: Usamos appendChild en lugar de innerHTML+= para no romper el Lazy Loading
         const overlay = document.createElement("div");
         overlay.className = "continue-overlay";
-        overlay.style.background = "linear-gradient(to top, rgba(0,0,0,0.9) 10%, transparent 60%)";
         overlay.innerHTML = `
             <div class="continue-info">${info}</div>
             <div class="continue-line">
                 <div class="continue-progress" style="width:${pct}%"></div>
             </div>`;
-            
         card.appendChild(overlay);
         row.appendChild(card);
     });
-
-    // Actualizamos el control de TV si es necesario
-    if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) {
-        SpatialNavigation.makeFocusable();
-    }
+    if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
 function renderWatchLater() {
@@ -1045,17 +950,13 @@ function renderWatchLater() {
     const row = document.getElementById("watchLaterRow");
     const header = document.getElementById("wlHeader");
     if (!row || !header) return;
-
     row.innerHTML = "";
     if (list.length === 0) {
         header.style.display = "none";
     } else {
         header.style.display = "block";
-        [...list].reverse().forEach(v => {
-            row.appendChild(createCard(v));
-        });
+        [...list].reverse().forEach(v => row.appendChild(createCard(v)));
     }
-    if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
 document.getElementById("search").addEventListener("input", (e) => {
@@ -1072,18 +973,12 @@ document.getElementById("search").addEventListener("input", (e) => {
 });
 
 window.resetCatalog = () => {
-    const searchInput = document.getElementById("search");
-    if (searchInput) searchInput.value = "";
-    
+    document.getElementById("search").value = "";
     document.getElementById("mainCatalog").style.display = "block";
     document.getElementById("heroBanner").style.display = "block";
     document.getElementById("searchResultsContainer").style.display = "none";
-    
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    if (localStorage.getItem("user_experience") === 'tv') {
-        window.switchFocusGroup('main');
-    }
+    if (localStorage.getItem("user_experience") === 'tv') window.switchFocusGroup('main');
 };
 
 document.getElementById("loginBtn").onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); } catch(e) { document.getElementById("loginError").style.display = "block"; } };
@@ -1093,28 +988,25 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById("loginModal").style.display = "none"; 
         if (!initExperience()) return;
         playerController.init();
-        const cacheKey = 'plusultra_catalog_cache'; const cachedData = localStorage.getItem(cacheKey);
+        const cachedData = localStorage.getItem('plusultra_catalog_cache');
         if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
         try { 
-            const r = await fetch(WORKER_URL); const data = await r.json(); allVideos = data; 
-            localStorage.setItem(cacheKey, JSON.stringify(data)); buildUI(); 
+            const r = await fetch(WORKER_URL); 
+            const data = await r.json(); 
+            allVideos = data; 
+            localStorage.setItem('plusultra_catalog_cache', JSON.stringify(data)); 
+            buildUI(); 
         } catch (e) {}
     } else { document.getElementById("loginModal").style.display = "flex"; }
 });
 
 window.logout = () => { localStorage.removeItem("user_experience"); signOut(auth); };
-// 1. Definimos la variable una sola vez fuera del evento
-const header = document.querySelector('.header');
 
-// 2. Un solo listener de scroll para manejar el efecto
+const headerElem = document.querySelector('.header');
 window.addEventListener('scroll', () => {
-    if (window.scrollY > 20) {
-        header.classList.add('scrolled');
-    } else {
-        header.classList.remove('scrolled');
-    }
+    if (window.scrollY > 20) headerElem.classList.add('scrolled');
+    else headerElem.classList.remove('scrolled');
 });
-
-    </script>
+</script>
 </body>
 </html>
