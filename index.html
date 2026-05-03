@@ -663,19 +663,25 @@ window.openSeriesModal = async (v) => {
                 src="https://www.youtube.com/embed/${v.trailerID}?autoplay=1&mute=1&loop=1&playlist=${v.trailerID}" 
                 allow="autoplay; encrypted-media" allowfullscreen>
             </iframe>`;
-    } else if (v.backdrop) {
+} else if (v.backdrop) {
         // Si no hay tráiler, volvemos a la imagen de fondo
         document.getElementById("modalHero").innerHTML = `
             <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>
             <img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.6;">`;
     }
-    
+
+    // ELIMINA LA LLAVE QUE ESTABA AQUÍ (Línea 675 de tu imagen)
+
+    if (v.resumen) {
+        document.getElementById("tmdbMeta").innerText = `${v.estreno || ''} • ${v.rating || '0.0'} ★`;
+        document.getElementById("tmdbOverview").innerText = v.resumen;
     } else {
         // Fallback por si la película es muy vieja y no tiene info en el JSON
         document.getElementById("tmdbMeta").innerText = "Información no disponible";
         document.getElementById("tmdbOverview").innerText = "Sin descripción disponible actualmente.";
     }
-    
+
+    // Ahora el código de abajo sí se ejecutará correctamente
     if(v.tipo === "serie" || v.tipo === "anime") {
         v.temporadas.forEach((t, i) => {
             const opt = document.createElement("div"); 
@@ -959,12 +965,18 @@ document.getElementById("search").addEventListener("input", (e) => {
 });
 
 window.resetCatalog = () => {
-    document.getElementById("search").value = "";
+    const searchInput = document.getElementById("search");
+    if (searchInput) searchInput.value = "";
+    
     document.getElementById("mainCatalog").style.display = "block";
     document.getElementById("heroBanner").style.display = "block";
     document.getElementById("searchResultsContainer").style.display = "none";
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    window.switchFocusGroup('main');
+    
+    if (localStorage.getItem("user_experience") === 'tv') {
+        window.switchFocusGroup('main');
+    }
 };
 
 document.getElementById("loginBtn").onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); } catch(e) { document.getElementById("loginError").style.display = "block"; } };
