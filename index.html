@@ -616,6 +616,7 @@ window.toggleWatchLater = (v) => {
 window.openSeriesModal = async (v) => {
     currentSeries = v; 
     currentSeason = currentSeason || 0;
+    console.log("Datos del objeto seleccionado:", v);
     
     document.getElementById("youtubePlayer").innerHTML = "";
     const modal = document.getElementById("seriesModal");
@@ -653,8 +654,7 @@ window.openSeriesModal = async (v) => {
     } else {
         playBtn.style.display = "none";
     }
-
-// Ya no hacemos fetch a TMDB aquí, usamos lo que viene en 'v' (el catálogo)
+    
 // Si hay un trailerID, inyectamos el reproductor de YouTube en el Hero del modal
     if (v.trailerID) {
         document.getElementById("modalHero").innerHTML = `
@@ -670,7 +670,6 @@ window.openSeriesModal = async (v) => {
             <img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.6;">`;
     }
 
-    // ELIMINA LA LLAVE QUE ESTABA AQUÍ (Línea 675 de tu imagen)
 
     if (v.resumen) {
         document.getElementById("tmdbMeta").innerText = `${v.estreno || ''} • ${v.rating || '0.0'} ★`;
