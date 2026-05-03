@@ -21,6 +21,41 @@
         if (btn) btn.style.display = "inline-block";
       }
     };
+
+    // --- CORRECCIÓN HERO BANNER: FUNCIONES GLOBALES ---
+    let heroPlayer; 
+
+    function loadYouTubeIframeAPI(videoId) {
+        if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            window.onYouTubeIframeAPIReady = () => createYTPlayer(videoId);
+        } else {
+            createYTPlayer(videoId);
+        }
+    }
+
+    function createYTPlayer(videoId) {
+        // Limpiar si ya existe
+        if (heroPlayer && heroPlayer.destroy) { heroPlayer.destroy(); }
+        
+        heroPlayer = new YT.Player('youtubePlayer', {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: { 'autoplay': 1, 'mute': 1, 'controls': 0, 'rel': 0, 'playlist': videoId, 'loop': 1 },
+            events: {
+                'onReady': (event) => event.target.playVideo(),
+                'onStateChange': (event) => {
+                    if (event.data === 0 && window.setupHeroBanner) { 
+                        window.setupHeroBanner(); 
+                    }
+                }
+            }
+        });
+    }
     </script>
 
     <style>
@@ -204,7 +239,7 @@
 
         /* TOAST NOTIFICATION */
         .toast {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(44, 44, 46, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px; z-index: 200000; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); pointer-events: none; /* Para que no interfiera con clics si sale sobre algo */
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(44, 44, 46, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px; z-index: 200000; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); pointer-events: none;
         }
         .toast.show {
             transform: translateX(-50%) translateY(0);
@@ -339,39 +374,6 @@
         <div class="episode-list" id="episodeList"></div>
     </div>
 </div>
-
-let heroPlayer; // Variable global para el reproductor del banner
-
-// Esta función es necesaria para que la API de YouTube funcione
-function loadYouTubeIframeAPI(videoId) {
-    if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        window.onYouTubeIframeAPIReady = () => createYTPlayer(videoId);
-    } else {
-        createYTPlayer(videoId);
-    }
-}
-
-function createYTPlayer(videoId) {
-    heroPlayer = new YT.Player('youtubePlayer', {
-        height: '100%',
-        width: '100%',
-        videoId: videoId,
-        playerVars: { 'autoplay': 1, 'mute': 1, 'controls': 0, 'rel': 0 },
-        events: {
-            'onReady': (event) => event.target.playVideo(),
-            'onStateChange': (event) => {
-                // Si el video termina (Estado 0), elegimos otro aleatorio de los últimos 10
-                if (event.data === 0) {
-                    setupHeroBanner(); 
-                }
-            }
-        }
-    });
-}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -559,7 +561,6 @@ const playerController = {
                 const userRef = doc(db, "users", auth.currentUser.uid, "progress", this.currentId);
                 await setDoc(userRef, data);
                 this.lastSyncTime = this.video.currentTime;
-                console.log("✓ Progreso guardado en la nube");
             } catch (e) { console.error("Error sincronizando:", e); }
         }
     },
@@ -707,7 +708,7 @@ window.toggleWatchLater = (v) => {
         showToast("Quitado de Mirar Después");
     } else {
         if (list.length >= 20) {
-            list.shift(); // Elimina el primero (el más antiguo) para dejar espacio al nuevo
+            list.shift(); 
             showToast("Lista llena: Se actualizó el contenido antiguo");
         } else {
             showToast("Agregado a Mirar Después");
@@ -724,7 +725,9 @@ window.openSeriesModal = async (v) => {
     currentSeries = v; 
     currentSeason = currentSeason || 0;
     
-    document.getElementById("youtubePlayer").innerHTML = "";
+    // Al abrir el modal, detenemos el reproductor del banner
+    if (heroPlayer && heroPlayer.stopVideo) heroPlayer.stopVideo();
+
     const modal = document.getElementById("seriesModal");
     modal.style.display = "flex";
     document.getElementById("modalScroll").scrollTop = 0;
@@ -849,15 +852,12 @@ window.closeSeriesModal = () => {
     window.switchFocusGroup('main'); 
 };
 
-let heroPlayer; // Variable global para el reproductor
-
+// --- FUNCIÓN SETUP ACTUALIZADA PARA EL MÓDULO ---
 async function setupHeroBanner() {
     const cinePelis = allVideos.filter(v => v.tipo === "cine"); 
     if (cinePelis.length === 0) return;
 
-    // Tomamos los últimos 10 agregados
     const ultimas10 = cinePelis.slice(-10);
-    // Elegimos una al azar
     const peliAleatoria = ultimas10[Math.floor(Math.random() * ultimas10.length)];
 
     const heroBanner = document.getElementById("heroBanner");
@@ -875,25 +875,20 @@ async function setupHeroBanner() {
         window.openVideo(peliAleatoria); 
     };
 
-    // Si ya existe un reproductor, lo destruimos para evitar duplicados
-    if (heroPlayer && heroPlayer.destroy) {
-        heroPlayer.destroy();
-    }
-
-    // Cargamos el trailer usando la API de YouTube para controlar el estado
-    // Nota: Usamos el ID de trailer si existe, si no, buscamos por título
     const videoId = peliAleatoria.trailerID || null;
+    const playerDiv = document.getElementById("youtubePlayer");
     
     if (videoId) {
+        // Llamada a la función global corregida
         loadYouTubeIframeAPI(videoId);
     } else {
-        // Fallback: Si no hay trailerID, usamos el método de búsqueda (menos preciso para eventos)
-        document.getElementById("youtubePlayer").innerHTML = `
+        playerDiv.innerHTML = `
             <iframe width="100%" height="100%" 
             src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(peliAleatoria.titulo + " trailer")}&autoplay=1&mute=1&controls=0" 
             frameborder="0" allow="autoplay"></iframe>`;
     }
 }
+window.setupHeroBanner = setupHeroBanner; // Hacerla accesible
 
 function buildUI(){
     document.getElementById("app").innerHTML = `
