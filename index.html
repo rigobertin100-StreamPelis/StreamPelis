@@ -201,6 +201,14 @@
         .ios-text { display: flex; flex-direction: column; }
         .ios-main-text { font-size: 18px; font-weight: 600; color: white; }
         .ios-sub-text { font-size: 14px; color: #8e8e93; }
+
+        /* TOAST NOTIFICATION */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(44, 44, 46, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px; z-index: 200000; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); pointer-events: none; /* Para que no interfiera con clics si sale sobre algo */
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
         
         .continue-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 80%);display:flex;flex-direction:column;justify-content:flex-end;padding:15px;gap:8px;pointer-events:none;}
         .continue-info{font-size:12px;color:#0a84ff;font-weight:bold;}
@@ -487,6 +495,22 @@ const WL_KEY = "plus_ultra_watchlater";
 const getProgress = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 const getWatchLater = () => JSON.parse(localStorage.getItem(WL_KEY) || "[]");
 
+    function showToast(message) {
+    let toast = document.getElementById("toast-notify");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "toast-notify";
+        toast.className = "toast";
+        document.body.appendChild(toast);
+    }
+    toast.innerText = message;
+    toast.classList.add("show");
+    
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000);
+}
+
 const playerController = {
     video: null, 
     hls: null, 
@@ -647,8 +671,14 @@ window.toggleWatchLater = (v) => {
         list.splice(index, 1);
         btn.classList.remove("active");
         btn.innerText = "+";
+        showToast("Quitado de Mirar Después");
     } else {
-        if (list.length >= 20) list.shift();
+        if (list.length >= 20) {
+            list.shift(); // Elimina el primero (el más antiguo) para dejar espacio al nuevo
+            showToast("Lista llena: Se actualizó el contenido antiguo");
+        } else {
+            showToast("Agregado a Mirar Después");
+        }
         list.push(v);
         btn.classList.add("active");
         btn.innerText = "✓";
