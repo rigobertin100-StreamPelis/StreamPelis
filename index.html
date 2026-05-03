@@ -655,18 +655,21 @@ window.openSeriesModal = async (v) => {
     }
 
 // Ya no hacemos fetch a TMDB aquí, usamos lo que viene en 'v' (el catálogo)
-    if (v.resumen) {
-        const year = v.estreno ? v.estreno.split('-')[0] : 'N/A';
-        document.getElementById("seriesTitle").innerText = `${v.titulo} (${year})`;
-        document.getElementById("tmdbOverview").innerText = v.resumen;
-        document.getElementById("tmdbMeta").innerText = `⭐ ${parseFloat(v.rating || 0).toFixed(1)} | Estreno: ${v.estreno || 'Desconocido'}`;
-        
-        // Si hay un backdrop (imagen de fondo) de TMDB, lo usamos
-        if (v.backdrop) {
-            document.getElementById("modalHero").innerHTML = `
-                <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>
-                <img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.6;">`;
-        }
+// Si hay un trailerID, inyectamos el reproductor de YouTube en el Hero del modal
+    if (v.trailerID) {
+        document.getElementById("modalHero").innerHTML = `
+            <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent); z-index:1;"></div>
+            <iframe style="width:100%; height:100%; border:none; position:relative; z-index:0;" 
+                src="https://www.youtube.com/embed/${v.trailerID}?autoplay=1&mute=1&loop=1&playlist=${v.trailerID}" 
+                allow="autoplay; encrypted-media" allowfullscreen>
+            </iframe>`;
+    } else if (v.backdrop) {
+        // Si no hay tráiler, volvemos a la imagen de fondo
+        document.getElementById("modalHero").innerHTML = `
+            <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>
+            <img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.6;">`;
+    }
+    
     } else {
         // Fallback por si la película es muy vieja y no tiene info en el JSON
         document.getElementById("tmdbMeta").innerText = "Información no disponible";
