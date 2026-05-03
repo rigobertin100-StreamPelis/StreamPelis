@@ -438,19 +438,18 @@ window.togglePlay = () => {
 window.closeVideo = () => {
     playerController.cleanup(); 
     document.getElementById("player").style.display = "none";
-if (currentSeries) {
-        // En lugar de solo mostrarlo, llamamos a la función que rellena los datos
-        window.openSeriesModal(currentSeries); 
-        window.switchFocusGroup('modal');
-    } else {
-        window.switchFocusGroup('main');
+    if (currentSeries) { 
+        document.getElementById("seriesModal").style.display = "flex"; 
+        window.switchFocusGroup('modal'); 
+    } else { 
+        window.switchFocusGroup('main'); 
     }
     renderContinue(5);
 };
 
 window.openSeriesModal = async (v) => {
     currentSeries = v; 
-currentSeason = currentSeason || 0;
+    currentSeason = 0;
     
     document.getElementById("youtubePlayer").innerHTML = "";
     const modal = document.getElementById("seriesModal");
@@ -670,24 +669,19 @@ function createCard(v, isContinue = false) {
     
     card.onclick = (e) => { 
         e.preventDefault(); 
-if (isContinue) {
-    if (v.tipo === "serie" || v.tipo === "anime") {
-        // IMPORTANTE: Primero asignamos la serie actual
-        currentSeries = v; 
-        currentSeason = v._prog.season || 0;
-        currentEpisode = v._prog.episode || 0;
-        
-        const ep = v.temporadas[currentSeason].episodios[currentEpisode];
-        
-        // Antes de abrir el video, "preparamos" el modal con los datos reales
-        actualizarModalSerie(v); 
-        
-        window.openVideo(ep);
-    } else {
-        currentSeries = null;
-        window.openVideo(v); 
-    }
-}
+        if (isContinue) {
+            // CORRECCIÓN PARA SERIES Y ANIME EN CONTINUAR VIENDO
+            if (v.tipo === "serie" || v.tipo === "anime") {
+                currentSeries = v;
+                currentSeason = v._prog.season || 0;
+                currentEpisode = v._prog.episode || 0;
+                // Obtenemos el objeto del episodio real
+                const ep = v.temporadas[currentSeason].episodios[currentEpisode];
+                window.openVideo(ep);
+            } else {
+                currentSeries = null;
+                window.openVideo(v); 
+            }
         } else {
             window.openSeriesModal(v); 
         }
