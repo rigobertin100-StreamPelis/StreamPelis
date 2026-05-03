@@ -340,6 +340,39 @@
     </div>
 </div>
 
+let heroPlayer; // Variable global para el reproductor del banner
+
+// Esta función es necesaria para que la API de YouTube funcione
+function loadYouTubeIframeAPI(videoId) {
+    if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        window.onYouTubeIframeAPIReady = () => createYTPlayer(videoId);
+    } else {
+        createYTPlayer(videoId);
+    }
+}
+
+function createYTPlayer(videoId) {
+    heroPlayer = new YT.Player('youtubePlayer', {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: { 'autoplay': 1, 'mute': 1, 'controls': 0, 'rel': 0 },
+        events: {
+            'onReady': (event) => event.target.playVideo(),
+            'onStateChange': (event) => {
+                // Si el video termina (Estado 0), elegimos otro aleatorio de los últimos 10
+                if (event.data === 0) {
+                    setupHeroBanner(); 
+                }
+            }
+        }
+    });
+}
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -816,19 +849,50 @@ window.closeSeriesModal = () => {
     window.switchFocusGroup('main'); 
 };
 
+let heroPlayer; // Variable global para el reproductor
+
 async function setupHeroBanner() {
     const cinePelis = allVideos.filter(v => v.tipo === "cine"); 
     if (cinePelis.length === 0) return;
-    const ultimaPeli = cinePelis[cinePelis.length - 1];
-    document.getElementById("heroBanner").style.display = "block";
-    const peliYear = ultimaPeli.estreno ? ` (${ultimaPeli.estreno.split('-')[0]})` : '';
-    document.getElementById("heroTitle").innerText = ultimaPeli.titulo + peliYear;
-    if(ultimaPeli.resumen) {
-        document.getElementById("heroDesc").innerText = ultimaPeli.resumen.substring(0, 150) + "...";
+
+    // Tomamos los últimos 10 agregados
+    const ultimas10 = cinePelis.slice(-10);
+    // Elegimos una al azar
+    const peliAleatoria = ultimas10[Math.floor(Math.random() * ultimas10.length)];
+
+    const heroBanner = document.getElementById("heroBanner");
+    heroBanner.style.display = "block";
+
+    const peliYear = peliAleatoria.estreno ? ` (${peliAleatoria.estreno.split('-')[0]})` : '';
+    document.getElementById("heroTitle").innerText = peliAleatoria.titulo + peliYear;
+    
+    if(peliAleatoria.resumen) {
+        document.getElementById("heroDesc").innerText = peliAleatoria.resumen.substring(0, 150) + "...";
     }
-    document.getElementById("heroPlayBtn").onclick = () => { currentSeries = null; window.openVideo(ultimaPeli); };
-    let finalSrc = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(ultimaPeli.titulo + " trailer")}&autoplay=1&mute=1&controls=0`;
-    document.getElementById("youtubePlayer").innerHTML = `<iframe width="100%" height="100%" src="${finalSrc}" frameborder="0" allow="autoplay"></iframe>`;
+
+    document.getElementById("heroPlayBtn").onclick = () => { 
+        currentSeries = null; 
+        window.openVideo(peliAleatoria); 
+    };
+
+    // Si ya existe un reproductor, lo destruimos para evitar duplicados
+    if (heroPlayer && heroPlayer.destroy) {
+        heroPlayer.destroy();
+    }
+
+    // Cargamos el trailer usando la API de YouTube para controlar el estado
+    // Nota: Usamos el ID de trailer si existe, si no, buscamos por título
+    const videoId = peliAleatoria.trailerID || null;
+    
+    if (videoId) {
+        loadYouTubeIframeAPI(videoId);
+    } else {
+        // Fallback: Si no hay trailerID, usamos el método de búsqueda (menos preciso para eventos)
+        document.getElementById("youtubePlayer").innerHTML = `
+            <iframe width="100%" height="100%" 
+            src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(peliAleatoria.titulo + " trailer")}&autoplay=1&mute=1&controls=0" 
+            frameborder="0" allow="autoplay"></iframe>`;
+    }
 }
 
 function buildUI(){
