@@ -575,15 +575,21 @@ window.openVideo = async (v) => {
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
 
-// MEJORA 5: Player con controles activos
+// Configuración de controles según tipo de contenido y experiencia
+    const isMultiEpisode = currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime");
+
     if (exp === 'mobile') {
         playerNav.style.display = "none";
-        videoElement.controls = true; // <--- Cambiado: ahora activa los nativos
-        customOverlay.style.display = (currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime")) ? "flex" : "none";
+        // Si es película, usamos controles nativos; si es serie, usamos los personalizados para navegar episodios
+        videoElement.controls = !isMultiEpisode; 
+        customOverlay.style.display = isMultiEpisode ? "flex" : "none";
     } else {
         playerNav.style.display = "flex";
-        videoElement.controls = true; // <--- Cambiado: ahora activa los nativos
+        videoElement.controls = true;
         customOverlay.style.display = "none";
+        // En TV, ocultamos botones de episodio si es película
+        document.getElementById("btnPrev").style.display = isMultiEpisode ? "inline-block" : "none";
+        document.getElementById("btnNext").style.display = isMultiEpisode ? "inline-block" : "none";
     }
 
     let finalUrl = v.url;
