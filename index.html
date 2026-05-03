@@ -31,10 +31,17 @@
         .tv-mode { cursor: none; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
         
+        /* Mejora 3: GPU Acceleration para TV */
+        .tv-mode .card {
+            will-change: transform;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+
         .tv-mode :focus {
             outline: 6px solid #ccff00 !important;
             outline-offset: 3px;
-            transform: scale(1.05);
+            transform: scale(1.05) translateZ(0);
             z-index: 10 !important; 
             box-shadow: 0 0 25px rgba(204, 255, 0, 0.7);
         }
@@ -62,7 +69,8 @@
         .carousel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:10px;}
         
         .card{width:220px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:20px;overflow:hidden;cursor:pointer;transition:0.3s; background: #2c2c2e;}
-        .card img{width:100%;height:100%;object-fit:cover;}
+        .card img{width:100%;height:100%;object-fit:cover; transition: opacity 0.3s;}
+        .card img.lazy-hidden { opacity: 0; }
 
         .loading-sentinel { min-width: 100px; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #0a84ff; font-weight: bold; }
         
@@ -81,7 +89,6 @@
         .btn-play-now {padding: 18px 40px; background: #0a84ff; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; transition: 0.3s;}
         .btn-play-now:hover {background: #007aff; transform: scale(1.02);}
         
-        /* Estilo Botón Mirar Después */
         .btn-watch-later {
             width: 56px; height: 56px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.4);
             background: rgba(44, 44, 46, 0.8); color: white; font-size: 30px; cursor: pointer;
@@ -217,7 +224,6 @@
                 <div id="tmdbCredits" style="margin-top:20px; font-size:14px; color:rgba(255,255,255,0.5)"></div>
             </div>
             <div class="info-right">
-                <!-- Botón Mirar Después posicionado a la izquierda -->
                 <button class="btn-watch-later" id="modalWatchLaterBtn" title="Mirar Después" tabindex="0">+</button>
                 <button class="btn-play-now" id="modalPlayBtn">Iniciar Película</button>
             </div>
@@ -267,6 +273,18 @@ const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
 
+// Mejora 1: Lazy Loader Observer
+const lazyLoader = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.classList.remove("lazy-hidden");
+            observer.unobserve(img);
+        }
+    });
+}, { rootMargin: "100px" });
+
 window.setExperience = (type) => {
     localStorage.setItem("user_experience", type);
     document.getElementById("expModal").style.display = "none";
@@ -288,8 +306,40 @@ function initExperience() {
     if (exp === 'tv') {
         document.body.classList.add("tv-mode");
         initTVNavigation();
+        initGlobalEvents(); // Mejora 2: Delegación de Eventos
     }
     return true;
+}
+
+// Mejora 2: Delegación de Eventos para el Catálogo (TV)
+function initGlobalEvents() {
+    document.getElementById("mainCatalog").addEventListener("click", (e) => {
+        const card = e.target.closest(".card");
+        if (!card) return;
+
+        const title = card.dataset.title;
+        const video = allVideos.find(v => v.titulo.toLowerCase() === title);
+        const isContinue = card.classList.contains("is-continue-card");
+
+        if (video) {
+            if (isContinue) {
+                const data = getProgress();
+                const p = data[video.titulo];
+                if (video.tipo === "serie" || video.tipo === "anime") {
+                    currentSeries = video;
+                    currentSeason = p.season || 0;
+                    currentEpisode = p.episode || 0;
+                    const ep = video.temporadas[currentSeason].episodios[currentEpisode];
+                    window.openVideo(ep);
+                } else {
+                    currentSeries = null;
+                    window.openVideo(video);
+                }
+            } else {
+                window.openSeriesModal(video);
+            }
+        }
+    });
 }
 
 function initTVNavigation() {
@@ -342,7 +392,7 @@ window.toggleFullScreen = () => {
 };
 
 const STORAGE_KEY="plus_ultra_progress";
-const WL_KEY = "plus_ultra_watchlater"; // Clave para Mirar Después
+const WL_KEY = "plus_ultra_watchlater";
 const getProgress = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 const getWatchLater = () => JSON.parse(localStorage.getItem(WL_KEY) || "[]");
 
@@ -471,7 +521,7 @@ window.toggleWatchLater = (v) => {
         btn.classList.remove("active");
         btn.innerText = "+";
     } else {
-        if (list.length >= 20) list.shift(); // Elimina el más antiguo si llega a 20
+        if (list.length >= 20) list.shift();
         list.push(v);
         btn.classList.add("active");
         btn.innerText = "✓";
@@ -496,7 +546,6 @@ window.openSeriesModal = async (v) => {
     document.getElementById("seasonSelect").innerHTML = "";
     document.getElementById("episodeList").innerHTML = "";
 
-    // Configuración Botón Mirar Después
     const wlBtn = document.getElementById("modalWatchLaterBtn");
     const isWL = getWatchLater().some(item => item.titulo === v.titulo);
     wlBtn.classList.toggle("active", isWL);
@@ -704,31 +753,48 @@ function loadNextSegment(containerId, sourceData) {
     if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
+// Mejora 1: Lazy Loader y Condicional de Experiencia en Tarjetas
 function createCard(v, isContinue = false) {
+    const exp = localStorage.getItem("user_experience");
     const card = document.createElement("div"); 
-    card.className = "card"; card.tabIndex = 0; 
+    card.className = "card"; 
+    card.tabIndex = 0; 
     card.dataset.title = v.titulo.toLowerCase();
-    card.innerHTML = `<img src="${v.img}" loading="lazy">`;
+    if (isContinue) card.classList.add("is-continue-card");
+
+    const img = document.createElement("img");
     
-    card.onclick = (e) => { 
-        e.preventDefault(); 
-        if (isContinue) {
-            if (v.tipo === "serie" || v.tipo === "anime") {
-                currentSeries = v;
-                currentSeason = v._prog.season || 0;
-                currentEpisode = v._prog.episode || 0;
-                window.openSeriesModal(v);
-                document.getElementById("seriesModal").style.display = "none";
-                const ep = v.temporadas[currentSeason].episodios[currentEpisode];
-                window.openVideo(ep);
+    if (exp === 'tv') {
+        img.classList.add("lazy-hidden");
+        img.dataset.src = v.img;
+        img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+        lazyLoader.observe(img);
+    } else {
+        img.src = v.img;
+        img.loading = "lazy";
+    }
+
+    card.appendChild(img);
+    
+    if (exp !== 'tv') {
+        card.onclick = (e) => { 
+            e.preventDefault(); 
+            if (isContinue) {
+                if (v.tipo === "serie" || v.tipo === "anime") {
+                    currentSeries = v;
+                    currentSeason = v._prog.season || 0;
+                    currentEpisode = v._prog.episode || 0;
+                    const ep = v.temporadas[currentSeason].episodios[currentEpisode];
+                    window.openVideo(ep);
+                } else {
+                    currentSeries = null;
+                    window.openVideo(v); 
+                }
             } else {
-                currentSeries = null;
-                window.openVideo(v); 
+                window.openSeriesModal(v); 
             }
-        } else {
-            window.openSeriesModal(v); 
-        }
-    };
+        };
+    }
     return card;
 }
 
@@ -757,7 +823,6 @@ function renderWatchLater() {
         header.style.display = "none";
     } else {
         header.style.display = "block";
-        // Mostramos los items en orden inverso (el más reciente primero)
         [...list].reverse().forEach(v => {
             row.appendChild(createCard(v));
         });
