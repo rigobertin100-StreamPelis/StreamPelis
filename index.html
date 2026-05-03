@@ -671,11 +671,31 @@ window.openSeriesModal = async (v) => {
     }
 
 
+// Si el resumen viene vacío, intentamos buscarlo en TMDB en tiempo real
+    if (!v.resumen || v.resumen === '') {
+        const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=9db71febe6f2e19d653ab88b8ff729b6&query=${encodeURIComponent(v.titulo)}&language=es-MX`;
+        try {
+            const res = await fetch(searchUrl);
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+                const info = data.results[0];
+                v.resumen = info.overview;
+                v.estreno = info.release_date;
+                v.rating = info.vote_average;
+                v.backdrop = `https://image.tmdb.org/t/p/w1280${info.backdrop_path}`;
+            }
+        } catch (err) { console.error("Error buscando info extra:", err); }
+    }
+
+    // Ahora sí mostramos lo que tengamos
     if (v.resumen) {
         document.getElementById("tmdbMeta").innerText = `${v.estreno || ''} • ${v.rating || '0.0'} ★`;
         document.getElementById("tmdbOverview").innerText = v.resumen;
+        // Si no hay trailer y hay backdrop de TMDB, lo ponemos de fondo
+        if (v.backdrop && !document.getElementById("modalHero").querySelector('iframe')) {
+            document.getElementById("modalHero").innerHTML = `<img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.5;">`;
+        }
     } else {
-        // Fallback por si la película es muy vieja y no tiene info en el JSON
         document.getElementById("tmdbMeta").innerText = "Información no disponible";
         document.getElementById("tmdbOverview").innerText = "Sin descripción disponible actualmente.";
     }
