@@ -521,7 +521,7 @@ const playerController = {
                 };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
-                if (Math.abs(this.video.currentTime - this.lastSyncTime) > 30) {
+                if (Math.abs(this.video.currentTime - this.lastSyncTime) > 60) {
                     this.syncToFirebase();
                 }
             }
