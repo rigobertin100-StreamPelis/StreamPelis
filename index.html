@@ -24,14 +24,22 @@
     </script>
 
     <style>
+        /* BASE & LAYOUT */
         body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);color:white;padding-top:90px;overflow-x:hidden;}
-        .header{position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:1000;background:rgba(28,28,30,.35);backdrop-filter:blur(25px);transition:.3s;border-bottom:1px solid rgba(255,255,255,.1);box-sizing:border-box;}
+        
+        /* MEJORA 2: Glassmorphism Refinado */
+        .header{
+            position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:1000;
+            background: rgba(28,28,30,0.55);
+            backdrop-filter: blur(30px) saturate(180%);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            transition:.3s;box-sizing:border-box;
+        }
         .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
         
         .tv-mode { cursor: none; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
         
-        /* Mejora 3: GPU Acceleration para TV */
         .tv-mode .card {
             will-change: transform;
             transform: translateZ(0);
@@ -64,11 +72,68 @@
 
         .row{margin-top:40px;padding-left:20px;}
         .row h2{font-size:22px;margin-bottom:14px;color:rgba(255,255,255,0.9);}
-        .carousel{display:flex;gap:18px;overflow-x:auto;padding-bottom:20px;scroll-behavior:smooth;}
+        
+        /* MEJORA 7: Scroll con inercia */
+        .carousel{
+            display:flex;gap:18px;overflow-x:auto;padding-bottom:20px;
+            scroll-behavior:smooth;
+            scroll-snap-type: x mandatory;
+        }
         .carousel::-webkit-scrollbar{height:6px;}
         .carousel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:10px;}
         
-        .card{width:220px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:20px;overflow:hidden;cursor:pointer;transition:0.3s; background: #2c2c2e;}
+        /* MEJORA 1, 3 y 4: Premium Cards + Animación + UX Táctil */
+        .card {
+            width:220px;flex-shrink:0;aspect-ratio:2/3;position:relative;border-radius:20px;overflow:hidden;cursor:pointer;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s, opacity 0.6s; 
+            background: #2c2c2e;
+            scroll-snap-align: start;
+            /* Efecto Profundidad */
+            transform: perspective(1000px) translateZ(0);
+            /* Animación de entrada */
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card:hover {
+            transform: scale(1.08) translateY(-6px);
+            z-index: 5;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+
+        /* Capa viva de gradiente */
+        .card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%);
+            opacity: 0;
+            transition: 0.3s;
+        }
+
+        .card:hover::after { opacity: 1; }
+
+        /* Feedback Táctil */
+        .card:active {
+            transform: scale(0.96);
+        }
+
+        /* MEJORA 6: Skeleton Loading */
+        .skeleton {
+            background: linear-gradient(90deg, #2c2c2e 25%, #3a3a3c 50%, #2c2c2e 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.2s infinite;
+        }
+
+        @keyframes shimmer {
+            to { background-position: -200% 0; }
+        }
+
         .card img{width:100%;height:100%;object-fit:cover; transition: opacity 0.3s;}
         .card img.lazy-hidden { opacity: 0; }
 
@@ -273,7 +338,6 @@ const SEGMENT_SIZE = 10;
 const loadedCounts = {};
 const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
 
-// Mejora 1: Lazy Loader Observer
 const lazyLoader = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -306,12 +370,11 @@ function initExperience() {
     if (exp === 'tv') {
         document.body.classList.add("tv-mode");
         initTVNavigation();
-        initGlobalEvents(); // Mejora 2: Delegación de Eventos
+        initGlobalEvents(); 
     }
     return true;
 }
 
-// Mejora 2: Delegación de Eventos para el Catálogo (TV)
 function initGlobalEvents() {
     document.getElementById("mainCatalog").addEventListener("click", (e) => {
         const card = e.target.closest(".card");
@@ -461,9 +524,10 @@ window.openVideo = async (v) => {
     document.getElementById("seriesModal").style.display = "none";
     document.getElementById("player").style.display = "flex";
 
+    // MEJORA 5: Player estilo OTT
     if (exp === 'mobile') {
         playerNav.style.display = "none";
-        videoElement.setAttribute("controls", "controls");
+        videoElement.removeAttribute("controls"); // Ocultamos nativos
         customOverlay.style.display = (currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime")) ? "flex" : "none";
     } else {
         playerNav.style.display = "flex";
@@ -753,26 +817,31 @@ function loadNextSegment(containerId, sourceData) {
     if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
-// Mejora 1: Lazy Loader y Condicional de Experiencia en Tarjetas
 function createCard(v, isContinue = false) {
     const exp = localStorage.getItem("user_experience");
     const card = document.createElement("div"); 
-    card.className = "card"; 
+    card.className = "card skeleton"; // MEJORA 6: Skeleton por defecto
     card.tabIndex = 0; 
     card.dataset.title = v.titulo.toLowerCase();
+    
+    // MEJORA 3: Animación fluida con delay aleatorio
+    card.style.animationDelay = `${Math.random() * 0.2}s`;
+
     if (isContinue) card.classList.add("is-continue-card");
 
     const img = document.createElement("img");
     
-    if (exp === 'tv') {
-        img.classList.add("lazy-hidden");
-        img.dataset.src = v.img;
-        img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-        lazyLoader.observe(img);
-    } else {
-        img.src = v.img;
-        img.loading = "lazy";
-    }
+    // Lazy Loader para TV y Mobile
+    img.classList.add("lazy-hidden");
+    img.dataset.src = v.img;
+    img.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+    
+    img.onload = () => {
+        card.classList.remove("skeleton"); // Quitamos skeleton al cargar
+        img.classList.remove("lazy-hidden");
+    };
+
+    lazyLoader.observe(img);
 
     card.appendChild(img);
     
