@@ -22,7 +22,6 @@
       }
     };
 
-    // --- CORRECCIÓN HERO BANNER: FUNCIONES GLOBALES ---
     let heroPlayer; 
 
     function loadYouTubeIframeAPI(videoId) {
@@ -105,7 +104,6 @@
             box-shadow: 0 0 25px rgba(204, 255, 0, 0.7);
         }
 
-        /* Estilos específicos para inputs de login en modo TV */
         .tv-mode #loginBox input:focus, .tv-mode #loginBox button:focus {
             background: #3a3a3c !important;
             color: #fff !important;
@@ -121,18 +119,18 @@
 
         .logout{white-space:nowrap;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer;font-weight:bold;}
         
-.hero-banner {
-    position: relative; 
-    width: 100%; 
-    height: 70vh; 
-    background-color: #111; 
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center;
-    overflow: hidden; 
-    margin-top: -90px; 
-    display: none;
-}
+        .hero-banner {
+            position: relative; 
+            width: 100%; 
+            height: 70vh; 
+            background-color: #111; 
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            overflow: hidden; 
+            margin-top: -90px; 
+            display: none;
+        }
         .hero-video-bg {position: absolute; top: 50%; left: 50%; width: 100vw; height: 56.25vw; transform: translate(-50%, -50%); pointer-events: none;}
         .hero-overlay {position: absolute; inset: 0; background: linear-gradient(to right, rgba(28,28,30,0.9) 10%, transparent 70%), linear-gradient(to top, #1c1c1e 5%, transparent 50%); display: flex; flex-direction: column; justify-content: center; padding: 0 50px; z-index: 2;}
         #heroTitle {font-size: clamp(30px, 5vw, 60px); margin: 0; color: #fff; text-transform: uppercase; max-width: 50%; line-height: 1.1;}
@@ -253,7 +251,6 @@
         .ios-main-text { font-size: 18px; font-weight: 600; color: white; }
         .ios-sub-text { font-size: 14px; color: #8e8e93; }
 
-        /* TOAST NOTIFICATION */
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(44, 44, 46, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px; z-index: 200000; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); pointer-events: none;
         }
@@ -446,6 +443,7 @@ function initExperience() {
     const exp = localStorage.getItem("user_experience");
     if (!exp) {
         document.getElementById("expModal").style.display = "flex";
+        // Forzamos navegación espacial en la pantalla de selección inicial
         if (window.SpatialNavigation) {
             SpatialNavigation.init();
             SpatialNavigation.add({ id: 'exp', selector: '.ios-card' });
@@ -499,6 +497,7 @@ function initTVNavigation() {
         SpatialNavigation.add({ id: 'main', selector: '.card, .hero-btn, .logout, .search, .btn-catalog' });
         SpatialNavigation.add({ id: 'modal', selector: '.series-modal .season-option, .series-modal .episode-list button, .series-modal .close, #modalPlayBtn, #modalWatchLaterBtn' });
         SpatialNavigation.add({ id: 'player', selector: '.player .player-nav button, .player .close' });
+        SpatialNavigation.add({ id: 'exp', selector: '.ios-card' }); // Agregamos grupo exp aquí también
         SpatialNavigation.makeFocusable();
     }
 }
@@ -506,6 +505,7 @@ function initTVNavigation() {
 window.addEventListener('keydown', (e) => {
     const playerOpen = document.getElementById("player").style.display === "flex";
     const modalOpen = document.getElementById("seriesModal").style.display === "flex";
+    const expOpen = document.getElementById("expModal").style.display === "flex";
     const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
 
     if ([27, 8, 461, 10009].includes(e.keyCode)) {
@@ -528,9 +528,17 @@ window.addEventListener('keydown', (e) => {
 }, true);
 
 window.switchFocusGroup = (groupId) => {
-    if (localStorage.getItem("user_experience") !== 'tv' && groupId !== 'login') return;
+    // Permitimos cambiar a exp o login siempre
+    const allowedAlways = ['exp', 'login'];
+    if (localStorage.getItem("user_experience") !== 'tv' && !allowedAlways.includes(groupId)) return;
+    
     if (window.SpatialNavigation) {
-        SpatialNavigation.disable('login'); SpatialNavigation.disable('main'); SpatialNavigation.disable('modal'); SpatialNavigation.disable('player');
+        SpatialNavigation.disable('login'); 
+        SpatialNavigation.disable('main'); 
+        SpatialNavigation.disable('modal'); 
+        SpatialNavigation.disable('player');
+        SpatialNavigation.disable('exp');
+        
         SpatialNavigation.enable(groupId); 
         setTimeout(() => { SpatialNavigation.focus(groupId); }, 100);
     }
@@ -547,7 +555,7 @@ const WL_KEY = "plus_ultra_watchlater";
 const getProgress = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 const getWatchLater = () => JSON.parse(localStorage.getItem(WL_KEY) || "[]");
 
-    function showToast(message) {
+function showToast(message) {
     let toast = document.getElementById("toast-notify");
     if (!toast) {
         toast = document.createElement("div");
@@ -739,18 +747,15 @@ window.toggleWatchLater = (v) => {
 };
 
 window.openSeriesModal = async (v) => {
-    // 1. Resetear estados globales para la nueva selección
     currentSeries = v; 
     currentSeason = 0; 
     
-    // Detener el reproductor del banner principal si está sonando
     if (heroPlayer && heroPlayer.stopVideo) heroPlayer.stopVideo();
 
     const modal = document.getElementById("seriesModal");
     modal.style.display = "flex";
     document.getElementById("modalScroll").scrollTop = 0;
 
-    // 2. LIMPIEZA TOTAL DEL DOM
     const modalHero = document.getElementById("modalHero");
     modalHero.innerHTML = ""; 
     modalHero.style.backgroundImage = "none"; 
@@ -761,14 +766,12 @@ window.openSeriesModal = async (v) => {
     document.getElementById("seasonSelect").innerHTML = "";
     document.getElementById("episodeList").innerHTML = "";
 
-    // 3. Configurar botón de Watch Later
     const wlBtn = document.getElementById("modalWatchLaterBtn");
     const isWL = getWatchLater().some(item => item.titulo === v.titulo);
     wlBtn.classList.toggle("active", isWL);
     wlBtn.innerText = isWL ? "✓" : "+";
     wlBtn.onclick = () => window.toggleWatchLater(v);
 
-    // 4. Renderizado del Hero (Trailer o Backdrop) - SIEMPRE EJECUTAR
     if (v.trailerID) {
         modalHero.innerHTML = `
             <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent); z-index:1;"></div>
@@ -778,7 +781,6 @@ window.openSeriesModal = async (v) => {
                 allow="autoplay; encrypted-media" allowfullscreen>
             </iframe>`;
     } else {
-        // Buscamos cualquier imagen disponible para evitar el fondo negro
         const imgRespaldo = v.backdrop || v.img; 
         if (imgRespaldo) {
             modalHero.style.backgroundImage = `url(${imgRespaldo})`;
@@ -788,7 +790,6 @@ window.openSeriesModal = async (v) => {
         }
     }
 
-    // 5. Gestión del botón de reproducción principal
     const playBtn = document.getElementById("modalPlayBtn");
     if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
         playBtn.style.display = "block";
@@ -798,7 +799,6 @@ window.openSeriesModal = async (v) => {
         playBtn.style.display = "none";
     }
 
-    // 6. Carga asíncrona de metadatos (TMDB)
     if (!v.resumen) {
         const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=9db71febe6f2e19d653ab88b8ff729b6&query=${encodeURIComponent(v.titulo)}&language=es-MX`;
         try {
@@ -817,11 +817,9 @@ window.openSeriesModal = async (v) => {
         } catch (err) { console.error("Error cargando TMDB:", err); }
     }
 
-    // Actualizar UI con datos guardados o nuevos
     document.getElementById("tmdbMeta").innerText = `${v.estreno || ''} • ${v.rating || '0.0'} ★`;
     document.getElementById("tmdbOverview").innerText = v.resumen || "Sin descripción disponible.";
 
-    // 7. Render de episodios
     if(v.tipo === "serie" || v.tipo === "anime") {
         v.temporadas.forEach((t, i) => {
             const opt = document.createElement("div"); 
@@ -1140,16 +1138,8 @@ onAuthStateChanged(auth, async (user) => {
         } catch (e) {}
     } else { 
         document.getElementById("loginModal").style.display = "flex"; 
-        // Si el usuario ya eligió modo TV previamente, activamos navegación en login
-        if (localStorage.getItem("user_experience") === 'tv') {
-            document.body.classList.add("tv-mode");
-            initTVNavigation();
-            window.switchFocusGroup('login');
-        } else if (!localStorage.getItem("user_experience")) {
-            // Si es la primera vez, inicializamos para que el login también sea navegable por defecto
-            initTVNavigation();
-            window.switchFocusGroup('login');
-        }
+        initTVNavigation();
+        window.switchFocusGroup('login');
     }
 });
 
