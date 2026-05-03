@@ -734,7 +734,7 @@ window.toggleWatchLater = (v) => {
 window.openSeriesModal = async (v) => {
     // 1. Resetear estados globales para la nueva selección
     currentSeries = v; 
-    currentSeason = 0; // Evita que una serie nueva herede la temporada de la anterior
+    currentSeason = 0; 
     
     // Detener el reproductor del banner principal si está sonando
     if (heroPlayer && heroPlayer.stopVideo) heroPlayer.stopVideo();
@@ -743,26 +743,25 @@ window.openSeriesModal = async (v) => {
     modal.style.display = "flex";
     document.getElementById("modalScroll").scrollTop = 0;
 
-    // 2. LIMPIEZA TOTAL DEL DOM (Esto evita que veas a John Wick en Terminator)
+    // 2. LIMPIEZA TOTAL DEL DOM
     const modalHero = document.getElementById("modalHero");
     modalHero.innerHTML = ""; 
     modalHero.style.backgroundImage = "none"; 
 
-    // Resetear textos y listas para que no parpadee info vieja
     document.getElementById("seriesTitle").innerText = v.titulo;
     document.getElementById("tmdbMeta").innerText = "Cargando...";
     document.getElementById("tmdbOverview").innerText = "";
     document.getElementById("seasonSelect").innerHTML = "";
     document.getElementById("episodeList").innerHTML = "";
 
-    // 3. Configurar botón de Watch Later (Mirar después)
+    // 3. Configurar botón de Watch Later
     const wlBtn = document.getElementById("modalWatchLaterBtn");
     const isWL = getWatchLater().some(item => item.titulo === v.titulo);
     wlBtn.classList.toggle("active", isWL);
     wlBtn.innerText = isWL ? "✓" : "+";
     wlBtn.onclick = () => window.toggleWatchLater(v);
 
-    // 4. Renderizado del Hero (Trailer o Backdrop)
+    // 4. Renderizado del Hero (Trailer o Backdrop) - SIEMPRE EJECUTAR
     if (v.trailerID) {
         modalHero.innerHTML = `
             <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent); z-index:1;"></div>
@@ -771,11 +770,15 @@ window.openSeriesModal = async (v) => {
                 onload="this.style.opacity='1'"
                 allow="autoplay; encrypted-media" allowfullscreen>
             </iframe>`;
-    } else if (v.backdrop) {
-        modalHero.style.backgroundImage = `url(${v.backdrop})`;
-        modalHero.style.backgroundSize = "cover";
-        modalHero.style.backgroundPosition = "center";
-        modalHero.innerHTML = `<div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>`;
+    } else {
+        // Buscamos cualquier imagen disponible para evitar el fondo negro
+        const imgRespaldo = v.backdrop || v.img; 
+        if (imgRespaldo) {
+            modalHero.style.backgroundImage = `url(${imgRespaldo})`;
+            modalHero.style.backgroundSize = "cover";
+            modalHero.style.backgroundPosition = "center";
+            modalHero.innerHTML = `<div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>`;
+        }
     }
 
     // 5. Gestión del botón de reproducción principal
@@ -799,18 +802,19 @@ window.openSeriesModal = async (v) => {
                 v.resumen = info.overview;
                 v.estreno = info.release_date;
                 v.rating = info.vote_average;
-                if (!v.backdrop && !v.trailerID) {
-                     modalHero.style.backgroundImage = `url(https://image.tmdb.org/t/p/w1280${info.backdrop_path})`;
+                if (info.backdrop_path && !v.trailerID) {
+                    v.backdrop = `https://image.tmdb.org/t/p/w1280${info.backdrop_path}`;
+                    modalHero.style.backgroundImage = `url(${v.backdrop})`;
                 }
             }
         } catch (err) { console.error("Error cargando TMDB:", err); }
     }
 
-    // Actualizar UI con datos de TMDB
+    // Actualizar UI con datos guardados o nuevos
     document.getElementById("tmdbMeta").innerText = `${v.estreno || ''} • ${v.rating || '0.0'} ★`;
     document.getElementById("tmdbOverview").innerText = v.resumen || "Sin descripción disponible.";
 
-    // 7. Render de episodios (si aplica)
+    // 7. Render de episodios
     if(v.tipo === "serie" || v.tipo === "anime") {
         v.temporadas.forEach((t, i) => {
             const opt = document.createElement("div"); 
@@ -829,7 +833,6 @@ window.openSeriesModal = async (v) => {
         renderEpisodes(0);
     }
     
-    // Cambiar el foco para navegación por control remoto (TV Mode)
     window.switchFocusGroup('modal');
 };
     
@@ -893,8 +896,6 @@ async function setupHeroBanner() {
     const heroBanner = document.getElementById("heroBanner");
     heroBanner.style.display = "block";
 
-    // 1. Ponemos el POSTER de fondo inmediatamente como respaldo
-    // Usamos el backdrop si existe, si no, la imagen de la card (v.img)
     const imagenRespaldo = peliAleatoria.backdrop || peliAleatoria.img;
     heroBanner.style.backgroundImage = `url(${imagenRespaldo})`;
     heroBanner.style.backgroundSize = "cover";
@@ -913,30 +914,22 @@ async function setupHeroBanner() {
     };
 
     const playerDiv = document.getElementById("youtubePlayer");
-    
-    // 2. Limpiamos el contenedor del player
     playerDiv.innerHTML = "";
 
-    // 3. Solo intentamos cargar YouTube si existe un trailerID
     if (peliAleatoria.trailerID) {
-        // Creamos el iframe con opacidad 0 inicial
         const iframe = document.createElement("iframe");
         iframe.style.width = "100%";
         iframe.style.height = "100%";
         iframe.style.border = "none";
-        iframe.style.opacity = "0"; // Invisible al principio
+        iframe.style.opacity = "0"; 
         iframe.style.transition = "opacity 1s ease-in";
         
-        // Si el video carga bien, le damos opacidad 1 para tapar el poster
         iframe.onload = () => { iframe.style.opacity = "1"; };
 
         iframe.src = `https://www.youtube.com/embed/${peliAleatoria.trailerID}?autoplay=1&mute=1&loop=1&playlist=${peliAleatoria.trailerID}&controls=0&modestbranding=1`;
         iframe.allow = "autoplay; encrypted-media";
         
         playerDiv.appendChild(iframe);
-    } else {
-        // Si no hay trailerID, el poster ya está de fondo gracias al paso 1
-        playerDiv.innerHTML = ""; 
     }
 }
 
