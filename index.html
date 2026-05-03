@@ -480,10 +480,12 @@ window.openSeriesModal = async (v) => {
     }
 
     const playBtn = document.getElementById("modalPlayBtn");
-if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids" || v.tipo === "serie" || v.tipo === "anime") {
+if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
     playBtn.style.display = "block";
+    playBtn.innerText = "Iniciar Película"; // Aseguramos el texto
     playBtn.onclick = () => window.openVideo(v);
 } else {
+    // Si es serie o anime, el botón se oculta porque se usan los capítulos
     playBtn.style.display = "none";
 }
 
@@ -671,16 +673,32 @@ function renderAll(){
 function loadNextSegment(containerId, sourceData) {
     const container = document.getElementById(containerId); const sentinel = container.querySelector(".loading-sentinel");
     const start = loadedCounts[containerId] || 0; const segment = sourceData.slice(start, start + SEGMENT_SIZE);
-    segment.forEach(v => { const card = createCard(v); sentinel ? container.insertBefore(card, sentinel) : container.appendChild(card); });
+    segment.forEach(v => { const card = createCard(v, false); sentinel ? container.insertBefore(card, sentinel) : container.appendChild(card); });
     loadedCounts[containerId] = start + segment.length;
     if (loadedCounts[containerId] >= sourceData.length && sentinel) sentinel.style.display = "none";
     if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) SpatialNavigation.makeFocusable();
 }
 
-function createCard(v){
-    const card = document.createElement("div"); card.className = "card"; card.tabIndex = 0; card.dataset.title = v.titulo.toLowerCase();
+// Añadimos 'isContinue' como parámetro opcional
+function createCard(v, isContinue = false) {
+    const card = document.createElement("div"); 
+    card.className = "card"; 
+    card.tabIndex = 0; 
+    card.dataset.title = v.titulo.toLowerCase();
+    
     card.innerHTML = `<img src="${v.img}" loading="lazy">`;
-    card.onclick = (e) => { e.preventDefault(); window.openSeriesModal(v); };
+    
+    card.onclick = (e) => { 
+        e.preventDefault(); 
+        if (isContinue) {
+            // Si es la fila de continuar, va directo al reproductor
+            window.openVideo(v); 
+        } else {
+            // Si no, abre el modal informativo normal
+            window.openSeriesModal(v); 
+        }
+    };
+    
     return card;
 }
 
@@ -693,7 +711,7 @@ function renderContinue(limite = 5) {
     finalDisplay.forEach(v => {
         const p = v._prog; const pct = (p.time / p.duration) * 100;
         let info = (v.tipo === "serie" || v.tipo === "anime") ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1}` : `Faltan ${Math.ceil((p.duration - p.time)/60)} min`;
-        const card = createCard(v); card.innerHTML += `<div class="continue-overlay"><div class="continue-info">${info}</div><div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div></div>`;
+        const card = createCard(v, true); card.innerHTML += `<div class="continue-overlay"><div class="continue-info">${info}</div><div class="continue-line"><div class="continue-progress" style="width:${pct}%"></div></div></div>`;
         row.appendChild(card);
     });
 }
