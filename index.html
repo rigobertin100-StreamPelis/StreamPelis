@@ -1038,65 +1038,21 @@ window.resetCatalog = () => {
 
 document.getElementById("loginBtn").onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); } catch(e) { document.getElementById("loginError").style.display = "block"; } };
 
-// REEMPLAZA CON ESTO:
 onAuthStateChanged(auth, async (user) => {
-    if (user) {
-// 1. Verificamos la experiencia antes que cualquier otra cosa
-const savedExperience = localStorage.getItem('user_experience');
+    if(user){
+        document.getElementById("loginModal").style.display = "none"; 
+        if (!initExperience()) return;
+        playerController.init();
+        const cacheKey = 'plusultra_catalog_cache'; const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
+        try { 
+            const r = await fetch(WORKER_URL); const data = await r.json(); allVideos = data; 
+            localStorage.setItem(cacheKey, JSON.stringify(data)); buildUI(); 
+        } catch (e) {}
+    } else { document.getElementById("loginModal").style.display = "flex"; }
+});
 
-if (!savedExperience) {
-    // Si no hay experiencia, mostramos el selector y ocultamos el login
-    document.getElementById("loginModal").style.display = "none";
-    document.getElementById("expModal").style.display = "flex";
-    
-    // Configuración para control remoto (TV)
-    if (window.SpatialNavigation) {
-        SpatialNavigation.init();
-        SpatialNavigation.add({ id: 'exp', selector: '.ios-card' });
-        SpatialNavigation.makeFocusable();
-        SpatialNavigation.focus('exp');
-    }
-} else {
-    // 2. Si YA hay experiencia, entonces activamos la lógica de Firebase
-    initExperience(); // Aplicamos el modo guardado (TV o Móvil)
-
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Usuario logueado: ocultamos todo y entramos a la app
-            document.getElementById("loginModal").style.display = "none";
-            document.getElementById("expModal").style.display = "none";
-            
-            playerController.init();
-
-            // Lógica de carga del catálogo desde R2/Worker
-            const cacheKey = 'plusultra_catalog_cache';
-            const cachedData = localStorage.getItem(cacheKey);
-            if (cachedData) { 
-                allVideos = JSON.parse(cachedData); 
-                buildUI(); 
-            }
-            
-            try { 
-                const r = await fetch(WORKER_URL); 
-                const data = await r.json(); 
-                allVideos = data; 
-                localStorage.setItem(cacheKey, JSON.stringify(data)); 
-                buildUI(); 
-            } catch (e) {
-                console.error("Error en catálogo:", e);
-            }
-        } else {
-            // Usuario no logueado: mostramos el login
-            document.getElementById("loginModal").style.display = "flex";
-            document.getElementById("expModal").style.display = "none";
-        }
-    });
-}
-
-window.logout = () => { 
-    localStorage.removeItem("user_experience"); // Esto limpia el modo elegido
-    signOut(auth); 
-};
+window.logout = () => { localStorage.removeItem("user_experience"); signOut(auth); };
 // 1. Definimos la variable una sola vez fuera del evento
 const header = document.querySelector('.header');
 
