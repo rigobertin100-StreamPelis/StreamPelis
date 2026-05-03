@@ -193,8 +193,24 @@
         
         #loginModal, #expModal {position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:9999999;}
         #loginBox, #expBox {background:#1c1c1e;padding:40px;border-radius:28px;display:flex;flex-direction:column;gap:16px;width:320px;}
-        #loginBox input, #expBox button {padding:14px;border-radius:12px;border:none;background:#2c2c2e;color:white;font-size:16px;}
-        #loginBox button, .exp-btn-active {padding:14px;border:none;border-radius:12px;background:#0a84ff;color:#fff;font-weight:bold;cursor:pointer;}
+#loginBox input {padding:14px;border-radius:12px;border:none;background:#2c2c2e;color:white;font-size:16px;}
+        #loginBox button {padding:14px;border:none;border-radius:12px;background:#0a84ff;color:#fff;font-weight:bold;cursor:pointer;}
+
+        /* NUEVO ESTILO MODAL EXPERIENCIA */
+        .ios-menu-container { width: 450px !important; padding: 30px !important; }
+        .ios-title { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 25px; letter-spacing: -0.5px; }
+        .ios-options-grid { display: flex; flex-direction: column; gap: 15px; }
+        .ios-card {
+            background: #2c2c2e; border: none; border-radius: 18px; padding: 16px;
+            display: flex; align-items: center; gap: 18px; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-align: left;
+        }
+        .ios-card:hover { background: #3a3a3c; transform: scale(1.02); }
+        .ios-card:active { transform: scale(0.98); opacity: 0.8; }
+        .ios-icon { font-size: 32px; background: rgba(255,255,255,0.05); width: 60px; height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+        .ios-text { display: flex; flex-direction: column; }
+        .ios-main-text { font-size: 18px; font-weight: 600; color: white; }
+        .ios-sub-text { font-size: 14px; color: #8e8e93; }
         
         .continue-overlay{position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, transparent 80%);display:flex;flex-direction:column;justify-content:flex-end;padding:15px;gap:8px;pointer-events:none;}
         .continue-info{font-size:12px;color:#0a84ff;font-weight:bold;}
@@ -239,10 +255,26 @@
 </div>
 
 <div id="expModal" style="display:none;">
-    <div id="expBox">
-        <h2 style="text-align:center">Elegir Experiencia</h2>
-        <button onclick="setExperience('tv')" tabindex="1" class="exp-btn-active">📺 Pantalla (TV)</button>
-        <button onclick="setExperience('mobile')" tabindex="2" style="background:#3a3a3c">📱 SmartPhone / PC</button>
+    <div id="expBox" class="ios-menu-container">
+        <h2 class="ios-title">Experiencia</h2>
+        
+        <div class="ios-options-grid">
+            <button class="ios-card" onclick="setExperience('tv')" tabindex="1">
+                <div class="ios-icon">📺</div>
+                <div class="ios-text">
+                    <span class="ios-main-text">Modo Televisión</span>
+                    <span class="ios-sub-text">Optimizado para control remoto</span>
+                </div>
+            </button>
+
+            <button class="ios-card" onclick="setExperience('mobile')" tabindex="2">
+                <div class="ios-icon">📱</div>
+                <div class="ios-text">
+                    <span class="ios-main-text">Modo Móvil / PC</span>
+                    <span class="ios-sub-text">Uso táctil y ratón</span>
+                </div>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -380,7 +412,7 @@ function initExperience() {
         document.getElementById("expModal").style.display = "flex";
         if (window.SpatialNavigation) {
             SpatialNavigation.init();
-            SpatialNavigation.add({ id: 'exp', selector: '#expBox button' });
+            SpatialNavigation.add({ id: 'exp', selector: '.ios-card' });
             SpatialNavigation.makeFocusable();
             SpatialNavigation.focus('exp');
         }
