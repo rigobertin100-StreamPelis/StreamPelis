@@ -480,33 +480,45 @@ window.openSeriesModal = async (v) => {
     }
 
     const playBtn = document.getElementById("modalPlayBtn");
-if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
+if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids" || v.tipo === "serie" || v.tipo === "anime") {
     playBtn.style.display = "block";
     playBtn.onclick = () => window.openVideo(v);
 } else {
     playBtn.style.display = "none";
 }
 
-if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
-    const query = v.titulo.replace(/^[PSCK]\./, '').replace(/_/g, ' ');
-    try {
-        const resp = await fetch(`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&language=es-MX`, {
-            headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
-        });
+if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids" || v.tipo === "serie" || v.tipo === "anime") {
+        const esTV = (v.tipo === "serie" || v.tipo === "anime");
+        const endpoint = esTV ? "tv" : "movie";
+        const query = v.titulo.replace(/^[PSCKA]\./, '').replace(/_/g, ' ');
+
+        try {
+            const resp = await fetch(`https://api.themoviedb.org/3/search/${endpoint}?query=${encodeURIComponent(query)}&language=es-MX`, {
+                headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
+            });
             const data = await resp.json();
+            
             if (data.results && data.results.length > 0) {
                 const info = data.results[0];
-                const year = info.release_date ? info.release_date.split('-')[0] : 'N/A';
-                document.getElementById("seriesTitle").innerText = `${info.title} (${year})`;
+                const tituloFinal = esTV ? info.name : info.title;
+                const fecha = esTV ? info.first_air_date : info.release_date;
+                const year = fecha ? fecha.split('-')[0] : 'N/A';
+
+                document.getElementById("seriesTitle").innerText = `${tituloFinal} (${year})`;
                 document.getElementById("tmdbOverview").innerText = info.overview;
-                document.getElementById("tmdbMeta").innerText = `⭐ ${info.vote_average.toFixed(1)} | Estreno: ${info.release_date}`;
+                document.getElementById("tmdbMeta").innerText = `⭐ ${info.vote_average.toFixed(1)} | Estreno: ${fecha}`;
                 
-                const cResp = await fetch(`https://api.themoviedb.org/3/movie/${info.id}/credits?language=es-MX`, {
-                    headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
-                });
-                const cData = await cResp.json();
-                const directors = cData.crew.filter(c => c.job === "Director").map(d => d.name).join(", ");
-                document.getElementById("tmdbCredits").innerText = directors ? `Director: ${directors}` : "";
+                // Los créditos (Director) solo los buscamos si es película/cine/kids
+                if (!esTV) {
+                    const cResp = await fetch(`https://api.themoviedb.org/3/movie/${info.id}/credits?language=es-MX`, {
+                        headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
+                    });
+                    const cData = await cResp.json();
+                    const directors = cData.crew.filter(c => c.job === "Director").map(d => d.name).join(", ");
+                    document.getElementById("tmdbCredits").innerText = directors ? `Director: ${directors}` : "";
+                } else {
+                    document.getElementById("tmdbCredits").innerText = ""; // Limpiar créditos en series
+                }
             }
         } catch(e) { console.error("Error TMDB:", e); }
     }
