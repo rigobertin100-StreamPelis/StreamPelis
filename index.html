@@ -25,17 +25,36 @@
 
     <style>
         /* BASE & LAYOUT */
-        body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;background:linear-gradient(to bottom,#1c1c1e,#2c2c2e);color:white;padding-top:90px;overflow-x:hidden;}
+        body {
+    margin: 0; 
+    /* Añadimos "SF Pro Display" y un ajuste de espaciado para verse más pro */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    letter-spacing: -0.022em; 
+    background: #000000; /* Fondo negro puro hace que los colores de las cards resalten más */
+    color: white; 
+    padding-top: 90px; 
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
         
         /* MEJORA 2: Glassmorphism Refinado */
-        .header{
-            position:fixed;top:0;left:0;width:100%;display:flex;align-items:center;justify-content:space-between;padding:18px 28px;z-index:1000;
-            background: rgba(28,28,30,0.55);
-            backdrop-filter: blur(30px) saturate(180%);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            transition:.3s;box-sizing:border-box;
-        }
-        .header.scrolled{background:rgba(28,28,30,.9);box-shadow:0 10px 30px rgba(0,0,0,.5);}
+.header {
+    position: fixed; top: 0; left: 0; width: 100%; 
+    display: flex; align-items: center; justify-content: space-between; 
+    padding: 14px 28px; z-index: 1000;
+    background: rgba(18, 18, 18, 0.6); 
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%); 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.4s ease, padding 0.4s ease;
+    box-sizing: border-box;
+}
+
+.header.scrolled {
+    background: rgba(10, 10, 10, 0.95);
+    padding: 10px 28px; 
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+}
         
         .tv-mode { cursor: none; }
         .tv-mode .header, .tv-mode .series-modal { backdrop-filter: none !important; background: rgba(28,28,30,0.98) !important; }
@@ -969,6 +988,18 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 window.logout = () => { localStorage.removeItem("user_experience"); signOut(auth); };
-</script>
+// 1. Definimos la variable una sola vez fuera del evento
+const header = document.querySelector('.header');
+
+// 2. Un solo listener de scroll para manejar el efecto
+window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+        header.classList.add('scrolled');
+    } else {
+        header.classList.remove('scrolled');
+    }
+});
+
+    </script>
 </body>
 </html>
