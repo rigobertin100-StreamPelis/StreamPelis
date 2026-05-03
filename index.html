@@ -576,12 +576,31 @@ window.nextEpisode = () => {
 
 window.prevEpisode = () => {
     if (!currentSeries) return;
-    if (currentEpisode > 0) { 
-        currentEpisode--; window.openVideo(temp.episodios[currentEpisode]); 
-    } else if (currentSeason > 0) { 
-        currentSeason--; currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1; 
-        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
+    // 1. Verificación de seguridad: Si es el primer cap de la primera temporada, no hay a donde ir
+    if (currentSeason === 0 && currentEpisode === 0) return;
+
+    if (currentEpisode > 0) {
+        // CASO 1: Retroceder un capítulo dentro de la misma temporada
+        currentEpisode--;
+    } else if (currentSeason > 0) {
+        // CASO 2: Estamos en el cap 0, hay que ir a la temporada anterior
+        currentSeason--;
+        
+        // Buscamos la temporada previa en el objeto de la serie
+        const temporadaPrevia = currentSeries.temporadas[currentSeason];
+        
+        // Seteamos el capítulo al último disponible de esa temporada
+        currentEpisode = temporadaPrevia.episodios.length - 1;
+    } else {
+        return;
     }
+    
+    // 3. Obtener el episodio resultante y sincronizar UI
+    const ep = currentSeries.temporadas[currentSeason].episodios[currentEpisode];
+    renderEpisodes(currentSeason);
+    
+    // 4. Cargar el video
+    window.openVideo(ep);
 };
 
 window.closeSeriesModal = () => { 
