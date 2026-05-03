@@ -511,20 +511,47 @@ const getProgress = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 const getWatchLater = () => JSON.parse(localStorage.getItem(WL_KEY) || "[]");
 
 const playerController = {
-    video: null, hls: null, currentId: null, idleTimer: null,
-    init(){
+    video: null, 
+    hls: null, 
+    currentId: null, 
+    idleTimer: null,
+    lastSyncTime: 0,
+
+    async syncToFirebase() {
+        if (!this.currentId || !auth.currentUser) return;
+        const data = getProgress()[this.currentId];
+        if (data) {
+            try {
+                const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const userRef = doc(db, "users", auth.currentUser.uid, "progress", this.currentId);
+                await setDoc(userRef, data);
+                this.lastSyncTime = this.video.currentTime;
+                console.log("✓ Progreso guardado en la nube");
+            } catch (e) { console.error("Error sincronizando:", e); }
+        }
+    },
+
+    init() {
         this.video = document.getElementById("video");
         this.video.ontimeupdate = () => {
-            if(this.currentId && this.video.currentTime > 5) {
+            if (this.currentId && this.video.currentTime > 5) {
                 const data = getProgress();
                 data[this.currentId] = { 
-                    time: this.video.currentTime, duration: this.video.duration, 
-                    updated: Date.now(), season: (currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime")) ? currentSeason : null, 
+                    time: this.video.currentTime, 
+                    duration: this.video.duration, 
+                    updated: Date.now(), 
+                    season: (currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime")) ? currentSeason : null, 
                     episode: (currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime")) ? currentEpisode : null 
                 };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+                // Sincroniza cada 30 segundos (30, no 300)
+                if (Math.abs(this.video.currentTime - this.lastSyncTime) > 300) {
+                    this.syncToFirebase();
+                }
             }
         };
+
         this.video.onended = () => (currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime")) ? window.nextEpisode() : window.closeVideo();
         
         const nav = document.getElementById("playerNav");
@@ -539,8 +566,10 @@ const playerController = {
         window.addEventListener("mousemove", resetTimer);
         window.addEventListener("keydown", resetTimer);
     },
-    async play(v){
-        this.cleanup();
+
+    async play(v) {
+        this.cleanup(); // Llama a la limpieza antes de empezar un video nuevo
+        
         const isSerie = currentSeries && (currentSeries.tipo === "serie" || currentSeries.tipo === "anime");
         document.getElementById("btnPrev").style.display = isSerie ? "inline-block" : "none";
         document.getElementById("btnNext").style.display = isSerie ? "inline-block" : "none";
@@ -549,12 +578,33 @@ const playerController = {
         const saved = getProgress()[this.currentId];
 
         const startVideo = () => {
-            if(saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
+            if (saved && (!currentSeries || (saved.season === currentSeason && saved.episode === currentEpisode))) {
                 this.video.currentTime = saved.time;
             }
             this.video.play().catch(e => console.warn("Autoplay bloqueado", e));
         };
 
+        if (v.url.includes(".m3u8") && Hls.isSupported()) {
+            this.hls = new Hls(); 
+            this.hls.loadSource(v.url); 
+            this.hls.attachMedia(this.video);
+            this.hls.on(Hls.Events.MANIFEST_PARSED, startVideo);
+        } else {
+            this.video.src = v.url;
+            this.video.onloadedmetadata = startVideo;
+        }
+    },
+
+    cleanup() { 
+        this.syncToFirebase(); // Sincroniza el progreso final antes de cerrar
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
+        }
+        this.video.pause(); 
+        this.video.src = ""; 
+    }
+};
         if(v.url.includes(".m3u8") && Hls.isSupported()){
             this.hls = new Hls(); this.hls.loadSource(v.url); this.hls.attachMedia(this.video);
             this.hls.on(Hls.Events.MANIFEST_PARSED, startVideo);
