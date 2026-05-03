@@ -439,7 +439,8 @@ window.closeVideo = () => {
     playerController.cleanup(); 
     document.getElementById("player").style.display = "none";
     if (currentSeries) { 
-        document.getElementById("seriesModal").style.display = "flex"; 
+        // CAMBIO: Al cerrar, volvemos a abrir el modal de la serie para refrescar datos
+        window.openSeriesModal(currentSeries);
         window.switchFocusGroup('modal'); 
     } else { 
         window.switchFocusGroup('main'); 
@@ -449,7 +450,8 @@ window.closeVideo = () => {
 
 window.openSeriesModal = async (v) => {
     currentSeries = v; 
-    currentSeason = 0;
+    // CAMBIO: Respetar la temporada si ya existe progreso guardado
+    currentSeason = currentSeason || 0;
     
     document.getElementById("youtubePlayer").innerHTML = "";
     const modal = document.getElementById("seriesModal");
@@ -528,7 +530,7 @@ window.openSeriesModal = async (v) => {
             };
             document.getElementById("seasonSelect").appendChild(opt);
         });
-        renderEpisodes(0);
+        renderEpisodes(currentSeason);
     }
     window.switchFocusGroup('modal');
 };
@@ -578,6 +580,8 @@ window.closeSeriesModal = () => {
     document.getElementById("seriesModal").style.display = "none"; 
     document.getElementById("modalHero").innerHTML = "";
     currentSeries = null; 
+    // Al cerrar el modal, reiniciamos la temporada a 0 para el próximo uso
+    currentSeason = 0;
     setupHeroBanner(); 
     window.switchFocusGroup('main'); 
 };
@@ -670,12 +674,18 @@ function createCard(v, isContinue = false) {
     card.onclick = (e) => { 
         e.preventDefault(); 
         if (isContinue) {
-            // CORRECCIÓN PARA SERIES Y ANIME EN CONTINUAR VIENDO
+            // CAMBIO: Preparamos el modal de serie para que, al salir del video, tenga los datos cargados.
             if (v.tipo === "serie" || v.tipo === "anime") {
                 currentSeries = v;
                 currentSeason = v._prog.season || 0;
                 currentEpisode = v._prog.episode || 0;
-                // Obtenemos el objeto del episodio real
+                
+                // Llamamos a openSeriesModal para que TMDB cargue la info en segundo plano
+                window.openSeriesModal(v);
+                
+                // Cerramos el modal inmediatamente porque vamos a abrir el video
+                document.getElementById("seriesModal").style.display = "none";
+                
                 const ep = v.temporadas[currentSeason].episodios[currentEpisode];
                 window.openVideo(ep);
             } else {
