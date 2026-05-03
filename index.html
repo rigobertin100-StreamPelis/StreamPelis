@@ -889,19 +889,27 @@ function renderContinue(limite = 5) {
         const pct = (p.time / p.duration) * 100;
         let info = (v.tipo === "serie" || v.tipo === "anime") ? `T${(p.season || 0) + 1}:E${(p.episode || 0) + 1}` : `Faltan ${Math.ceil((p.duration - p.time)/60)} min`;
         
-        // Creamos la tarjeta base que ya trae la imagen
+        // Creamos la tarjeta base (usando createCard para heredar la lógica de imagen)
         const card = createCard(v, true); 
         
-        // Agregamos el overlay encima de la imagen
-        card.innerHTML += `
-            <div class="continue-overlay" style="background: linear-gradient(to top, rgba(0,0,0,0.9) 10%, transparent 60%);">
-                <div class="continue-info">${info}</div>
-                <div class="continue-line">
-                    <div class="continue-progress" style="width:${pct}%"></div>
-                </div>
+        // FIX: Usamos appendChild en lugar de innerHTML+= para no romper el Lazy Loading
+        const overlay = document.createElement("div");
+        overlay.className = "continue-overlay";
+        overlay.style.background = "linear-gradient(to top, rgba(0,0,0,0.9) 10%, transparent 60%)";
+        overlay.innerHTML = `
+            <div class="continue-info">${info}</div>
+            <div class="continue-line">
+                <div class="continue-progress" style="width:${pct}%"></div>
             </div>`;
+            
+        card.appendChild(overlay);
         row.appendChild(card);
     });
+
+    // Actualizamos el control de TV si es necesario
+    if (localStorage.getItem("user_experience") === 'tv' && window.SpatialNavigation) {
+        SpatialNavigation.makeFocusable();
+    }
 }
 
 function renderWatchLater() {
