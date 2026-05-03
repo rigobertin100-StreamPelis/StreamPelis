@@ -22,6 +22,7 @@
       }
     };
 
+    // --- CORRECCIÓN HERO BANNER: FUNCIONES GLOBALES ---
     let heroPlayer; 
 
     function loadYouTubeIframeAPI(videoId) {
@@ -104,6 +105,7 @@
             box-shadow: 0 0 25px rgba(204, 255, 0, 0.7);
         }
 
+        /* Estilos específicos para inputs de login en modo TV */
         .tv-mode #loginBox input:focus, .tv-mode #loginBox button:focus {
             background: #3a3a3c !important;
             color: #fff !important;
@@ -119,18 +121,18 @@
 
         .logout{white-space:nowrap;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer;font-weight:bold;}
         
-        .hero-banner {
-            position: relative; 
-            width: 100%; 
-            height: 70vh; 
-            background-color: #111; 
-            background-repeat: no-repeat;
-            background-size: cover;
-            background-position: center;
-            overflow: hidden; 
-            margin-top: -90px; 
-            display: none;
-        }
+.hero-banner {
+    position: relative; 
+    width: 100%; 
+    height: 70vh; 
+    background-color: #111; 
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    overflow: hidden; 
+    margin-top: -90px; 
+    display: none;
+}
         .hero-video-bg {position: absolute; top: 50%; left: 50%; width: 100vw; height: 56.25vw; transform: translate(-50%, -50%); pointer-events: none;}
         .hero-overlay {position: absolute; inset: 0; background: linear-gradient(to right, rgba(28,28,30,0.9) 10%, transparent 70%), linear-gradient(to top, #1c1c1e 5%, transparent 50%); display: flex; flex-direction: column; justify-content: center; padding: 0 50px; z-index: 2;}
         #heroTitle {font-size: clamp(30px, 5vw, 60px); margin: 0; color: #fff; text-transform: uppercase; max-width: 50%; line-height: 1.1;}
@@ -231,7 +233,7 @@
         
         .episode-list{width:100%;display:flex;flex-wrap:wrap;gap:10px;padding: 20px 50px;}
         
-        #loginModal, #expModal {position:fixed;inset:0;background:#000;display:flex;justify-content:center;align-items:center;z-index:9999999;}
+        #loginModal, #expModal {position:fixed;inset:0;background:#000;display:none;justify-content:center;align-items:center;z-index:9999999;}
         #loginBox, #expBox {background:#1c1c1e;padding:40px;border-radius:28px;display:flex;flex-direction:column;gap:16px;width:320px;}
         #loginBox input {padding:14px;border-radius:12px;border:none;background:#2c2c2e;color:white;font-size:16px;}
         #loginBox button {padding:14px;border:none;border-radius:12px;background:#0a84ff;color:#fff;font-weight:bold;cursor:pointer;}
@@ -251,6 +253,7 @@
         .ios-main-text { font-size: 18px; font-weight: 600; color: white; }
         .ios-sub-text { font-size: 14px; color: #8e8e93; }
 
+        /* TOAST NOTIFICATION */
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: rgba(44, 44, 46, 0.95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px; z-index: 200000; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); pointer-events: none;
         }
@@ -290,17 +293,7 @@
 
 <body>
 
-<div id="loginModal">
-    <div id="loginBox">
-        <h2 style="text-align:center">PlusUltra</h2>
-        <input id="loginUser" type="email" placeholder="Correo" tabindex="1">
-        <input id="loginPass" type="password" placeholder="Contraseña" tabindex="2">
-        <button id="loginBtn" tabindex="3">Ingresar</button>
-        <p id="loginError" style="color:#ff453a; display:none; text-align:center">Credenciales incorrectas</p>
-    </div>
-</div>
-
-<div id="expModal" style="display:none;">
+<div id="expModal">
     <div id="expBox" class="ios-menu-container">
         <h2 class="ios-title">Experiencia</h2>
         <div class="ios-options-grid">
@@ -319,6 +312,16 @@
                 </div>
             </button>
         </div>
+    </div>
+</div>
+
+<div id="loginModal">
+    <div id="loginBox">
+        <h2 style="text-align:center">PlusUltra</h2>
+        <input id="loginUser" type="email" placeholder="Correo" tabindex="1">
+        <input id="loginPass" type="password" placeholder="Contraseña" tabindex="2">
+        <button id="loginBtn" tabindex="3">Ingresar</button>
+        <p id="loginError" style="color:#ff453a; display:none; text-align:center">Credenciales incorrectas</p>
     </div>
 </div>
 
@@ -433,32 +436,71 @@ const lazyLoader = new IntersectionObserver((entries, observer) => {
     });
 }, { rootMargin: "100px" });
 
+// --- LÓGICA DE INICIO Y EXPERIENCIA (CORREGIDA) ---
+
 window.setExperience = (type) => {
     localStorage.setItem("user_experience", type);
     document.getElementById("expModal").style.display = "none";
-    location.reload();
+    location.reload(); // Recargamos para aplicar el modo TV antes de evaluar el login
 };
 
-function initExperience() {
+function initTVNavigation() {
+    if (window.SpatialNavigation) {
+        SpatialNavigation.init();
+        SpatialNavigation.add({ id: 'exp', selector: '.ios-card' });
+        SpatialNavigation.add({ id: 'login', selector: '#loginBox input, #loginBtn' });
+        SpatialNavigation.add({ id: 'main', selector: '.card, .hero-btn, .logout, .search, .btn-catalog' });
+        SpatialNavigation.add({ id: 'modal', selector: '.series-modal .season-option, .series-modal .episode-list button, .series-modal .close, #modalPlayBtn, #modalWatchLaterBtn' });
+        SpatialNavigation.add({ id: 'player', selector: '.player .player-nav button, .player .close' });
+        SpatialNavigation.makeFocusable();
+    }
+}
+
+async function checkInitialState() {
+    initTVNavigation(); // Siempre inicializamos la nav espacial por si es TV
     const exp = localStorage.getItem("user_experience");
+
+    // 1. ELECCIÓN DE EXPERIENCIA (PRIMERO)
     if (!exp) {
         document.getElementById("expModal").style.display = "flex";
-        // Forzamos navegación espacial en la pantalla de selección inicial
         if (window.SpatialNavigation) {
-            SpatialNavigation.init();
-            SpatialNavigation.add({ id: 'exp', selector: '.ios-card' });
-            SpatialNavigation.makeFocusable();
             SpatialNavigation.focus('exp');
         }
-        return false;
+        return; 
     }
+
+    // Aplicar modo si ya existe
     if (exp === 'tv') {
         document.body.classList.add("tv-mode");
-        initTVNavigation();
-        initGlobalEvents(); 
     }
-    return true;
+
+    // 2. LOGIN FIREBASE (DESPUÉS)
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            document.getElementById("loginModal").style.display = "none";
+            playerController.init();
+            initGlobalEvents();
+
+            const cachedData = localStorage.getItem('plusultra_catalog_cache');
+            if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
+            try { 
+                const r = await fetch(WORKER_URL); 
+                const data = await r.json(); 
+                allVideos = data; 
+                localStorage.setItem('plusultra_catalog_cache', JSON.stringify(data)); 
+                buildUI(); 
+            } catch (e) {}
+        } else {
+            document.getElementById("loginModal").style.display = "flex";
+            if (exp === 'tv' && window.SpatialNavigation) {
+                window.switchFocusGroup('login');
+            }
+        }
+    });
 }
+
+// Iniciar proceso
+window.onload = checkInitialState;
 
 function initGlobalEvents() {
     document.getElementById("mainCatalog").addEventListener("click", (e) => {
@@ -490,22 +532,9 @@ function initGlobalEvents() {
     });
 }
 
-function initTVNavigation() {
-    if (window.SpatialNavigation) {
-        SpatialNavigation.init();
-        SpatialNavigation.add({ id: 'login', selector: '#loginBox input, #loginBtn' });
-        SpatialNavigation.add({ id: 'main', selector: '.card, .hero-btn, .logout, .search, .btn-catalog' });
-        SpatialNavigation.add({ id: 'modal', selector: '.series-modal .season-option, .series-modal .episode-list button, .series-modal .close, #modalPlayBtn, #modalWatchLaterBtn' });
-        SpatialNavigation.add({ id: 'player', selector: '.player .player-nav button, .player .close' });
-        SpatialNavigation.add({ id: 'exp', selector: '.ios-card' }); // Agregamos grupo exp aquí también
-        SpatialNavigation.makeFocusable();
-    }
-}
-
 window.addEventListener('keydown', (e) => {
     const playerOpen = document.getElementById("player").style.display === "flex";
     const modalOpen = document.getElementById("seriesModal").style.display === "flex";
-    const expOpen = document.getElementById("expModal").style.display === "flex";
     const isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
 
     if ([27, 8, 461, 10009].includes(e.keyCode)) {
@@ -528,17 +557,9 @@ window.addEventListener('keydown', (e) => {
 }, true);
 
 window.switchFocusGroup = (groupId) => {
-    // Permitimos cambiar a exp o login siempre
-    const allowedAlways = ['exp', 'login'];
-    if (localStorage.getItem("user_experience") !== 'tv' && !allowedAlways.includes(groupId)) return;
-    
+    if (localStorage.getItem("user_experience") !== 'tv' && groupId !== 'login' && groupId !== 'exp') return;
     if (window.SpatialNavigation) {
-        SpatialNavigation.disable('login'); 
-        SpatialNavigation.disable('main'); 
-        SpatialNavigation.disable('modal'); 
-        SpatialNavigation.disable('player');
-        SpatialNavigation.disable('exp');
-        
+        SpatialNavigation.disable('exp'); SpatialNavigation.disable('login'); SpatialNavigation.disable('main'); SpatialNavigation.disable('modal'); SpatialNavigation.disable('player');
         SpatialNavigation.enable(groupId); 
         setTimeout(() => { SpatialNavigation.focus(groupId); }, 100);
     }
@@ -555,7 +576,7 @@ const WL_KEY = "plus_ultra_watchlater";
 const getProgress = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 const getWatchLater = () => JSON.parse(localStorage.getItem(WL_KEY) || "[]");
 
-function showToast(message) {
+    function showToast(message) {
     let toast = document.getElementById("toast-notify");
     if (!toast) {
         toast = document.createElement("div");
@@ -1120,28 +1141,13 @@ window.resetCatalog = () => {
     if (localStorage.getItem("user_experience") === 'tv') window.switchFocusGroup('main');
 };
 
-document.getElementById("loginBtn").onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); } catch(e) { document.getElementById("loginError").style.display = "block"; } };
-
-onAuthStateChanged(auth, async (user) => {
-    if(user){
-        document.getElementById("loginModal").style.display = "none"; 
-        if (!initExperience()) return;
-        playerController.init();
-        const cachedData = localStorage.getItem('plusultra_catalog_cache');
-        if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
-        try { 
-            const r = await fetch(WORKER_URL); 
-            const data = await r.json(); 
-            allVideos = data; 
-            localStorage.setItem('plusultra_catalog_cache', JSON.stringify(data)); 
-            buildUI(); 
-        } catch (e) {}
-    } else { 
-        document.getElementById("loginModal").style.display = "flex"; 
-        initTVNavigation();
-        window.switchFocusGroup('login');
-    }
-});
+document.getElementById("loginBtn").onclick = async () => { 
+    try { 
+        await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); 
+    } catch(e) { 
+        document.getElementById("loginError").style.display = "block"; 
+    } 
+};
 
 window.logout = () => { localStorage.removeItem("user_experience"); signOut(auth); };
 
