@@ -575,13 +575,17 @@ window.nextEpisode = () => {
 };
 
 window.prevEpisode = () => {
-    if (!currentSeries) return;
-    if (currentEpisode > 0) { 
-        currentEpisode--; window.openVideo(temp.episodios[currentEpisode]); 
-    } else if (currentSeason > 0) { 
-        currentSeason--; currentEpisode = currentSeries.temporadas[currentSeason].episodios.length - 1; 
-        window.openVideo(currentSeries.temporadas[currentSeason].episodios[currentEpisode]); 
+    if (currentSeason === 0 && currentEpisode === 0) return;[cite: 1]
+    if (currentEpisode > 0) {
+        currentEpisode--;[cite: 1]
+    } else {
+        currentSeason--;[cite: 1]
+        const temporadaPrevia = currentSeries.temporadas[currentSeason];[cite: 1]
+        currentEpisode = temporadaPrevia.episodios.length - 1;[cite: 1]
     }
+    const ep = currentSeries.temporadas[currentSeason].episodios[currentEpisode];[cite: 1]
+    renderEpisodes(currentSeason);[cite: 1]
+    window.playEpisode(ep.url, ep.nombre);[cite: 1]
 };
 
 window.closeSeriesModal = () => { 
