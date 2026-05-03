@@ -115,7 +115,18 @@
 
         .logout{white-space:nowrap;padding:10px 14px;border:none;border-radius:12px;background:#ff3b30;color:#fff;cursor:pointer;font-weight:bold;}
         
-        .hero-banner {position: relative; width: 100%; height: 70vh; background: #000; overflow: hidden; margin-top: -90px; display: none;}
+.hero-banner {
+    position: relative; 
+    width: 100%; 
+    height: 70vh; 
+    background-color: #111; 
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    overflow: hidden; 
+    margin-top: -90px; 
+    display: none;
+}
         .hero-video-bg {position: absolute; top: 50%; left: 50%; width: 100vw; height: 56.25vw; transform: translate(-50%, -50%); pointer-events: none;}
         .hero-overlay {position: absolute; inset: 0; background: linear-gradient(to right, rgba(28,28,30,0.9) 10%, transparent 70%), linear-gradient(to top, #1c1c1e 5%, transparent 50%); display: flex; flex-direction: column; justify-content: center; padding: 0 50px; z-index: 2;}
         #heroTitle {font-size: clamp(30px, 5vw, 60px); margin: 0; color: #fff; text-transform: uppercase; max-width: 50%; line-height: 1.1;}
@@ -882,6 +893,13 @@ async function setupHeroBanner() {
     const heroBanner = document.getElementById("heroBanner");
     heroBanner.style.display = "block";
 
+    // 1. Ponemos el POSTER de fondo inmediatamente como respaldo
+    // Usamos el backdrop si existe, si no, la imagen de la card (v.img)
+    const imagenRespaldo = peliAleatoria.backdrop || peliAleatoria.img;
+    heroBanner.style.backgroundImage = `url(${imagenRespaldo})`;
+    heroBanner.style.backgroundSize = "cover";
+    heroBanner.style.backgroundPosition = "center";
+
     const peliYear = peliAleatoria.estreno ? ` (${peliAleatoria.estreno.split('-')[0]})` : '';
     document.getElementById("heroTitle").innerText = peliAleatoria.titulo + peliYear;
     
@@ -894,18 +912,34 @@ async function setupHeroBanner() {
         window.openVideo(peliAleatoria); 
     };
 
-    const videoId = peliAleatoria.trailerID || null;
     const playerDiv = document.getElementById("youtubePlayer");
     
-    if (videoId) {
-        loadYouTubeIframeAPI(videoId);
+    // 2. Limpiamos el contenedor del player
+    playerDiv.innerHTML = "";
+
+    // 3. Solo intentamos cargar YouTube si existe un trailerID
+    if (peliAleatoria.trailerID) {
+        // Creamos el iframe con opacidad 0 inicial
+        const iframe = document.createElement("iframe");
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.border = "none";
+        iframe.style.opacity = "0"; // Invisible al principio
+        iframe.style.transition = "opacity 1s ease-in";
+        
+        // Si el video carga bien, le damos opacidad 1 para tapar el poster
+        iframe.onload = () => { iframe.style.opacity = "1"; };
+
+        iframe.src = `https://www.youtube.com/embed/${peliAleatoria.trailerID}?autoplay=1&mute=1&loop=1&playlist=${peliAleatoria.trailerID}&controls=0&modestbranding=1`;
+        iframe.allow = "autoplay; encrypted-media";
+        
+        playerDiv.appendChild(iframe);
     } else {
-        playerDiv.innerHTML = `
-            <iframe width="100%" height="100%" 
-            src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(peliAleatoria.titulo + " trailer")}&autoplay=1&mute=1&controls=0&modestbranding=1" 
-            frameborder="0" allow="autoplay"></iframe>`;
+        // Si no hay trailerID, el poster ya está de fondo gracias al paso 1
+        playerDiv.innerHTML = ""; 
     }
 }
+
 window.setupHeroBanner = setupHeroBanner; 
 
 function buildUI(){
