@@ -721,37 +721,37 @@ window.toggleWatchLater = (v) => {
 };
 
 window.openSeriesModal = async (v) => {
+    // 1. Resetear estados globales para la nueva selección
     currentSeries = v; 
-    currentSeason = currentSeason || 0;
+    currentSeason = 0; // Evita que una serie nueva herede la temporada de la anterior
     
+    // Detener el reproductor del banner principal si está sonando
     if (heroPlayer && heroPlayer.stopVideo) heroPlayer.stopVideo();
 
     const modal = document.getElementById("seriesModal");
     modal.style.display = "flex";
     document.getElementById("modalScroll").scrollTop = 0;
 
-    // Reset UI inmediata
+    // 2. LIMPIEZA TOTAL DEL DOM (Esto evita que veas a John Wick en Terminator)
     const modalHero = document.getElementById("modalHero");
-    modalHero.innerHTML = "";
+    modalHero.innerHTML = ""; 
+    modalHero.style.backgroundImage = "none"; 
+
+    // Resetear textos y listas para que no parpadee info vieja
     document.getElementById("seriesTitle").innerText = v.titulo;
-    document.getElementById("tmdbMeta").innerText = "";
+    document.getElementById("tmdbMeta").innerText = "Cargando...";
     document.getElementById("tmdbOverview").innerText = "";
     document.getElementById("seasonSelect").innerHTML = "";
     document.getElementById("episodeList").innerHTML = "";
 
+    // 3. Configurar botón de Watch Later (Mirar después)
     const wlBtn = document.getElementById("modalWatchLaterBtn");
     const isWL = getWatchLater().some(item => item.titulo === v.titulo);
     wlBtn.classList.toggle("active", isWL);
     wlBtn.innerText = isWL ? "✓" : "+";
     wlBtn.onclick = () => window.toggleWatchLater(v);
 
-    // Fondo inicial (mientras carga el trailer)
-    if (v.backdrop) {
-        modalHero.style.backgroundImage = `url(${v.backdrop})`;
-        modalHero.style.backgroundSize = "cover";
-        modalHero.style.backgroundPosition = "center";
-    }
-
+    // 4. Renderizado del Hero (Trailer o Backdrop)
     if (v.trailerID) {
         modalHero.innerHTML = `
             <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent); z-index:1;"></div>
@@ -761,11 +761,13 @@ window.openSeriesModal = async (v) => {
                 allow="autoplay; encrypted-media" allowfullscreen>
             </iframe>`;
     } else if (v.backdrop) {
-        modalHero.innerHTML = `
-            <div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>
-            <img src="${v.backdrop}" style="width:100%; height:100%; object-fit:cover; opacity:0.6;">`;
+        modalHero.style.backgroundImage = `url(${v.backdrop})`;
+        modalHero.style.backgroundSize = "cover";
+        modalHero.style.backgroundPosition = "center";
+        modalHero.innerHTML = `<div style="position:absolute; inset:0; background:linear-gradient(to top, #1c1c1e, transparent)"></div>`;
     }
 
+    // 5. Gestión del botón de reproducción principal
     const playBtn = document.getElementById("modalPlayBtn");
     if (v.tipo === "pelicula" || v.tipo === "cine" || v.tipo === "kids") {
         playBtn.style.display = "block";
@@ -775,7 +777,7 @@ window.openSeriesModal = async (v) => {
         playBtn.style.display = "none";
     }
 
-    // Cargar datos TMDB si no existen
+    // 6. Carga asíncrona de metadatos (TMDB)
     if (!v.resumen) {
         const searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=9db71febe6f2e19d653ab88b8ff729b6&query=${encodeURIComponent(v.titulo)}&language=es-MX`;
         try {
@@ -786,32 +788,40 @@ window.openSeriesModal = async (v) => {
                 v.resumen = info.overview;
                 v.estreno = info.release_date;
                 v.rating = info.vote_average;
-                if (!v.backdrop) v.backdrop = `https://image.tmdb.org/t/p/w1280${info.backdrop_path}`;
+                if (!v.backdrop && !v.trailerID) {
+                     modalHero.style.backgroundImage = `url(https://image.tmdb.org/t/p/w1280${info.backdrop_path})`;
+                }
             }
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error("Error cargando TMDB:", err); }
     }
 
+    // Actualizar UI con datos de TMDB
     document.getElementById("tmdbMeta").innerText = `${v.estreno || ''} • ${v.rating || '0.0'} ★`;
     document.getElementById("tmdbOverview").innerText = v.resumen || "Sin descripción disponible.";
 
+    // 7. Render de episodios (si aplica)
     if(v.tipo === "serie" || v.tipo === "anime") {
         v.temporadas.forEach((t, i) => {
             const opt = document.createElement("div"); 
-            opt.className = `season-option ${i === currentSeason ? 'active' : ''}`; 
-            opt.innerText = t.numero; opt.tabIndex = 0;
+            opt.className = `season-option ${i === 0 ? 'active' : ''}`; 
+            opt.innerText = t.numero; 
+            opt.tabIndex = 0;
             opt.onclick = () => { 
-                currentSeason = i; currentEpisode = 0;
+                currentSeason = i; 
+                currentEpisode = 0;
                 document.querySelectorAll(".season-option").forEach(el => el.classList.remove("active")); 
                 opt.classList.add("active"); 
                 renderEpisodes(i); 
             };
             document.getElementById("seasonSelect").appendChild(opt);
         });
-        renderEpisodes(currentSeason);
+        renderEpisodes(0);
     }
+    
+    // Cambiar el foco para navegación por control remoto (TV Mode)
     window.switchFocusGroup('modal');
 };
-
+    
 function renderEpisodes(idx) {
     const list = document.getElementById("episodeList"); 
     list.innerHTML = "";
