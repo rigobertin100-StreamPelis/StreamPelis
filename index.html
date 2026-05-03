@@ -105,6 +105,12 @@
             box-shadow: 0 0 25px rgba(204, 255, 0, 0.7);
         }
 
+        /* Estilos específicos para inputs de login en modo TV */
+        .tv-mode #loginBox input:focus, .tv-mode #loginBox button:focus {
+            background: #3a3a3c !important;
+            color: #fff !important;
+        }
+
         .logo{font-size:34px;font-weight:700;color:#0a84ff;}
         .header-right{display:flex;align-items:center;gap:12px;}
         
@@ -388,7 +394,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAt1E2XmlsxV52dAwRaXW_e4XdDQxiP8lg",
@@ -489,7 +495,8 @@ function initGlobalEvents() {
 function initTVNavigation() {
     if (window.SpatialNavigation) {
         SpatialNavigation.init();
-        SpatialNavigation.add({ id: 'main', selector: '.card, .hero-btn, .logout, .search, .btn-catalog, #loginBtn, #loginBox input' });
+        SpatialNavigation.add({ id: 'login', selector: '#loginBox input, #loginBtn' });
+        SpatialNavigation.add({ id: 'main', selector: '.card, .hero-btn, .logout, .search, .btn-catalog' });
         SpatialNavigation.add({ id: 'modal', selector: '.series-modal .season-option, .series-modal .episode-list button, .series-modal .close, #modalPlayBtn, #modalWatchLaterBtn' });
         SpatialNavigation.add({ id: 'player', selector: '.player .player-nav button, .player .close' });
         SpatialNavigation.makeFocusable();
@@ -521,9 +528,9 @@ window.addEventListener('keydown', (e) => {
 }, true);
 
 window.switchFocusGroup = (groupId) => {
-    if (localStorage.getItem("user_experience") !== 'tv') return;
+    if (localStorage.getItem("user_experience") !== 'tv' && groupId !== 'login') return;
     if (window.SpatialNavigation) {
-        SpatialNavigation.disable('main'); SpatialNavigation.disable('modal'); SpatialNavigation.disable('player');
+        SpatialNavigation.disable('login'); SpatialNavigation.disable('main'); SpatialNavigation.disable('modal'); SpatialNavigation.disable('player');
         SpatialNavigation.enable(groupId); 
         setTimeout(() => { SpatialNavigation.focus(groupId); }, 100);
     }
@@ -1117,50 +1124,32 @@ window.resetCatalog = () => {
 
 document.getElementById("loginBtn").onclick = async () => { try { await signInWithEmailAndPassword(auth, document.getElementById("loginUser").value, document.getElementById("loginPass").value); } catch(e) { document.getElementById("loginError").style.display = "block"; } };
 
-// Reemplaza tu onAuthStateChanged actual con este:
 onAuthStateChanged(auth, async (user) => {
     if(user){
-        try {
-            // 1. Consultar los datos del usuario en la colección "users"
-            const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
-
-            if (userSnap.exists()) {
-                const userData = userSnap.data();
-                const ahora = Date.now();
-
-                // 2. Verificar si la cuenta ya expiró
-                if (userData.fechaExpiracion && ahora > userData.fechaExpiracion) {
-                    alert("⚠️ Tu acceso ha vencido. Por favor, contacta al administrador.");
-                    window.logout(); // Usamos tu función de logout
-                    return;
-                }
-            } else {
-                // Opcional: Si el usuario es nuevo y no tiene fecha en Firestore,
-                // puedes decidir si dejarlo pasar o no.
-                console.warn("El usuario no tiene una fecha de expiración configurada.");
-            }
-
-            // 3. Si todo está bien, procedemos con tu lógica original
-            document.getElementById("loginModal").style.display = "none"; 
-            if (!initExperience()) return;
-            playerController.init();
-            
-            const cachedData = localStorage.getItem('plusultra_catalog_cache');
-            if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
-            
+        document.getElementById("loginModal").style.display = "none"; 
+        if (!initExperience()) return;
+        playerController.init();
+        const cachedData = localStorage.getItem('plusultra_catalog_cache');
+        if (cachedData) { allVideos = JSON.parse(cachedData); buildUI(); }
+        try { 
             const r = await fetch(WORKER_URL); 
             const data = await r.json(); 
             allVideos = data; 
             localStorage.setItem('plusultra_catalog_cache', JSON.stringify(data)); 
             buildUI(); 
-
-        } catch (error) {
-            console.error("Error validando suscripción:", error);
-            // En caso de error de red, podrías dejarlo pasar o sacarlo por seguridad
-        }
+        } catch (e) {}
     } else { 
         document.getElementById("loginModal").style.display = "flex"; 
+        // Si el usuario ya eligió modo TV previamente, activamos navegación en login
+        if (localStorage.getItem("user_experience") === 'tv') {
+            document.body.classList.add("tv-mode");
+            initTVNavigation();
+            window.switchFocusGroup('login');
+        } else if (!localStorage.getItem("user_experience")) {
+            // Si es la primera vez, inicializamos para que el login también sea navegable por defecto
+            initTVNavigation();
+            window.switchFocusGroup('login');
+        }
     }
 });
 
