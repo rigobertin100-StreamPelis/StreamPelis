@@ -992,9 +992,28 @@ function processCategoryData(data) {
     return first15.concat(rest);
 }
 
+function processCategoryData(data) {
+    // Invertimos para que lo último subido al bucket sea el índice 0
+    const sorted = [...data].reverse();
+    
+    // Si hay 15 o menos, se muestran todos en orden de novedad
+    if (sorted.length <= 15) return sorted;
+    
+    // Los primeros 15 se quedan fijos (los más nuevos)
+    const first15 = sorted.slice(0, 15);
+    
+    // Del 16 en adelante se mezclan aleatoriamente
+    const rest = shuffleArray(sorted.slice(15));
+    
+    return first15.concat(rest);
+}
+
 function renderAll(){
     const sections = [ 
+        // Esta fila toma los últimos 30 subidos al bucket sin importar la categoría
         { id: "recentRow", data: [...allVideos].slice(-30).reverse() }, 
+        
+        // Estas filas usan la nueva lógica de 15 fijos + resto random
         { id: "cineRow", data: processCategoryData(allVideos.filter(v => v.tipo === "cine")) },
         { id: "peliculasRow", data: processCategoryData(allVideos.filter(v => v.tipo === "pelicula")) }, 
         { id: "kidsRow", data: processCategoryData(allVideos.filter(v => v.tipo === "kids")) },
@@ -1008,11 +1027,17 @@ function renderAll(){
         container.innerHTML = ""; 
         loadedCounts[section.id] = 0; 
         loadNextSegment(section.id, section.data);
+        
         const sentinel = document.createElement("div"); 
-        sentinel.className = "loading-sentinel"; sentinel.innerText = "•••"; 
+        sentinel.className = "loading-sentinel"; 
+        sentinel.innerText = "•••"; 
         container.appendChild(sentinel);
-        new IntersectionObserver((entries) => { if (entries[0].isIntersecting) loadNextSegment(section.id, section.data); }, { root: container, threshold: 0.1 }).observe(sentinel);
+        
+        new IntersectionObserver((entries) => { 
+            if (entries[0].isIntersecting) loadNextSegment(section.id, section.data); 
+        }, { root: container, threshold: 0.1 }).observe(sentinel);
     });
+    
     renderContinue(5);
     renderWatchLater();
 }
