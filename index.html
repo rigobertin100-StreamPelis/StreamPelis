@@ -423,7 +423,7 @@ const setSignedCache = (key, url) => {
 
 const SEGMENT_SIZE = 10;
 const loadedCounts = {};
-const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev/";
+const WORKER_URL = "https://odd-credit-e6f8.rigobertin100.workers.dev";
 
 const lazyLoader = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
@@ -989,22 +989,6 @@ function processCategoryData(data) {
     if (sorted.length <= 15) return sorted;
     const first15 = sorted.slice(0, 15);
     const rest = shuffleArray(sorted.slice(15));
-    return first15.concat(rest);
-}
-
-function processCategoryData(data) {
-    // Invertimos para que lo último subido al bucket sea el índice 0
-    const sorted = [...data].reverse();
-    
-    // Si hay 15 o menos, se muestran todos en orden de novedad
-    if (sorted.length <= 15) return sorted;
-    
-    // Los primeros 15 se quedan fijos (los más nuevos)
-    const first15 = sorted.slice(0, 15);
-    
-    // Del 16 en adelante se mezclan aleatoriamente
-    const rest = shuffleArray(sorted.slice(15));
-    
     return first15.concat(rest);
 }
 
